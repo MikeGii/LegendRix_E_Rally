@@ -87,13 +87,24 @@ export function UserTableRow({
         <div className="relative">
           {showApprovalActions && (
             <div className="flex space-x-2">
-              <button
-                onClick={() => onAction('approve', user)}
-                disabled={actionLoading === user.id}
-                className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded text-sm font-medium transition-all duration-200 disabled:opacity-50"
-              >
-                {actionLoading === user.id ? '⏳' : '✅'} Approve
-              </button>
+              {/* Only show approve button if email is verified */}
+              {user.email_verified ? (
+                <button
+                  onClick={() => onAction('approve', user)}
+                  disabled={actionLoading === user.id}
+                  className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                >
+                  {actionLoading === user.id ? '⏳' : '✅'} Approve
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="px-3 py-1 bg-gray-600 text-gray-400 rounded text-sm font-medium cursor-not-allowed opacity-50"
+                  title="User must verify email first"
+                >
+                  📧 Email Required
+                </button>
+              )}
               <button
                 onClick={() => onAction('reject', user)}
                 disabled={actionLoading === user.id}

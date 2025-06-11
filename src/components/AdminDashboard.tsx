@@ -45,8 +45,8 @@ export function AdminDashboard() {
                   <span className="text-blue-400 font-medium">0</span>
                 </div>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-slate-300">Users pending approval</span>
-                  <span className="text-yellow-400 font-medium">{userStats.pendingApproval}</span>
+                  <span className="text-slate-300">Users pending email verification</span>
+                  <span className="text-yellow-400 font-medium">{userStats.pendingEmail}</span>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-slate-300">Total approved users</span>
@@ -78,28 +78,6 @@ export function AdminDashboard() {
                   ⚙️ System Settings
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Welcome Message */}
-        <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-white mb-4">Welcome to LegendRix E-Rally Admin Panel</h2>
-            <p className="text-slate-300 mb-6">
-              Manage your rally championship system efficiently. Monitor user registrations, 
-              oversee rally events, and maintain the competitive integrity of your platform.
-            </p>
-            <div className="flex justify-center space-x-4">
-              <button 
-                onClick={() => window.location.href = '/user-management'}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-blue-500/25"
-              >
-                Manage Users
-              </button>
-              <button className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-purple-500/25">
-                View Analytics
-              </button>
             </div>
           </div>
         </div>

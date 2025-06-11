@@ -20,27 +20,15 @@ export function AdminStatsCards({ stats }: AdminStatsCardsProps) {
       color: 'yellow'
     },
     {
-      title: 'Need Approval',
-      value: stats.pendingApproval,
-      icon: '⏳',
-      color: 'orange'
-    },
-    {
       title: 'Approved',
       value: stats.approved,
       icon: '✅',
       color: 'green'
-    },
-    {
-      title: 'Rejected',
-      value: stats.rejected,
-      icon: '❌',
-      color: 'red'
     }
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {cards.map((card) => (
         <div key={card.title} className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6 hover:bg-slate-800/40 transition-all duration-200">
           <div className="flex items-center justify-between">
@@ -49,7 +37,6 @@ export function AdminStatsCards({ stats }: AdminStatsCardsProps) {
               <p className={`text-2xl font-bold mt-1 ${
                 card.color === 'blue' ? 'text-white' :
                 card.color === 'yellow' ? 'text-yellow-400' :
-                card.color === 'orange' ? 'text-orange-400' :
                 card.color === 'green' ? 'text-green-400' :
                 'text-red-400'
               }`}>
@@ -59,14 +46,12 @@ export function AdminStatsCards({ stats }: AdminStatsCardsProps) {
             <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
               card.color === 'blue' ? 'bg-blue-500/20' :
               card.color === 'yellow' ? 'bg-yellow-500/20' :
-              card.color === 'orange' ? 'bg-orange-500/20' :
               card.color === 'green' ? 'bg-green-500/20' :
               'bg-red-500/20'
             }`}>
               <span className={`text-xl ${
                 card.color === 'blue' ? 'text-blue-400' :
                 card.color === 'yellow' ? 'text-yellow-400' :
-                card.color === 'orange' ? 'text-orange-400' :
                 card.color === 'green' ? 'text-green-400' :
                 'text-red-400'
               }`}>
