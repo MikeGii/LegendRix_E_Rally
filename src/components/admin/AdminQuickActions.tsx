@@ -1,7 +1,10 @@
-// src/components/admin/AdminQuickActions.tsx
 export function AdminQuickActions() {
   const handleUserManagement = () => {
     window.location.href = '/user-management'
+  }
+
+  const handleGameManagement = () => {
+    window.location.href = '/game-management'
   }
 
   const handleRallyManagement = () => {
@@ -18,6 +21,14 @@ export function AdminQuickActions() {
         >
           <span className="text-xl">👥</span>
           <span>User Management</span>
+        </button>
+        
+        <button 
+          onClick={handleGameManagement}
+          className="flex items-center space-x-3 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+        >
+          <span className="text-xl">🎮</span>
+          <span>Game Management</span>
         </button>
         
         <button 

@@ -57,27 +57,33 @@ export function AdminDashboard() {
 
             {/* Quick Links */}
             <div className="bg-slate-900/50 rounded-xl border border-slate-700/30 p-6">
-              <h3 className="text-lg font-medium text-white mb-4 flex items-center space-x-2">
+            <h3 className="text-lg font-medium text-white mb-4 flex items-center space-x-2">
                 <span>🔗</span>
                 <span>Quick Links</span>
-              </h3>
-              <div className="space-y-3">
+            </h3>
+            <div className="space-y-3">
                 <button 
-                  onClick={() => window.location.href = '/user-management'}
-                  className="w-full text-left px-4 py-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-all duration-200"
+                onClick={() => window.location.href = '/user-management'}
+                className="w-full text-left px-4 py-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-all duration-200"
                 >
-                  👥 User Management
+                👥 User Management
+                </button>
+                <button 
+                onClick={() => window.location.href = '/game-management'}
+                className="w-full text-left px-4 py-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-all duration-200"
+                >
+                🎮 Game Management
                 </button>
                 <button className="w-full text-left px-4 py-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-all duration-200">
-                  🏁 Rally Management
+                🏁 Rally Management
                 </button>
                 <button className="w-full text-left px-4 py-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-all duration-200">
-                  📊 System Analytics
+                📊 System Analytics
                 </button>
                 <button className="w-full text-left px-4 py-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-all duration-200">
-                  ⚙️ System Settings
+                ⚙️ System Settings
                 </button>
-              </div>
+            </div>
             </div>
           </div>
         </div>
