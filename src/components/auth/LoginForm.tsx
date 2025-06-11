@@ -2,19 +2,20 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 
 interface LoginFormProps {
   onSwitchToRegister: () => void
-  onLoginStart?: () => void       // Make these optional with ?
-  onLoginError?: () => void       // if they're not always required
+  onLoginStart?: () => void
+  onLoginError?: () => void
+  onLoginSuccess?: () => void // Add callback for successful login
 }
 
 export function LoginForm({ 
   onSwitchToRegister, 
   onLoginStart = () => {}, 
-  onLoginError = () => {} 
+  onLoginError = () => {},
+  onLoginSuccess = () => {} // New prop for login success
 }: LoginFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,11 +23,10 @@ export function LoginForm({
   const [error, setError] = useState('')
   
   const { login } = useAuth()
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onLoginStart() // Call this first
+    onLoginStart()
     setLoading(true)
     setError('')
 
@@ -38,21 +38,25 @@ export function LoginForm({
       
       if (!result.success) {
         setError(result.error || 'Login failed')
-        onLoginError() // Call on error
+        onLoginError()
         return
       }
 
-      // Force a hard refresh to ensure auth state is fully loaded
-      window.location.href = result.user?.role === 'admin' 
-      ? '/admin-dashboard' 
-      : '/user-dashboard'
+      console.log('✅ Login successful, staying on landing page')
+      
+      // Clear form
+      setEmail('')
+      setPassword('')
+      
+      // Call success callback to close modal
+      onLoginSuccess()
 
-      } catch (err: any) {
-        setError(err.message || 'Login failed')
-        onLoginError()
-      } finally {
-        setLoading(false)
-      }
+    } catch (err: any) {
+      setError(err.message || 'Login failed')
+      onLoginError()
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

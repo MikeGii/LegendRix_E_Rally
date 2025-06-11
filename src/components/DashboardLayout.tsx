@@ -15,6 +15,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     await logout()
+    // Redirect to main page after logout and refresh to ensure clean state
+    window.location.href = '/'
+  }
+
+  const handleBackToMain = () => {
+    // Go back to main landing page while staying logged in
     router.push('/')
   }
 
@@ -27,6 +33,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
+              {/* Back to Main Button */}
+              <button
+                onClick={handleBackToMain}
+                className="flex items-center space-x-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/70 text-slate-300 hover:text-white rounded-lg transition-all duration-200"
+              >
+                <span>←</span>
+                <span>Pealeht</span>
+              </button>
+              
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">🏁</span>
@@ -34,7 +49,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div>
                   <h1 className="text-lg font-bold text-white">LegendRix E-Rally</h1>
                   <p className="text-xs text-slate-400 -mt-1">
-                    {currentView === 'admin' ? 'Admin Panel' : 'Sõitja portaal'}
+                    {currentView === 'admin' ? 'Admin Panel' : 'Töölaud'}
                   </p>
                 </div>
               </div>
@@ -105,7 +120,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 onClick={handleLogout}
                 className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-red-500/25"
               >
-                Logout
+                Logi Välja
               </button>
             </div>
           </div>

@@ -32,6 +32,18 @@ function HomeContent() {
     setAuthView('login') // Reset to login when closing
   }
 
+  const handleLoginSuccess = async () => {
+    // Close the modal after successful login
+    setShowAuthModal(false)
+    setAuthView('login')
+    
+    // Wait for auth state to settle, then refresh
+    await new Promise(resolve => setTimeout(resolve, 800))
+    
+    console.log('🔄 Forcing page refresh after successful login')
+    window.location.reload()
+  }
+
   const handleDashboard = () => {
     if (user) {
       const dashboardUrl = user.role === 'admin' ? '/admin-dashboard' : '/user-dashboard'
@@ -41,7 +53,8 @@ function HomeContent() {
 
   const handleLogout = async () => {
     await logout()
-    // Stay on the landing page after logout
+    // Refresh page to ensure clean state
+    window.location.reload()
   }
 
   // Simple loading state to prevent hydration issues
@@ -51,62 +64,67 @@ function HomeContent() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Transparent Header */}
-      <header className="absolute top-0 left-0 right-0 z-30 bg-transparent">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      {/* UPDATED: Elegant Glassmorphism Header */}
+      <header className="absolute top-0 left-0 right-0 z-30">
+        {/* NEW: Background with gradient and blur */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/90 via-slate-800/70 to-transparent backdrop-blur-xl border-b border-white/10 shadow-xl"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-6 py-6">
           <div className="flex justify-between items-center">
-            {/* Logo with Rally Cover Image */}
-            <div className="flex items-center space-x-3">
-              <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-lg">
-                <Image
-                  src="/image/rally-cover.png"
-                  alt="LegendRix Rally"
-                  fill
-                  className="object-cover"
-                  priority
-                />
+            {/* UPDATED: Enhanced Logo with Rally Cover Image */}
+            <div className="flex items-center space-x-4">
+              <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/30 bg-gradient-to-br from-blue-500/30 to-purple-500/30 backdrop-blur-sm p-1">
+                <div className="w-full h-full rounded-xl overflow-hidden">
+                  <Image
+                    src="/image/rally-cover.png"
+                    alt="LegendRix Rally"
+                    fill
+                    className="object-cover"
+                    priority
+                    sizes="56px"
+                  />
+                </div>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white drop-shadow-lg">LegendRix</h1>
+                <h1 className="text-2xl font-bold text-white drop-shadow-lg tracking-wide">LegendRix</h1>
+                <p className="text-sm text-blue-200/90 drop-shadow font-medium -mt-1">E-Rally Championship</p>
               </div>
             </div>
 
-            {/* Header Buttons */}
-            <div className="flex items-center space-x-4">
-              {/* Dashboard Button - Only show if user is logged in */}
-              {user && (
-                <button
-                  onClick={handleDashboard}
-                  className="px-6 py-3 bg-blue-600/80 backdrop-blur-md hover:bg-blue-500/90 text-white rounded-xl font-medium transition-all duration-300 border border-blue-500/30 hover:border-blue-400/50 shadow-lg hover:shadow-xl"
-                >
-                  <div className="flex items-center space-x-2">
-                    <span>📊</span>
-                    <span>Dashboard</span>
-                  </div>
-                </button>
-              )}
-
-              {/* Auth Button - Changes based on login status */}
+            {/* UPDATED: Enhanced Header Buttons */}
+            <div className="flex items-center space-x-3">
               {user ? (
-                // Logout Button (when logged in)
-                <button
-                  onClick={handleLogout}
-                  disabled={loading}
-                  className="px-6 py-3 bg-red-600/80 backdrop-blur-md hover:bg-red-500/90 text-white rounded-xl font-medium transition-all duration-300 border border-red-500/30 hover:border-red-400/50 shadow-lg hover:shadow-xl disabled:opacity-50"
-                >
-                  <div className="flex items-center space-x-2">
-                    <span>🚪</span>
-                    <span>{loading ? 'Logging out...' : 'Logout'}</span>
-                  </div>
-                </button>
+                // Logged In Buttons: Töölaud + Logi Välja
+                <>
+                  <button
+                    onClick={handleDashboard}
+                    className="group px-8 py-3 bg-gradient-to-r from-blue-500/20 to-blue-600/20 backdrop-blur-md hover:from-blue-500/30 hover:to-blue-600/30 text-white rounded-2xl font-semibold transition-all duration-300 border border-blue-400/30 hover:border-blue-300/50 shadow-lg hover:shadow-blue-500/25 hover:scale-105"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-lg group-hover:scale-110 transition-transform duration-200">📊</span>
+                      <span>Töölaud</span>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={handleLogout}
+                    disabled={loading}
+                    className="group px-8 py-3 bg-gradient-to-r from-red-500/20 to-red-600/20 backdrop-blur-md hover:from-red-500/30 hover:to-red-600/30 text-white rounded-2xl font-semibold transition-all duration-300 border border-red-400/30 hover:border-red-300/50 shadow-lg hover:shadow-red-500/25 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-lg group-hover:scale-110 transition-transform duration-200">🚪</span>
+                      <span>{loading ? 'Välja logimas...' : 'Logi Välja'}</span>
+                    </div>
+                  </button>
+                </>
               ) : (
                 // Sign In / Register Button (when not logged in)
                 <button
                   onClick={handleOpenAuth}
-                  className="px-6 py-3 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white rounded-xl font-medium transition-all duration-300 border border-white/20 hover:border-white/30 shadow-lg hover:shadow-xl"
+                  className="group px-8 py-3 bg-gradient-to-r from-white/15 to-white/10 backdrop-blur-md hover:from-white/25 hover:to-white/20 text-white rounded-2xl font-semibold transition-all duration-300 border border-white/20 hover:border-white/40 shadow-lg hover:shadow-white/10 hover:scale-105"
                 >
-                  <div className="flex items-center space-x-2">
-                    <span>👤</span>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg group-hover:scale-110 transition-transform duration-200">👤</span>
                     <span>Logi sisse / Registreeru</span>
                   </div>
                 </button>
@@ -117,7 +135,7 @@ function HomeContent() {
       </header>
 
       {/* Cover Photo Section */}
-      <div className="relative w-full" style={{ height: '30vh', marginTop: '80px' }}>
+      <div className="relative w-full" style={{ height: '30vh', marginTop: '100px' }}>
         <div className="absolute inset-0">
           <Image
             src="/cover-photo.png"
@@ -137,15 +155,9 @@ function HomeContent() {
           {/* Welcome Message for Logged In Users */}
           {user && (
             <div className="text-center mb-8">
-              <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-6 max-w-2xl mx-auto">
-                <h3 className="text-xl font-bold text-green-300 mb-2">
-                  Tere tulemast, {user.name}! 👋
-                </h3>
-                <p className="text-green-200">
-                  You are logged in as <span className="font-semibold">{user.role}</span>. 
-                  Click Dashboard to access your account features.
-                </p>
-              </div>
+              <h3 className="text-2xl font-bold text-white mb-4">
+                Tere tulemast, {user.name}!
+              </h3>
             </div>
           )}
 
@@ -165,7 +177,7 @@ function HomeContent() {
                 onClick={handleDashboard}
                 className="px-8 py-4 bg-blue-600/80 backdrop-blur-sm hover:bg-blue-500/90 text-white rounded-xl font-semibold text-lg transition-all duration-300 shadow-2xl hover:shadow-blue-500/25 hover:scale-105"
               >
-                Ava Dashboard
+                Ava Töölaud
               </button>
             ) : (
               <button
@@ -223,10 +235,10 @@ function HomeContent() {
                     onClick={handleDashboard}
                     className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-xl font-bold text-xl transition-all duration-300 shadow-2xl hover:shadow-blue-500/25 hover:scale-105 mr-4"
                   >
-                    Avage Dashboard
+                    Avage Töölaud
                   </button>
                   <p className="text-slate-400 text-sm">
-                    Logged in as <span className="text-white font-medium">{user.name}</span> ({user.role})
+                    Logged in as <span className="text-white font-medium">{user.name}</span>
                   </p>
                 </div>
               ) : (
@@ -290,6 +302,7 @@ function HomeContent() {
                   onSwitchToRegister={() => setAuthView('register')}
                   onLoginStart={() => {}}
                   onLoginError={() => {}}
+                  onLoginSuccess={handleLoginSuccess}
                 />
               ) : (
                 <RegisterForm onSwitchToLogin={() => setAuthView('login')} />
