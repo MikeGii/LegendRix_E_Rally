@@ -1,4 +1,4 @@
-// src/hooks/useAuth.ts - Optimized for speed
+// src/hooks/useAuth.ts - Clean production version
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -41,7 +41,7 @@ export function useAuth() {
         if (session) {
           console.log('✅ Session found for:', session.user.email)
           setSession(session)
-          await loadUserProfileFast(session.user.id, session.user.email!, session.user.user_metadata?.name)
+          await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
         } else {
           console.log('ℹ️ No session found')
           setLoading(false)
@@ -59,7 +59,7 @@ export function useAuth() {
       if (event === 'SIGNED_IN' && session) {
         console.log('🔄 Auth state: SIGNED_IN detected')
         setSession(session)
-        await loadUserProfileFast(session.user.id, session.user.email!, session.user.user_metadata?.name)
+        await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
       } else if (event === 'SIGNED_OUT') {
         console.log('🚪 Auth state: SIGNED_OUT detected')
         setUser(null)
@@ -77,150 +77,96 @@ export function useAuth() {
     }
   }, [])
 
-  const loadUserProfileFast = async (userId: string, email: string, name?: string) => {
-    console.log('⚡ Fast loading profile for:', email)
+  const loadUserProfile = async (userId: string, email: string, name?: string, retryCount = 0) => {
+    console.log('📋 Loading profile for:', email, '| User ID:', userId.substring(0, 8), '| Attempt:', retryCount + 1)
     
     try {
-      // Skip session refresh for the first attempt - just try the query directly
-      console.log('🔍 Direct database query (no refresh)...')
-      
-      // Set moderate timeout - fail fast but not too fast
-      const queryTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Fast timeout')), 5000) // Increased to 5 seconds
-      })
-      
-      const queryPromise = supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle()
-
-      try {
-        const result = await Promise.race([queryPromise, queryTimeout])
-        const { data: existingUser, error: fetchError } = result as any
-
-        if (fetchError) {
-          console.warn('⚠️ Direct query failed:', fetchError.message)
-          // Fall back to refresh method
-          return loadUserProfileWithRefresh(userId, email, name)
-        }
-
-        if (!existingUser) {
-          console.log('📝 User not found, creating...')
-          await createUserRecord(userId, email, name)
-          return
-        }
-
-        // Success!
-        console.log('✅ Fast query success:', existingUser.email)
-        setUser(existingUser)
-        setLoading(false)
-        return
-
-      } catch (timeoutError) {
-        console.warn('⏰ Fast query timed out, trying refresh method...')
-        // Fall back to refresh method
-        return loadUserProfileWithRefresh(userId, email, name)
-      }
-
-    } catch (error) {
-      console.error('❌ Fast profile loading failed:', error)
-      // Don't set loading to false here - let the fallback handle it
-      return loadUserProfileWithRefresh(userId, email, name)
-    }
-  }
-
-  const loadUserProfileWithRefresh = async (userId: string, email: string, name?: string) => {
-    console.log('🔄 Fallback: Using refresh method for:', email)
-    
-    try {
-      // Only refresh if the direct method failed
-      console.log('🔄 Refreshing session...')
+      // Force refresh the Supabase client session with timeout
+      console.log('🔄 Refreshing Supabase session...')
       
       const refreshTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Refresh timeout')), 4000) // Increased to 4 seconds
+        setTimeout(() => reject(new Error('Session refresh timeout')), 5000)
       })
       
       try {
         await Promise.race([supabase.auth.refreshSession(), refreshTimeout])
-        console.log('✅ Session refreshed')
-      } catch (refreshError) {
-        console.warn('⚠️ Session refresh timed out, continuing anyway...')
+        console.log('✅ Session refresh completed')
+      } catch (refreshError: any) {
+        console.warn('⚠️ Session refresh failed or timed out:', refreshError.message)
+        // Continue anyway - sometimes the query works even if refresh fails
       }
       
-      // Try the query again after refresh
+      // Set a reasonable timeout for the database query
       const queryTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Post-refresh timeout')), 6000) // Increased to 6 seconds
+        setTimeout(() => reject(new Error('Database query timeout')), 8000)
       })
       
+      // Race the query against timeout
       const queryPromise = supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
 
+      console.log('🔍 Executing database query...')
       const result = await Promise.race([queryPromise, queryTimeout])
       const { data: existingUser, error: fetchError } = result as any
 
       if (fetchError) {
-        console.error('❌ Refresh method query failed:', fetchError)
-        // Try one more time with a simple approach
-        return loadUserProfileSimple(userId, email, name)
+        console.error('❌ Database query error:', fetchError)
+        
+        // Retry logic for specific errors or connection issues
+        if (retryCount < 2) {
+          console.log('🔄 Retrying database query in 2 seconds... (attempt', retryCount + 2, ')')
+          setTimeout(() => {
+            loadUserProfile(userId, email, name, retryCount + 1)
+          }, 2000)
+          return
+        }
+        
+        console.error('❌ Max retries reached, giving up')
+        setLoading(false)
+        return
       }
 
       if (!existingUser) {
-        console.log('📝 User not found after refresh, creating...')
+        // User doesn't exist, create them
+        console.log('📝 User not found, creating new record')
         await createUserRecord(userId, email, name)
         return
       }
 
       // Success!
-      console.log('✅ Refresh method success:', existingUser.email)
+      console.log('✅ User found in database:', {
+        email: existingUser.email,
+        role: existingUser.role,
+        status: existingUser.status,
+        emailVerified: existingUser.email_verified,
+        adminApproved: existingUser.admin_approved
+      })
+      
       setUser(existingUser)
       setLoading(false)
 
-    } catch (error) {
-      console.error('❌ Refresh method failed:', error)
-      // Try one more time with simple approach
-      return loadUserProfileSimple(userId, email, name)
-    }
-  }
-
-  const loadUserProfileSimple = async (userId: string, email: string, name?: string) => {
-    console.log('🔧 Simple fallback for:', email)
-    
-    try {
-      // Last resort - simple query with longer timeout
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle()
-
-      if (fetchError) {
-        console.error('❌ Simple method failed:', fetchError)
-        setLoading(false)
+    } catch (error: any) {
+      console.error('❌ Profile loading exception:', error.message)
+      
+      // If it's any timeout, retry
+      if ((error.message.includes('timeout') || error.message.includes('Timeout')) && retryCount < 2) {
+        console.log('⏰ Operation timed out, retrying... (attempt', retryCount + 2, ')')
+        setTimeout(() => {
+          loadUserProfile(userId, email, name, retryCount + 1)
+        }, 2000)
         return
       }
-
-      if (!existingUser) {
-        console.log('📝 Creating user with simple method...')
-        await createUserRecord(userId, email, name)
-        return
-      }
-
-      console.log('✅ Simple method success:', existingUser.email)
-      setUser(existingUser)
-      setLoading(false)
-
-    } catch (error) {
-      console.error('❌ All methods failed:', error)
+      
+      console.error('❌ Profile loading failed completely after', retryCount + 1, 'attempts')
       setLoading(false)
     }
   }
 
   const createUserRecord = async (userId: string, email: string, name?: string) => {
-    console.log('📝 Creating user record for:', email)
+    console.log('📝 Creating new user record for:', email)
     
     try {
       const newUserData = {
@@ -245,7 +191,7 @@ export function useAuth() {
         return
       }
 
-      console.log('✅ User created:', newUser.email)
+      console.log('✅ User created successfully:', newUser.email, '| Role:', newUser.role)
       setUser(newUser)
       setLoading(false)
       
@@ -256,7 +202,7 @@ export function useAuth() {
   }
 
   const login = async (email: string, password: string) => {
-    console.log('🔐 Starting login for:', email)
+    console.log('🔐 Starting login process for:', email)
     setLoading(true)
 
     try {
@@ -321,10 +267,12 @@ export function useAuth() {
   }
 
   const logout = async () => {
-    console.log('🚪 Logout...')
+    console.log('🚪 Starting logout process...')
+    
     setUser(null)
     setSession(null)
     setLoading(false)
+    
     await supabase.auth.signOut()
     console.log('✅ Logout completed')
   }
