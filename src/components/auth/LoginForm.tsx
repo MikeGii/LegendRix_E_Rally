@@ -48,6 +48,11 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
     onLoginStart()
     
     try {
+      console.log('Login form data:', {
+        email: data.email,
+        password: '***hidden***'
+      })
+
       const result = await login(data.email, data.password)
       
       if (result.success) {
@@ -58,6 +63,7 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
         onLoginError()
       }
     } catch (error) {
+      console.error('Login submission error:', error)
       setMessage('Login failed. Please try again.')
       onLoginError()
     }
@@ -78,6 +84,7 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
           type="email"
           placeholder="Email address"
           disabled={isLoading}
+          autoComplete="email"
           {...register('email', {
             required: 'Email is required',
             pattern: {
@@ -97,6 +104,7 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
           type="password"
           placeholder="Password"
           disabled={isLoading}
+          autoComplete="current-password"
           {...register('password', {
             required: 'Password is required',
             minLength: {

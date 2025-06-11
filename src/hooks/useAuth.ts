@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { User } from '@supabase/supabase-js'
 
 interface UserProfile {
   id: string
@@ -10,6 +9,7 @@ interface UserProfile {
   email_verified: boolean
   admin_approved: boolean
   status: 'pending_email' | 'pending_approval' | 'approved' | 'rejected'
+  created_at: string
 }
 
 export function useAuth() {
@@ -22,6 +22,7 @@ export function useAuth() {
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
+        console.log('Initial session:', session?.user?.email || 'No session')
         setSession(session)
         
         if (session?.user) {
@@ -66,6 +67,7 @@ export function useAuth() {
         console.error('Error fetching user profile:', error)
         setUser(null)
       } else {
+        console.log('User profile loaded:', data.email)
         setUser({
           id: data.id,
           name: data.name,
@@ -73,7 +75,8 @@ export function useAuth() {
           role: data.role,
           email_verified: data.email_verified,
           admin_approved: data.admin_approved,
-          status: data.status
+          status: data.status,
+          created_at: data.created_at
         })
       }
     } catch (error) {
@@ -84,49 +87,86 @@ export function useAuth() {
 
   const register = async (email: string, password: string, name: string) => {
     try {
-      console.log('Starting registration for:', email)
+      console.log('=== REGISTRATION START ===')
+      console.log('Email:', email)
+      console.log('Name:', name)
+      console.log('Password length:', password.length)
+      
+      // REMOVED: existing user check that was causing 406 error
+      // Let Supabase handle duplicate email detection
       
       // Sign up with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: email,
+        password: password,
         options: {
-          data: { name }
+          data: {
+            name: name
+          }
         }
+      })
+
+      console.log('Supabase signup response:', {
+        user: data.user?.email,
+        userData: data.user?.user_metadata,
+        session: !!data.session,
+        error: error?.message
       })
 
       if (error) {
         console.error('Supabase auth signup error:', error)
-        throw error
+        return { success: false, error: error.message }
       }
 
-      console.log('Supabase signup successful:', data.user?.email)
+      // If signup successful but no session, email confirmation is required
+      if (data.user && !data.session) {
+        console.log('Registration successful, email confirmation required')
+        return { 
+          success: true, 
+          message: 'Registration successful! Please check your email to verify your account.' 
+        }
+      }
+
+      // If we have a session, user is immediately logged in
+      if (data.user && data.session) {
+        console.log('Registration successful with immediate login')
+        return { success: true }
+      }
+
+      console.log('Registration completed')
       return { success: true }
     } catch (error: any) {
       console.error('Registration error:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: error.message || 'Registration failed' }
     }
   }
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Starting login for:', email)
+      console.log('=== LOGIN START ===')
+      console.log('Email:', email)
       
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+        email: email,
+        password: password
+      })
+
+      console.log('Supabase login response:', {
+        user: data.user?.email,
+        session: !!data.session,
+        error: error?.message
       })
 
       if (error) {
         console.error('Login error:', error)
-        throw error
+        return { success: false, error: error.message }
       }
 
       console.log('Login successful:', data.user?.email)
       return { success: true }
     } catch (error: any) {
       console.error('Login error:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: error.message || 'Login failed' }
     }
   }
 

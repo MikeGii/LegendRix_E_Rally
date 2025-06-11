@@ -34,13 +34,13 @@ export function ProtectedRoute({
       }
 
       // Check email verification requirement
-      if (requireEmailVerified && !user.emailVerified && user.role !== 'admin') {
+      if (requireEmailVerified && !user.email_verified && user.role !== 'admin') {
         router.push('/')
         return
       }
 
       // Check admin approval requirement
-      if (requireAdminApproved && !user.adminApproved && user.role !== 'admin') {
+      if (requireAdminApproved && !user.admin_approved && user.role !== 'admin') {
         router.push('/')
         return
       }
@@ -65,8 +65,8 @@ export function ProtectedRoute({
   // Allow access if user meets requirements or if they're an admin
   const hasAccess = user.role === 'admin' || (
     (!requiredRole || user.role === requiredRole) &&
-    (!requireEmailVerified || user.emailVerified) &&
-    (!requireAdminApproved || user.adminApproved)
+    (!requireEmailVerified || user.email_verified) &&
+    (!requireAdminApproved || user.admin_approved)
   )
 
   if (!hasAccess) {

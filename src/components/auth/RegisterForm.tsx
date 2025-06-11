@@ -48,6 +48,13 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     setMessage(null)
     
     try {
+      console.log('Registration form data:', {
+        name: data.name,
+        email: data.email,
+        password: '***hidden***'
+      })
+
+      // Pass parameters in correct order: email, password, name
       const result = await registerUser(data.email, data.password, data.name)
       
       if (result.success) {
@@ -55,6 +62,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           type: 'success',
           text: 'Registration successful! Check your email to verify your account.'
         })
+        // Clear form after successful registration
       } else {
         setMessage({
           type: 'error',
@@ -62,6 +70,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         })
       }
     } catch (error) {
+      console.error('Registration submission error:', error)
       setMessage({
         type: 'error',
         text: 'Registration failed. Please try again.'
@@ -88,6 +97,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           type="text"
           placeholder="Full name"
           disabled={isLoading}
+          autoComplete="name"
           {...register('name', {
             required: 'Name is required',
             minLength: {
@@ -107,6 +117,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           type="email"
           placeholder="Email address"
           disabled={isLoading}
+          autoComplete="email"
           {...register('email', {
             required: 'Email is required',
             pattern: {
@@ -126,6 +137,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           type="password"
           placeholder="Password"
           disabled={isLoading}
+          autoComplete="new-password"
           {...register('password', {
             required: 'Password is required',
             minLength: {
@@ -145,6 +157,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           type="password"
           placeholder="Confirm password"
           disabled={isLoading}
+          autoComplete="new-password"
           {...register('confirmPassword', {
             required: 'Please confirm your password',
             validate: (value) => value === password || 'Passwords do not match'

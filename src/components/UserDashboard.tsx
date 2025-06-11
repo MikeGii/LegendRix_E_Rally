@@ -140,7 +140,7 @@ export function UserDashboard() {
       }
     }
 
-    if (!user.emailVerified) {
+    if (!user.email_verified) {
       return {
         type: 'warning',
         message: 'Please verify your email to access rally features',
@@ -149,7 +149,7 @@ export function UserDashboard() {
       }
     }
     
-    if (!user.adminApproved) {
+    if (!user.admin_approved) {
       return {
         type: 'info',
         message: 'Account pending approval - you will be notified when ready',
@@ -167,7 +167,7 @@ export function UserDashboard() {
   }
 
   const status = getStatusMessage()
-  const canAccessRallies = isAdminAsUser || (user.emailVerified && user.adminApproved)
+  const canAccessRallies = isAdminAsUser || (user.email_verified && user.admin_approved)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
@@ -336,7 +336,7 @@ export function UserDashboard() {
           {/* Action needed for non-approved users */}
           {!canAccessRallies && (
             <div className="mt-8 text-center">
-              {!user.emailVerified ? (
+              {!user.email_verified ? (
                 <button className="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-yellow-500/25">
                   <div className="flex items-center space-x-2">
                     <span>📧</span>
