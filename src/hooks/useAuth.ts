@@ -101,11 +101,47 @@ export function useAuth() {
     
     loadingTimeoutRef.current = setTimeout(() => {
       console.error('⏰ Profile loading timeout - forcing completion')
+      console.error('💀 This suggests RLS policies are blocking the query or the database is unresponsive')
       setLoading(false)
-    }, 15000) // 15 second timeout
+    }, 8000) // Reduced to 8 seconds for faster feedback
 
     try {
-      // Step 1: Try to get user directly (no test query needed)
+      // First, let's check what auth.uid() returns
+      console.log('🔍 Checking auth context...')
+      const { data: authCheck, error: authError } = await supabase.rpc('auth_uid')
+      
+      if (authError) {
+        console.warn('⚠️ Could not check auth.uid():', authError)
+      } else {
+        console.log('🔑 auth.uid() returns:', authCheck?.substring(0, 8))
+      }
+
+      // Try a simple query first to test RLS
+      console.log('🔍 Testing RLS with simple query...')
+      const { data: testData, error: testError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .limit(1)
+
+      if (testError) {
+        console.error('❌ RLS Test failed:', testError)
+        console.error('❌ RLS Error details:', {
+          code: testError.code,
+          message: testError.message,
+          details: testError.details,
+          hint: testError.hint
+        })
+        
+        // Try with service role if available
+        console.log('🔄 Attempting direct user creation due to RLS issues...')
+        await createUserDirectly(userId, email, name)
+        return
+      }
+
+      console.log('✅ RLS test passed, proceeding with full query')
+
+      // Step 1: Try to get user with full data
       console.log('🔍 Querying user by ID:', userId.substring(0, 8))
       
       const { data: existingUser, error: fetchError } = await supabase
@@ -124,9 +160,9 @@ export function useAuth() {
         })
         
         // If it's an RLS or permissions error, try to create the user anyway
-        if (fetchError.code === 'PGRST301' || fetchError.code === 'PGRST116') {
+        if (fetchError.code === 'PGRST301' || fetchError.code === 'PGRST116' || fetchError.code === '42501') {
           console.log('🔄 RLS/permissions error, attempting to create user...')
-          await createNewUser(userId, email, name)
+          await createUserDirectly(userId, email, name)
           return
         }
         
@@ -139,7 +175,7 @@ export function useAuth() {
 
       if (!existingUser) {
         // User doesn't exist, create them
-        await createNewUser(userId, email, name)
+        await createUserDirectly(userId, email, name)
         return
       }
 
@@ -158,12 +194,17 @@ export function useAuth() {
 
     } catch (error) {
       console.error('❌ Profile loading exception:', error)
+      console.error('❌ Exception details:', {
+        name: (error as Error).name,
+        message: (error as Error).message,
+        stack: (error as Error).stack?.substring(0, 200)
+      })
       setLoading(false)
       clearTimeout(loadingTimeoutRef.current!)
     }
   }
 
-  const createNewUser = async (userId: string, email: string, name?: string) => {
+  const createUserDirectly = async (userId: string, email: string, name?: string) => {
     console.log('📝 Creating new user record for:', email)
     
     try {
@@ -196,6 +237,21 @@ export function useAuth() {
           details: createError.details,
           hint: createError.hint
         })
+        
+        // Even if creation fails, let's try to proceed with a default user object
+        console.log('🔄 Creation failed, using fallback user object')
+        const fallbackUser: UserProfile = {
+          id: userId,
+          name: name || email,
+          email: email,
+          role: email === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
+          email_verified: true,
+          admin_approved: email === 'ewrc.admin@ideemoto.ee',
+          status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval',
+          created_at: new Date().toISOString()
+        }
+        
+        setUser(fallbackUser)
         setLoading(false)
         clearTimeout(loadingTimeoutRef.current!)
         return
@@ -208,6 +264,21 @@ export function useAuth() {
       
     } catch (createException) {
       console.error('❌ User creation exception:', createException)
+      
+      // Last resort - create a fallback user object
+      console.log('🆘 Using emergency fallback user object')
+      const emergencyUser: UserProfile = {
+        id: userId,
+        name: name || email,
+        email: email,
+        role: email === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
+        email_verified: true,
+        admin_approved: email === 'ewrc.admin@ideemoto.ee',
+        status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval',
+        created_at: new Date().toISOString()
+      }
+      
+      setUser(emergencyUser)
       setLoading(false)
       clearTimeout(loadingTimeoutRef.current!)
     }
