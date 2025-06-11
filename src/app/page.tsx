@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { RegisterForm } from '@/components/auth/RegisterForm'
 
@@ -9,6 +10,34 @@ type AuthView = 'login' | 'register'
 export default function Home() {
   const [authView, setAuthView] = useState<AuthView>('login')
   const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const [verificationMessage, setVerificationMessage] = useState<string | null>(null)
+  
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Check for verification success
+    if (searchParams.get('verified') === 'true') {
+      setVerificationMessage('Email verified successfully! You can now sign in.')
+      setAuthView('login')
+      
+      // Clear the URL parameter after 5 seconds
+      setTimeout(() => {
+        setVerificationMessage(null)
+        window.history.replaceState({}, '', '/')
+      }, 5000)
+    }
+
+    // Check for auth errors
+    if (searchParams.get('error') === 'auth_error') {
+      setVerificationMessage('There was an error with email verification. Please try again.')
+      
+      // Clear the URL parameter after 5 seconds
+      setTimeout(() => {
+        setVerificationMessage(null)
+        window.history.replaceState({}, '', '/')
+      }, 5000)
+    }
+  }, [searchParams])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4">
@@ -33,6 +62,16 @@ export default function Home() {
               </svg>
             </div>
           </div>
+
+          {/* Verification Message */}
+          {verificationMessage && (
+            <div className="mb-6 p-4 rounded-lg border bg-green-900/50 border-green-700 text-green-300">
+              <div className="flex items-center space-x-3">
+                <span className="text-lg">✅</span>
+                <p className="font-medium">{verificationMessage}</p>
+              </div>
+            </div>
+          )}
 
           {/* Form Title */}
           <h2 className="text-center text-2xl font-bold text-white mb-6">
