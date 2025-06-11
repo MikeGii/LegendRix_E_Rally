@@ -16,6 +16,10 @@
     @apply bg-black text-gray-100 antialiased;
     font-family: 'Inter', sans-serif;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 /* Enhanced glassmorphism effect */
@@ -45,12 +49,18 @@
 
 /* Fade in animation for modal */
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from { 
+    opacity: 0; 
+    transform: scale(0.95) translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 /* Slide up animation */
@@ -61,6 +71,16 @@
 
 .animate-slideUp {
   animation: slideUp 0.4s ease-out;
+}
+
+/* Slide in from left animation */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.6s ease-out;
 }
 
 /* Cover image overlay effects */
@@ -109,6 +129,14 @@
   @apply hover:bg-gray-700 hover:text-white transition-colors duration-200;
 }
 
+/* Header transparency and backdrop effects */
+.header-glass {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* Text shadow utilities */
 .text-shadow {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
@@ -135,6 +163,37 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
+/* Hover glow effects */
+.glow-on-hover {
+  transition: all 0.3s ease;
+}
+
+.glow-on-hover:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Cover photo animation */
+@keyframes coverPan {
+  0% { transform: scale(1.05) translateX(0); }
+  50% { transform: scale(1.1) translateX(-10px); }
+  100% { transform: scale(1.05) translateX(0); }
+}
+
+.cover-animation {
+  animation: coverPan 20s ease-in-out infinite;
+}
+
+/* Feature card hover effects */
+.feature-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
 /* Responsive text shadows */
 @media (max-width: 768px) {
   .responsive-text-shadow {
@@ -146,4 +205,58 @@
   .responsive-text-shadow {
     text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
   }
+}
+
+/* Improved loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+  border: 4px solid rgba(59, 130, 246, 0.2);
+  border-left-color: #3b82f6;
+  border-radius: 50%;
+}
+
+/* Scroll animations */
+.scroll-fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease-out;
+}
+
+.scroll-fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Estonian flag colors for accents */
+.estonia-gradient {
+  background: linear-gradient(135deg, #0072ce 0%, #ffffff 50%, #000000 100%);
+}
+
+/* Rally-themed decorative elements */
+.rally-pattern {
+  background-image: 
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.05) 2px,
+      rgba(255, 255, 255, 0.05) 4px
+    );
+}
+
+/* Performance optimizations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000;
 }
