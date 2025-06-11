@@ -1,4 +1,4 @@
-// src/hooks/useAuth.ts - Fixed session management
+// src/hooks/useAuth.ts - Fixed to prevent infinite loops
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -18,9 +18,11 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
   const [session, setSession] = useState<any>(null)
   
-  // Prevent multiple initializations
+  // Prevent multiple initializations and profile loads
   const initialized = useRef(false)
   const subscriptionRef = useRef<any>(null)
+  const loadingProfileRef = useRef(false)
+  const currentUserIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (initialized.current) return
@@ -42,6 +44,7 @@ export function useAuth() {
         if (session?.user) {
           console.log('✅ Existing session found for:', session.user.email)
           setSession(session)
+          currentUserIdRef.current = session.user.id
           
           // Check if session is still valid
           const now = Math.floor(Date.now() / 1000)
@@ -64,6 +67,7 @@ export function useAuth() {
             
             console.log('✅ Session refreshed successfully')
             setSession(refreshData.session)
+            currentUserIdRef.current = refreshData.session.user.id
             await loadUserProfile(refreshData.session.user.id, refreshData.session.user.email!, refreshData.session.user.user_metadata?.name)
           }
         } else {
@@ -80,18 +84,35 @@ export function useAuth() {
     subscriptionRef.current = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth event:', event)
       
+      // Prevent duplicate processing for the same user
+      if (session?.user?.id === currentUserIdRef.current && event !== 'SIGNED_OUT') {
+        console.log('⚠️ Ignoring duplicate auth event for same user')
+        return
+      }
+      
       if (event === 'SIGNED_IN' && session) {
-        console.log('🔄 Auth state: SIGNED_IN detected')
+        console.log('🔄 Auth state: SIGNED_IN detected for:', session.user.email)
+        
+        // Prevent loading profile if already loading
+        if (loadingProfileRef.current) {
+          console.log('⚠️ Profile already loading, skipping...')
+          return
+        }
+        
         setSession(session)
+        currentUserIdRef.current = session.user.id
         await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
       } else if (event === 'SIGNED_OUT') {
         console.log('🚪 Auth state: SIGNED_OUT detected')
         setUser(null)
         setSession(null)
         setLoading(false)
+        currentUserIdRef.current = null
+        loadingProfileRef.current = false
       } else if (event === 'TOKEN_REFRESHED' && session) {
         console.log('🔄 Token refreshed silently')
         setSession(session)
+        currentUserIdRef.current = session.user.id
         // Don't reload profile, just update session
       }
     })
@@ -106,6 +127,13 @@ export function useAuth() {
   }, [])
 
   const loadUserProfile = async (userId: string, email: string, name?: string, retryCount = 0) => {
+    // Prevent concurrent profile loads
+    if (loadingProfileRef.current) {
+      console.log('⚠️ Profile load already in progress, skipping...')
+      return
+    }
+    
+    loadingProfileRef.current = true
     console.log('📋 Loading profile for:', email, '| Attempt:', retryCount + 1)
     
     try {
@@ -122,12 +150,14 @@ export function useAuth() {
         if (retryCount < 2 && (fetchError.message.includes('connection') || fetchError.message.includes('timeout'))) {
           console.log('🔄 Retrying database query in 2 seconds... (attempt', retryCount + 2, ')')
           setTimeout(() => {
+            loadingProfileRef.current = false
             loadUserProfile(userId, email, name, retryCount + 1)
           }, 2000)
           return
         }
         
         console.error('❌ Max retries reached, giving up')
+        loadingProfileRef.current = false
         setLoading(false)
         return
       }
@@ -148,6 +178,7 @@ export function useAuth() {
       
       setUser(existingUser)
       setLoading(false)
+      loadingProfileRef.current = false
 
     } catch (error: any) {
       console.error('❌ Profile loading exception:', error.message)
@@ -156,12 +187,14 @@ export function useAuth() {
       if (error.message.includes('timeout') && retryCount < 2) {
         console.log('⏰ Operation timed out, retrying... (attempt', retryCount + 2, ')')
         setTimeout(() => {
+          loadingProfileRef.current = false
           loadUserProfile(userId, email, name, retryCount + 1)
         }, 2000)
         return
       }
       
       console.error('❌ Profile loading failed completely after', retryCount + 1, 'attempts')
+      loadingProfileRef.current = false
       setLoading(false)
     }
   }
@@ -188,6 +221,7 @@ export function useAuth() {
 
       if (createError) {
         console.error('❌ Failed to create user:', createError)
+        loadingProfileRef.current = false
         setLoading(false)
         return
       }
@@ -195,9 +229,11 @@ export function useAuth() {
       console.log('✅ User created successfully:', newUser.email, '| Role:', newUser.role)
       setUser(newUser)
       setLoading(false)
+      loadingProfileRef.current = false
       
     } catch (createException) {
       console.error('❌ User creation exception:', createException)
+      loadingProfileRef.current = false
       setLoading(false)
     }
   }
@@ -207,6 +243,12 @@ export function useAuth() {
     setLoading(true)
 
     try {
+      // Sign out first to clear any existing session
+      await supabase.auth.signOut()
+      
+      // Small delay to ensure signout is processed
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password
@@ -226,12 +268,7 @@ export function useAuth() {
 
       console.log('✅ Authentication successful for:', data.user.email)
       
-      // Set session immediately
-      setSession(data.session)
-      
-      // Load user profile
-      await loadUserProfile(data.user.id, data.user.email!, data.user.user_metadata?.name)
-      
+      // The auth state listener will handle the rest
       return { success: true, user: data.user }
 
     } catch (error: any) {
@@ -280,6 +317,8 @@ export function useAuth() {
     setUser(null)
     setSession(null)
     setLoading(false)
+    currentUserIdRef.current = null
+    loadingProfileRef.current = false
     
     await supabase.auth.signOut()
     console.log('✅ Logout completed')
