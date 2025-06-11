@@ -443,3 +443,252 @@ export function useUpdateGame() {
     }
   })
 }
+
+// Delete Game Type Mutation
+export function useDeleteGameType() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (typeId: string) => {
+      console.log('🔄 Deleting game type:', typeId)
+      
+      const { error } = await supabase
+        .from('game_types')
+        .delete()
+        .eq('id', typeId)
+
+      if (error) {
+        console.error('Error deleting game type:', error)
+        throw error
+      }
+
+      console.log('✅ Game type deleted successfully')
+      return typeId
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: gameKeys.all })
+    },
+    onError: (error) => {
+      console.error('❌ Game type deletion failed:', error)
+    }
+  })
+}
+
+// Update Game Type Mutation
+export function useUpdateGameType() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<GameType> & { id: string }) => {
+      console.log('🔄 Updating game type:', id)
+      
+      const { data, error } = await supabase
+        .from('game_types')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating game type:', error)
+        throw error
+      }
+
+      console.log('✅ Game type updated successfully:', data.name)
+      return data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: gameKeys.types(data.game_id) })
+    },
+    onError: (error) => {
+      console.error('❌ Game type update failed:', error)
+    }
+  })
+}
+
+// Delete Game Event Mutation
+export function useDeleteGameEvent() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (eventId: string) => {
+      console.log('🔄 Deleting game event:', eventId)
+      
+      const { error } = await supabase
+        .from('game_events')
+        .delete()
+        .eq('id', eventId)
+
+      if (error) {
+        console.error('Error deleting game event:', error)
+        throw error
+      }
+
+      console.log('✅ Game event deleted successfully')
+      return eventId
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: gameKeys.all })
+    },
+    onError: (error) => {
+      console.error('❌ Game event deletion failed:', error)
+    }
+  })
+}
+
+// Update Game Event Mutation
+export function useUpdateGameEvent() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<GameEvent> & { id: string }) => {
+      console.log('🔄 Updating game event:', id)
+      
+      const { data, error } = await supabase
+        .from('game_events')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating game event:', error)
+        throw error
+      }
+
+      console.log('✅ Game event updated successfully:', data.name)
+      return data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: gameKeys.events(data.game_id) })
+    },
+    onError: (error) => {
+      console.error('❌ Game event update failed:', error)
+    }
+  })
+}
+
+// Delete Game Class Mutation
+export function useDeleteGameClass() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (classId: string) => {
+      console.log('🔄 Deleting game class:', classId)
+      
+      const { error } = await supabase
+        .from('game_classes')
+        .delete()
+        .eq('id', classId)
+
+      if (error) {
+        console.error('Error deleting game class:', error)
+        throw error
+      }
+
+      console.log('✅ Game class deleted successfully')
+      return classId
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: gameKeys.all })
+    },
+    onError: (error) => {
+      console.error('❌ Game class deletion failed:', error)
+    }
+  })
+}
+
+// Update Game Class Mutation
+export function useUpdateGameClass() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<GameClass> & { id: string }) => {
+      console.log('🔄 Updating game class:', id)
+      
+      const { data, error } = await supabase
+        .from('game_classes')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating game class:', error)
+        throw error
+      }
+
+      console.log('✅ Game class updated successfully:', data.name)
+      return data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: gameKeys.classes(data.game_id) })
+    },
+    onError: (error) => {
+      console.error('❌ Game class update failed:', error)
+    }
+  })
+}
+
+// Delete Event Track Mutation
+export function useDeleteEventTrack() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (trackId: string) => {
+      console.log('🔄 Deleting event track:', trackId)
+      
+      const { error } = await supabase
+        .from('event_tracks')
+        .delete()
+        .eq('id', trackId)
+
+      if (error) {
+        console.error('Error deleting event track:', error)
+        throw error
+      }
+
+      console.log('✅ Event track deleted successfully')
+      return trackId
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: gameKeys.all })
+    },
+    onError: (error) => {
+      console.error('❌ Event track deletion failed:', error)
+    }
+  })
+}
+
+// Update Event Track Mutation
+export function useUpdateEventTrack() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<EventTrack> & { id: string }) => {
+      console.log('🔄 Updating event track:', id)
+      
+      const { data, error } = await supabase
+        .from('event_tracks')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating event track:', error)
+        throw error
+      }
+
+      console.log('✅ Event track updated successfully:', data.name)
+      return data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: gameKeys.tracks(data.event_id) })
+      queryClient.invalidateQueries({ queryKey: gameKeys.all })
+    },
+    onError: (error) => {
+      console.error('❌ Event track update failed:', error)
+    }
+  })
+}

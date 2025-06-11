@@ -1,19 +1,32 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GameType } from '@/hooks/useGameManagement'
 
 interface CreateGameTypeModalProps {
+  gameType?: GameType | null
   onClose: () => void
   onSubmit: (typeData: Partial<GameType>) => void
   isLoading: boolean
 }
 
-export function CreateGameTypeModal({ onClose, onSubmit, isLoading }: CreateGameTypeModalProps) {
+export function CreateGameTypeModal({ gameType, onClose, onSubmit, isLoading }: CreateGameTypeModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     max_participants: '',
     duration_type: 'single',
   })
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (gameType) {
+      setFormData({
+        name: gameType.name || '',
+        description: gameType.description || '',
+        max_participants: gameType.max_participants?.toString() || '',
+        duration_type: gameType.duration_type || 'single',
+      })
+    }
+  }, [gameType])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,7 +48,7 @@ export function CreateGameTypeModal({ onClose, onSubmit, isLoading }: CreateGame
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-semibold text-white flex items-center space-x-2">
             <span>🏆</span>
-            <span>Create Game Type</span>
+            <span>{gameType ? 'Edit Game Type' : 'Create Game Type'}</span>
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
             ✕
@@ -112,10 +125,10 @@ export function CreateGameTypeModal({ onClose, onSubmit, isLoading }: CreateGame
               {isLoading ? (
                 <div className="flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                  Creating...
+                  {gameType ? 'Updating...' : 'Creating...'}
                 </div>
               ) : (
-                'Create Type'
+                gameType ? 'Update Type' : 'Create Type'
               )}
             </button>
             <button

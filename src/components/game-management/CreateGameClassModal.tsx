@@ -1,16 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GameClass } from '@/hooks/useGameManagement'
 
 interface CreateGameClassModalProps {
+  gameClass?: GameClass | null
   onClose: () => void
   onSubmit: (classData: Partial<GameClass>) => void
   isLoading: boolean
 }
 
-export function CreateGameClassModal({ onClose, onSubmit, isLoading }: CreateGameClassModalProps) {
+export function CreateGameClassModal({ gameClass, onClose, onSubmit, isLoading }: CreateGameClassModalProps) {
   const [formData, setFormData] = useState({
     name: '',
   })
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (gameClass) {
+      setFormData({
+        name: gameClass.name || '',
+      })
+    }
+  }, [gameClass])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +42,7 @@ export function CreateGameClassModal({ onClose, onSubmit, isLoading }: CreateGam
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-semibold text-white flex items-center space-x-2">
             <span>🏅</span>
-            <span>Create Game Class</span>
+            <span>{gameClass ? 'Edit Game Class' : 'Create Game Class'}</span>
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
             ✕
@@ -73,10 +83,10 @@ export function CreateGameClassModal({ onClose, onSubmit, isLoading }: CreateGam
               {isLoading ? (
                 <div className="flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                  Creating...
+                  {gameClass ? 'Updating...' : 'Creating...'}
                 </div>
               ) : (
-                'Create Class'
+                gameClass ? 'Update Class' : 'Create Class'
               )}
             </button>
             <button

@@ -1,6 +1,5 @@
-// src/components/game-management/GameTypesTab.tsx
 import { useState } from 'react'
-import { Game, GameType, useCreateGameType } from '@/hooks/useGameManagement'
+import { Game, GameType, useCreateGameType, useDeleteGameType, useUpdateGameType } from '@/hooks/useGameManagement'
 import { CreateGameTypeModal } from './CreateGameTypeModal'
 
 interface GameTypesTabProps {
@@ -12,7 +11,11 @@ interface GameTypesTabProps {
 
 export function GameTypesTab({ gameTypes, selectedGame, isLoading, onRefresh }: GameTypesTabProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingType, setEditingType] = useState<GameType | null>(null)
+  
   const createGameTypeMutation = useCreateGameType()
+  const deleteGameTypeMutation = useDeleteGameType()
+  const updateGameTypeMutation = useUpdateGameType()
 
   const handleCreateGameType = async (typeData: Partial<GameType>) => {
     if (!selectedGame) return
@@ -25,6 +28,32 @@ export function GameTypesTab({ gameTypes, selectedGame, isLoading, onRefresh }: 
       setShowCreateModal(false)
     } catch (error) {
       console.error('Failed to create game type:', error)
+    }
+  }
+
+  const handleUpdateGameType = async (typeData: Partial<GameType>) => {
+    if (!editingType) return
+    
+    try {
+      await updateGameTypeMutation.mutateAsync({
+        id: editingType.id,
+        ...typeData
+      })
+      setEditingType(null)
+    } catch (error) {
+      console.error('Failed to update game type:', error)
+    }
+  }
+
+  const handleDeleteGameType = async (typeId: string, typeName: string) => {
+    if (!confirm(`Are you sure you want to delete "${typeName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      await deleteGameTypeMutation.mutateAsync(typeId)
+    } catch (error) {
+      console.error('Failed to delete game type:', error)
     }
   }
 
@@ -97,6 +126,23 @@ export function GameTypesTab({ gameTypes, selectedGame, isLoading, onRefresh }: 
                     <p className="text-sm text-slate-400">{type.duration_type}</p>
                   </div>
                 </div>
+                
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setEditingType(type)}
+                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
+                    title="Edit"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => handleDeleteGameType(type.id, type.name)}
+                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+                    title="Delete"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
 
               {type.description && (
@@ -124,11 +170,22 @@ export function GameTypesTab({ gameTypes, selectedGame, isLoading, onRefresh }: 
         </div>
       )}
 
+      {/* Create Modal */}
       {showCreateModal && (
         <CreateGameTypeModal
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreateGameType}
           isLoading={createGameTypeMutation.isPending}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {editingType && (
+        <CreateGameTypeModal
+          gameType={editingType}
+          onClose={() => setEditingType(null)}
+          onSubmit={handleUpdateGameType}
+          isLoading={updateGameTypeMutation.isPending}
         />
       )}
     </div>

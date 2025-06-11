@@ -1,6 +1,5 @@
-// src/components/game-management/EventTracksModal.tsx
 import { useState } from 'react'
-import { GameEvent, EventTrack, useEventTracks, useCreateEventTrack } from '@/hooks/useGameManagement'
+import { GameEvent, EventTrack, useEventTracks, useCreateEventTrack, useDeleteEventTrack, useUpdateEventTrack } from '@/hooks/useGameManagement'
 
 interface EventTracksModalProps {
   event: GameEvent
@@ -9,8 +8,11 @@ interface EventTracksModalProps {
 
 export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [editingTrack, setEditingTrack] = useState<EventTrack | null>(null)
   const { data: tracks = [], isLoading, refetch } = useEventTracks(event.id)
   const createTrackMutation = useCreateEventTrack()
+  const deleteTrackMutation = useDeleteEventTrack()
+  const updateTrackMutation = useUpdateEventTrack()
 
   const [trackForm, setTrackForm] = useState({
     name: '',
@@ -21,29 +23,69 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
     is_special_stage: false
   })
 
-  const handleCreateTrack = async (e: React.FormEvent) => {
+  const resetForm = () => {
+    setTrackForm({
+      name: '',
+      length_km: '',
+      stage_number: '',
+      description: '',
+      surface_type: event.surface_type || 'gravel',
+      is_special_stage: false
+    })
+  }
+
+  const handleEditTrack = (track: EventTrack) => {
+    setTrackForm({
+      name: track.name,
+      length_km: track.length_km?.toString() || '',
+      stage_number: track.stage_number?.toString() || '',
+      description: track.description || '',
+      surface_type: track.surface_type || 'gravel',
+      is_special_stage: track.is_special_stage
+    })
+    setEditingTrack(track)
+    setShowCreateForm(true)
+  }
+
+  const handleDeleteTrack = async (trackId: string, trackName: string) => {
+    if (!confirm(`Are you sure you want to delete "${trackName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      await deleteTrackMutation.mutateAsync(trackId)
+      refetch()
+    } catch (error) {
+      console.error('Failed to delete track:', error)
+    }
+  }
+
+  const handleCreateOrUpdateTrack = async (e: React.FormEvent) => {
     e.preventDefault()
     
     try {
-      await createTrackMutation.mutateAsync({
+      const trackData = {
         ...trackForm,
         event_id: event.id,
         length_km: trackForm.length_km ? parseFloat(trackForm.length_km) : undefined,
         stage_number: trackForm.stage_number ? parseInt(trackForm.stage_number) : undefined,
-      })
+      }
+
+      if (editingTrack) {
+        await updateTrackMutation.mutateAsync({
+          id: editingTrack.id,
+          ...trackData
+        })
+      } else {
+        await createTrackMutation.mutateAsync(trackData)
+      }
       
-      setTrackForm({
-        name: '',
-        length_km: '',
-        stage_number: '',
-        description: '',
-        surface_type: event.surface_type || 'gravel',
-        is_special_stage: false
-      })
+      resetForm()
       setShowCreateForm(false)
+      setEditingTrack(null)
       refetch()
     } catch (error) {
-      console.error('Failed to create track:', error)
+      console.error('Failed to save track:', error)
     }
   }
 
@@ -53,6 +95,12 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }))
+  }
+
+  const handleCancelEdit = () => {
+    resetForm()
+    setShowCreateForm(false)
+    setEditingTrack(null)
   }
 
   return (
@@ -86,7 +134,8 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
           </h4>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200"
+            disabled={editingTrack !== null}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded-lg transition-all duration-200 disabled:opacity-50"
           >
             {showCreateForm ? 'Cancel' : '➕ Add Track'}
           </button>
@@ -94,8 +143,10 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
 
         {showCreateForm && (
           <div className="mb-6 p-6 bg-slate-900/50 rounded-xl border border-slate-700/30">
-            <h5 className="text-md font-semibold text-white mb-4">Add New Track</h5>
-            <form onSubmit={handleCreateTrack} className="space-y-4">
+            <h5 className="text-md font-semibold text-white mb-4">
+              {editingTrack ? 'Edit Track' : 'Add New Track'}
+            </h5>
+            <form onSubmit={handleCreateOrUpdateTrack} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -192,14 +243,17 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
               <div className="flex space-x-3">
                 <button
                   type="submit"
-                  disabled={createTrackMutation.isPending || !trackForm.name}
+                  disabled={createTrackMutation.isPending || updateTrackMutation.isPending || !trackForm.name}
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded-lg transition-all duration-200 disabled:opacity-50"
                 >
-                  {createTrackMutation.isPending ? 'Adding...' : 'Add Track'}
+                  {(createTrackMutation.isPending || updateTrackMutation.isPending) ? 
+                    (editingTrack ? 'Updating...' : 'Adding...') : 
+                    (editingTrack ? 'Update Track' : 'Add Track')
+                  }
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowCreateForm(false)}
+                  onClick={handleCancelEdit}
                   className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all duration-200"
                 >
                   Cancel
@@ -240,10 +294,21 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-slate-500">
-                    Created {new Date(track.created_at).toLocaleDateString()}
-                  </p>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleEditTrack(track)}
+                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
+                    title="Edit Track"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTrack(track.id, track.name)}
+                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+                    title="Delete Track"
+                  >
+                    🗑️
+                  </button>
                 </div>
               </div>
             ))}

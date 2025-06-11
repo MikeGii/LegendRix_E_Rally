@@ -1,6 +1,5 @@
-// src/components/game-management/EventsTab.tsx
 import { useState } from 'react'
-import { Game, GameEvent, useCreateGameEvent, useEventTracks } from '@/hooks/useGameManagement'
+import { Game, GameEvent, useCreateGameEvent, useDeleteGameEvent, useUpdateGameEvent } from '@/hooks/useGameManagement'
 import { CreateGameEventModal } from './CreateGameEventModal'
 import { EventTracksModal } from './EventTracksModal'
 
@@ -13,8 +12,12 @@ interface EventsTabProps {
 
 export function EventsTab({ events, selectedGame, isLoading, onRefresh }: EventsTabProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<GameEvent | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<GameEvent | null>(null)
+  
   const createGameEventMutation = useCreateGameEvent()
+  const deleteGameEventMutation = useDeleteGameEvent()
+  const updateGameEventMutation = useUpdateGameEvent()
 
   const handleCreateGameEvent = async (eventData: Partial<GameEvent>) => {
     if (!selectedGame) return
@@ -27,6 +30,32 @@ export function EventsTab({ events, selectedGame, isLoading, onRefresh }: Events
       setShowCreateModal(false)
     } catch (error) {
       console.error('Failed to create game event:', error)
+    }
+  }
+
+  const handleUpdateGameEvent = async (eventData: Partial<GameEvent>) => {
+    if (!editingEvent) return
+    
+    try {
+      await updateGameEventMutation.mutateAsync({
+        id: editingEvent.id,
+        ...eventData
+      })
+      setEditingEvent(null)
+    } catch (error) {
+      console.error('Failed to update game event:', error)
+    }
+  }
+
+  const handleDeleteGameEvent = async (eventId: string, eventName: string) => {
+    if (!confirm(`Are you sure you want to delete "${eventName}"? This will also delete all associated tracks.`)) {
+      return
+    }
+
+    try {
+      await deleteGameEventMutation.mutateAsync(eventId)
+    } catch (error) {
+      console.error('Failed to delete game event:', error)
     }
   }
 
@@ -96,15 +125,35 @@ export function EventsTab({ events, selectedGame, isLoading, onRefresh }: Events
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">{event.name}</h3>
-                    <p className="text-sm text-slate-400">{event.country}</p>
+                    <p className="text-sm text-slate-400">{event.country || 'Unknown'}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedEvent(event)}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-all duration-200"
-                >
-                  {event.tracks?.length || 0} Tracks
-                </button>
+                
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setSelectedEvent(event)}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-all duration-200"
+                  >
+                    {event.tracks?.length || 0} Tracks
+                  </button>
+                  
+                  <div className="flex space-x-1">
+                    <button
+                      onClick={() => setEditingEvent(event)}
+                      className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
+                      title="Edit"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGameEvent(event.id, event.name)}
+                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+                      title="Delete"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {event.description && (
@@ -116,23 +165,6 @@ export function EventsTab({ events, selectedGame, isLoading, onRefresh }: Events
                   <div className="flex justify-between">
                     <span className="text-slate-400">Surface:</span>
                     <span className="text-slate-300 capitalize">{event.surface_type}</span>
-                  </div>
-                )}
-                {event.difficulty_level && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Difficulty:</span>
-                    <div className="flex items-center space-x-1">
-                      {[1, 2, 3, 4, 5].map((level) => (
-                        <span
-                          key={level}
-                          className={`w-3 h-3 rounded-full ${
-                            level <= event.difficulty_level!
-                              ? 'bg-yellow-400'
-                              : 'bg-slate-600'
-                          }`}
-                        />
-                      ))}
-                    </div>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -147,6 +179,7 @@ export function EventsTab({ events, selectedGame, isLoading, onRefresh }: Events
         </div>
       )}
 
+      {/* Create Modal */}
       {showCreateModal && (
         <CreateGameEventModal
           onClose={() => setShowCreateModal(false)}
@@ -155,6 +188,17 @@ export function EventsTab({ events, selectedGame, isLoading, onRefresh }: Events
         />
       )}
 
+      {/* Edit Modal */}
+      {editingEvent && (
+        <CreateGameEventModal
+          gameEvent={editingEvent}
+          onClose={() => setEditingEvent(null)}
+          onSubmit={handleUpdateGameEvent}
+          isLoading={updateGameEventMutation.isPending}
+        />
+      )}
+
+      {/* Tracks Modal */}
       {selectedEvent && (
         <EventTracksModal
           event={selectedEvent}

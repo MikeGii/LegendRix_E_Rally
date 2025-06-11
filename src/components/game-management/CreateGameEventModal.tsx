@@ -1,17 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GameEvent } from '@/hooks/useGameManagement'
 
 interface CreateGameEventModalProps {
+  gameEvent?: GameEvent | null
   onClose: () => void
   onSubmit: (eventData: Partial<GameEvent>) => void
   isLoading: boolean
 }
 
-export function CreateGameEventModal({ onClose, onSubmit, isLoading }: CreateGameEventModalProps) {
+export function CreateGameEventModal({ gameEvent, onClose, onSubmit, isLoading }: CreateGameEventModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     surface_type: 'gravel',
   })
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (gameEvent) {
+      setFormData({
+        name: gameEvent.name || '',
+        surface_type: gameEvent.surface_type || 'gravel',
+      })
+    }
+  }, [gameEvent])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +40,7 @@ export function CreateGameEventModal({ onClose, onSubmit, isLoading }: CreateGam
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-semibold text-white flex items-center space-x-2">
             <span>🌍</span>
-            <span>Create Game Event</span>
+            <span>{gameEvent ? 'Edit Game Event' : 'Create Game Event'}</span>
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
             ✕
@@ -38,7 +49,7 @@ export function CreateGameEventModal({ onClose, onSubmit, isLoading }: CreateGam
 
         <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
           <p className="text-blue-300 text-sm">
-            <strong>Step 1:</strong> Create the event name first. You can add tracks to this event later.
+            <strong>{gameEvent ? 'Update:' : 'Step 1:'}</strong> {gameEvent ? 'Modify' : 'Create'} the event name first. You can add tracks to this event later.
           </p>
         </div>
 
@@ -84,10 +95,10 @@ export function CreateGameEventModal({ onClose, onSubmit, isLoading }: CreateGam
               {isLoading ? (
                 <div className="flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                  Creating...
+                  {gameEvent ? 'Updating...' : 'Creating...'}
                 </div>
               ) : (
-                'Create Event'
+                gameEvent ? 'Update Event' : 'Create Event'
               )}
             </button>
             <button

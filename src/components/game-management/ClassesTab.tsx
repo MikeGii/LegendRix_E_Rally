@@ -1,6 +1,5 @@
-// src/components/game-management/ClassesTab.tsx
 import { useState } from 'react'
-import { Game, GameClass, useCreateGameClass } from '@/hooks/useGameManagement'
+import { Game, GameClass, useCreateGameClass, useDeleteGameClass, useUpdateGameClass } from '@/hooks/useGameManagement'
 import { CreateGameClassModal } from './CreateGameClassModal'
 
 interface ClassesTabProps {
@@ -12,7 +11,11 @@ interface ClassesTabProps {
 
 export function ClassesTab({ classes, selectedGame, isLoading, onRefresh }: ClassesTabProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingClass, setEditingClass] = useState<GameClass | null>(null)
+  
   const createGameClassMutation = useCreateGameClass()
+  const deleteGameClassMutation = useDeleteGameClass()
+  const updateGameClassMutation = useUpdateGameClass()
 
   const handleCreateGameClass = async (classData: Partial<GameClass>) => {
     if (!selectedGame) return
@@ -25,6 +28,32 @@ export function ClassesTab({ classes, selectedGame, isLoading, onRefresh }: Clas
       setShowCreateModal(false)
     } catch (error) {
       console.error('Failed to create game class:', error)
+    }
+  }
+
+  const handleUpdateGameClass = async (classData: Partial<GameClass>) => {
+    if (!editingClass) return
+    
+    try {
+      await updateGameClassMutation.mutateAsync({
+        id: editingClass.id,
+        ...classData
+      })
+      setEditingClass(null)
+    } catch (error) {
+      console.error('Failed to update game class:', error)
+    }
+  }
+
+  const handleDeleteGameClass = async (classId: string, className: string) => {
+    if (!confirm(`Are you sure you want to delete "${className}" class? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      await deleteGameClassMutation.mutateAsync(classId)
+    } catch (error) {
+      console.error('Failed to delete game class:', error)
     }
   }
 
@@ -89,50 +118,44 @@ export function ClassesTab({ classes, selectedGame, isLoading, onRefresh }: Clas
             <div key={gameClass.id} className="bg-slate-900/50 rounded-xl border border-slate-700/30 p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    gameClass.skill_level === 'professional' ? 'bg-purple-500/20' :
-                    gameClass.skill_level === 'advanced' ? 'bg-blue-500/20' :
-                    gameClass.skill_level === 'intermediate' ? 'bg-green-500/20' :
-                    'bg-yellow-500/20'
-                  }`}>
-                    <span className={`text-xl ${
-                      gameClass.skill_level === 'professional' ? 'text-purple-300' :
-                      gameClass.skill_level === 'advanced' ? 'text-blue-300' :
-                      gameClass.skill_level === 'intermediate' ? 'text-green-300' :
-                      'text-yellow-300'
-                    }`}>🏅</span>
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                    <span className="text-blue-300 text-xl">🏅</span>
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">{gameClass.name}</h3>
-                    <p className="text-sm text-slate-400 capitalize">{gameClass.skill_level}</p>
+                    <p className="text-sm text-slate-400">Competition Class</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  {gameClass.entry_fee && gameClass.entry_fee > 0 && (
-                    <p className="text-green-400 font-medium">€{gameClass.entry_fee}</p>
-                  )}
+                
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setEditingClass(gameClass)}
+                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
+                    title="Edit"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => handleDeleteGameClass(gameClass.id, gameClass.name)}
+                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+                    title="Delete"
+                  >
+                    🗑️
+                  </button>
                 </div>
               </div>
 
-              {gameClass.description && (
-                <p className="text-slate-300 text-sm mb-4">{gameClass.description}</p>
-              )}
-
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Max Participants:</span>
-                  <span className="text-slate-300">{gameClass.max_participants || 'Unlimited'}</span>
-                </div>
-                {gameClass.requirements && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Requirements:</span>
-                    <span className="text-slate-300 text-right max-w-[200px]">{gameClass.requirements}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span className="text-slate-400">Status:</span>
                   <span className={`${gameClass.is_active ? 'text-green-400' : 'text-red-400'}`}>
                     {gameClass.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Created:</span>
+                  <span className="text-slate-300">
+                    {new Date(gameClass.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -141,11 +164,22 @@ export function ClassesTab({ classes, selectedGame, isLoading, onRefresh }: Clas
         </div>
       )}
 
+      {/* Create Modal */}
       {showCreateModal && (
         <CreateGameClassModal
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreateGameClass}
           isLoading={createGameClassMutation.isPending}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {editingClass && (
+        <CreateGameClassModal
+          gameClass={editingClass}
+          onClose={() => setEditingClass(null)}
+          onSubmit={handleUpdateGameClass}
+          isLoading={updateGameClassMutation.isPending}
         />
       )}
     </div>
