@@ -1,9 +1,8 @@
 {
   "root": true,
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint", "prettier"],
   "extends": [
-    "eslint:recommended",
+    "next/core-web-vitals",
     "plugin:@typescript-eslint/recommended",
     "plugin:prettier/recommended"
   ],
@@ -12,6 +11,7 @@
     "prettier/prettier": ["error", { "endOfLine": "auto" }]
   },
   "env": {
+    "browser": true,
     "node": true
   }
 }
