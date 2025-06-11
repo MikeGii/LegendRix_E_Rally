@@ -2,10 +2,12 @@
 
 import { useAuth } from '@/components/AuthProvider'
 import { useView } from '@/components/ViewProvider'
-import { useUpcomingRallies } from '@/hooks/useOptimizedRallies'
+import { useUpcomingRallies, useFeaturedRallies, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
 import { UserWelcomeHeader } from '@/components/user/UserWelcomeHeader'
 import { UserStatusBanner } from '@/components/user/UserStatusBanner'
 import { UpcomingRalliesSection } from '@/components/user/UpcomingRalliesSection'
+import { FeaturedRalliesSection } from '@/components/user/FeaturedRalliesSection'
+import { UserRegistrationsSection } from '@/components/user/UserRegistrationsSection'
 import { RallyActionButtons } from '@/components/user/RallyActionButtons'
 import { UserActionPrompt } from '@/components/user/UserActionPrompt'
 import { AdminSwitchPanel } from '@/components/user/AdminSwitchPanel'
@@ -21,8 +23,10 @@ export function UserDashboard() {
   const { user } = useAuth()
   const { currentView, canSwitchView } = useView()
   
-  // Load upcoming rallies using optimized hook
-  const { data: upcomingRallies = [], isLoading: isLoadingRallies } = useUpcomingRallies(3)
+  // Load rally data using updated hooks
+  const { data: upcomingRallies = [], isLoading: isLoadingUpcoming } = useUpcomingRallies(5)
+  const { data: featuredRallies = [], isLoading: isLoadingFeatured } = useFeaturedRallies(3)
+  const { data: userRegistrations = [], isLoading: isLoadingRegistrations } = useUserRallyRegistrations()
 
   if (!user) return null
 
@@ -44,10 +48,27 @@ export function UserDashboard() {
         {/* Status Banner */}
         <UserStatusBanner status={status} />
 
+        {/* User's Rally Registrations */}
+        {canAccessRallies && userRegistrations.length > 0 && (
+          <UserRegistrationsSection
+            registrations={userRegistrations}
+            isLoading={isLoadingRegistrations}
+          />
+        )}
+
+        {/* Featured Rallies */}
+        {canAccessRallies && featuredRallies.length > 0 && (
+          <FeaturedRalliesSection
+            rallies={featuredRallies}
+            isLoading={isLoadingFeatured}
+            canAccessRallies={canAccessRallies}
+          />
+        )}
+
         {/* Upcoming Rallies Section */}
         <UpcomingRalliesSection
           rallies={upcomingRallies}
-          isLoading={isLoadingRallies}
+          isLoading={isLoadingUpcoming}
           canAccessRallies={canAccessRallies}
         />
 
