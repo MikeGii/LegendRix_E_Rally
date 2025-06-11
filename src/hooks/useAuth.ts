@@ -1,4 +1,4 @@
-// src/hooks/useAuth.ts - Fixed to prevent infinite loops
+// src/hooks/useAuth.ts - Vercel-optimized version
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -23,6 +23,7 @@ export function useAuth() {
   const subscriptionRef = useRef<any>(null)
   const loadingProfileRef = useRef(false)
   const currentUserIdRef = useRef<string | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (initialized.current) return
@@ -30,11 +31,28 @@ export function useAuth() {
     
     console.log('🔄 Starting auth initialization...')
 
+    // Set a maximum timeout for the entire auth process
+    timeoutRef.current = setTimeout(() => {
+      if (loading) {
+        console.log('⏰ Auth initialization timeout reached, setting loading to false')
+        setLoading(false)
+        loadingProfileRef.current = false
+      }
+    }, 10000) // 10 second timeout
+
     const initAuth = async () => {
       try {
-        // Get existing session without forcing refresh
-        const { data: { session }, error } = await supabase.auth.getSession()
-        
+        // For Vercel: Add timeout to session check
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session check timeout')), 5000)
+        )
+
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise, 
+          timeoutPromise
+        ]) as any
+
         if (error) {
           console.error('❌ Session error:', error)
           setLoading(false)
@@ -46,30 +64,9 @@ export function useAuth() {
           setSession(session)
           currentUserIdRef.current = session.user.id
           
-          // Check if session is still valid
-          const now = Math.floor(Date.now() / 1000)
-          const expiresAt = session.expires_at || 0
-          
-          if (expiresAt > now + 300) { // If session expires in more than 5 minutes
-            console.log('✅ Session is valid, loading user profile...')
-            await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
-          } else {
-            console.log('⚠️ Session expiring soon, refreshing...')
-            // Try to refresh the session
-            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-            
-            if (refreshError || !refreshData.session) {
-              console.log('❌ Session refresh failed, signing out')
-              await supabase.auth.signOut()
-              setLoading(false)
-              return
-            }
-            
-            console.log('✅ Session refreshed successfully')
-            setSession(refreshData.session)
-            currentUserIdRef.current = refreshData.session.user.id
-            await loadUserProfile(refreshData.session.user.id, refreshData.session.user.email!, refreshData.session.user.user_metadata?.name)
-          }
+          // For Vercel: Don't check session expiry, just load profile
+          console.log('✅ Loading user profile...')
+          await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
         } else {
           console.log('ℹ️ No session found')
           setLoading(false)
@@ -77,44 +74,59 @@ export function useAuth() {
       } catch (error) {
         console.error('❌ Auth initialization error:', error)
         setLoading(false)
+      } finally {
+        // Clear the timeout
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+        }
       }
     }
 
-    // Setup auth state listener - only for actual auth changes
+    // Setup auth state listener with debouncing for Vercel
+    let authEventTimeout: NodeJS.Timeout | null = null
+    
     subscriptionRef.current = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth event:', event)
       
-      // Prevent duplicate processing for the same user
-      if (session?.user?.id === currentUserIdRef.current && event !== 'SIGNED_OUT') {
-        console.log('⚠️ Ignoring duplicate auth event for same user')
-        return
+      // Clear any pending auth event processing
+      if (authEventTimeout) {
+        clearTimeout(authEventTimeout)
       }
       
-      if (event === 'SIGNED_IN' && session) {
-        console.log('🔄 Auth state: SIGNED_IN detected for:', session.user.email)
-        
-        // Prevent loading profile if already loading
-        if (loadingProfileRef.current) {
-          console.log('⚠️ Profile already loading, skipping...')
+      // Debounce auth events to prevent rapid-fire processing in Vercel
+      authEventTimeout = setTimeout(async () => {
+        // Prevent duplicate processing for the same user
+        if (session?.user?.id === currentUserIdRef.current && event !== 'SIGNED_OUT') {
+          console.log('⚠️ Ignoring duplicate auth event for same user')
           return
         }
         
-        setSession(session)
-        currentUserIdRef.current = session.user.id
-        await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
-      } else if (event === 'SIGNED_OUT') {
-        console.log('🚪 Auth state: SIGNED_OUT detected')
-        setUser(null)
-        setSession(null)
-        setLoading(false)
-        currentUserIdRef.current = null
-        loadingProfileRef.current = false
-      } else if (event === 'TOKEN_REFRESHED' && session) {
-        console.log('🔄 Token refreshed silently')
-        setSession(session)
-        currentUserIdRef.current = session.user.id
-        // Don't reload profile, just update session
-      }
+        if (event === 'SIGNED_IN' && session) {
+          console.log('🔄 Auth state: SIGNED_IN detected for:', session.user.email)
+          
+          // Prevent loading profile if already loading
+          if (loadingProfileRef.current) {
+            console.log('⚠️ Profile already loading, skipping...')
+            return
+          }
+          
+          setSession(session)
+          currentUserIdRef.current = session.user.id
+          await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
+        } else if (event === 'SIGNED_OUT') {
+          console.log('🚪 Auth state: SIGNED_OUT detected')
+          setUser(null)
+          setSession(null)
+          setLoading(false)
+          currentUserIdRef.current = null
+          loadingProfileRef.current = false
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          console.log('🔄 Token refreshed silently')
+          setSession(session)
+          currentUserIdRef.current = session.user.id
+          // Don't reload profile, just update session
+        }
+      }, 100) // 100ms debounce
     })
 
     initAuth()
@@ -122,6 +134,12 @@ export function useAuth() {
     return () => {
       if (subscriptionRef.current) {
         subscriptionRef.current.data.subscription.unsubscribe()
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+      if (authEventTimeout) {
+        clearTimeout(authEventTimeout)
       }
     }
   }, [])
@@ -137,22 +155,32 @@ export function useAuth() {
     console.log('📋 Loading profile for:', email, '| Attempt:', retryCount + 1)
     
     try {
-      const { data: existingUser, error: fetchError } = await supabase
+      // For Vercel: Add timeout to database queries
+      const queryPromise = supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
 
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout')), 8000)
+      )
+
+      const { data: existingUser, error: fetchError } = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]) as any
+
       if (fetchError) {
         console.error('❌ Database query error:', fetchError)
         
-        // Retry logic for connection issues
-        if (retryCount < 2 && (fetchError.message.includes('connection') || fetchError.message.includes('timeout'))) {
-          console.log('🔄 Retrying database query in 2 seconds... (attempt', retryCount + 2, ')')
+        // More aggressive retry for Vercel
+        if (retryCount < 3) {
+          console.log('🔄 Retrying database query in 1 second... (attempt', retryCount + 2, ')')
           setTimeout(() => {
             loadingProfileRef.current = false
             loadUserProfile(userId, email, name, retryCount + 1)
-          }, 2000)
+          }, 1000)
           return
         }
         
@@ -163,13 +191,11 @@ export function useAuth() {
       }
 
       if (!existingUser) {
-        // User doesn't exist, create them
         console.log('📝 User not found, creating new record')
         await createUserRecord(userId, email, name)
         return
       }
 
-      // Success!
       console.log('✅ User profile loaded:', {
         email: existingUser.email,
         role: existingUser.role,
@@ -183,13 +209,13 @@ export function useAuth() {
     } catch (error: any) {
       console.error('❌ Profile loading exception:', error.message)
       
-      // Retry on timeout
-      if (error.message.includes('timeout') && retryCount < 2) {
-        console.log('⏰ Operation timed out, retrying... (attempt', retryCount + 2, ')')
+      // For Vercel: More forgiving retry logic
+      if (retryCount < 3) {
+        console.log('⏰ Retrying due to error... (attempt', retryCount + 2, ')')
         setTimeout(() => {
           loadingProfileRef.current = false
           loadUserProfile(userId, email, name, retryCount + 1)
-        }, 2000)
+        }, 1000)
         return
       }
       
@@ -213,11 +239,21 @@ export function useAuth() {
         status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval'
       }
 
-      const { data: newUser, error: createError } = await supabase
+      // For Vercel: Add timeout to create operation
+      const createPromise = supabase
         .from('users')
         .insert([newUserData])
         .select()
         .single()
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Create user timeout')), 8000)
+      )
+
+      const { data: newUser, error: createError } = await Promise.race([
+        createPromise,
+        timeoutPromise
+      ]) as any
 
       if (createError) {
         console.error('❌ Failed to create user:', createError)
@@ -243,11 +279,11 @@ export function useAuth() {
     setLoading(true)
 
     try {
-      // Sign out first to clear any existing session
-      await supabase.auth.signOut()
-      
-      // Small delay to ensure signout is processed
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // For Vercel: Clear any existing state first
+      setUser(null)
+      setSession(null)
+      currentUserIdRef.current = null
+      loadingProfileRef.current = false
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
