@@ -92,9 +92,6 @@ export function useAuth() {
       console.log('Name:', name)
       console.log('Password length:', password.length)
       
-      // REMOVED: existing user check that was causing 406 error
-      // Let Supabase handle duplicate email detection
-      
       // Sign up with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: email,
@@ -172,14 +169,30 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        console.error('Logout error:', error)
-      }
+      console.log('=== LOGOUT START ===')
+      
+      // Clear local state immediately for better UX
       setUser(null)
       setSession(null)
+      setLoading(false)
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('Logout error:', error)
+        // Don't throw error, just log it since we already cleared local state
+      } else {
+        console.log('✅ Logout successful')
+      }
+      
+      // Force page reload to clear any cached data and redirect to login
+      window.location.href = '/'
+      
     } catch (error) {
       console.error('Logout error:', error)
+      // Still redirect even if there's an error
+      window.location.href = '/'
     }
   }
 
