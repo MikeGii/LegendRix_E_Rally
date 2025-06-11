@@ -1,4 +1,4 @@
-// src/hooks/useAuth.ts - Clean production version
+// src/hooks/useAuth.ts - Fixed session management
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -30,6 +30,7 @@ export function useAuth() {
 
     const initAuth = async () => {
       try {
+        // Get existing session without forcing refresh
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
@@ -38,10 +39,33 @@ export function useAuth() {
           return
         }
 
-        if (session) {
-          console.log('✅ Session found for:', session.user.email)
+        if (session?.user) {
+          console.log('✅ Existing session found for:', session.user.email)
           setSession(session)
-          await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
+          
+          // Check if session is still valid
+          const now = Math.floor(Date.now() / 1000)
+          const expiresAt = session.expires_at || 0
+          
+          if (expiresAt > now + 300) { // If session expires in more than 5 minutes
+            console.log('✅ Session is valid, loading user profile...')
+            await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
+          } else {
+            console.log('⚠️ Session expiring soon, refreshing...')
+            // Try to refresh the session
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+            
+            if (refreshError || !refreshData.session) {
+              console.log('❌ Session refresh failed, signing out')
+              await supabase.auth.signOut()
+              setLoading(false)
+              return
+            }
+            
+            console.log('✅ Session refreshed successfully')
+            setSession(refreshData.session)
+            await loadUserProfile(refreshData.session.user.id, refreshData.session.user.email!, refreshData.session.user.user_metadata?.name)
+          }
         } else {
           console.log('ℹ️ No session found')
           setLoading(false)
@@ -52,7 +76,7 @@ export function useAuth() {
       }
     }
 
-    // Setup auth state listener
+    // Setup auth state listener - only for actual auth changes
     subscriptionRef.current = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth event:', event)
       
@@ -65,6 +89,10 @@ export function useAuth() {
         setUser(null)
         setSession(null)
         setLoading(false)
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        console.log('🔄 Token refreshed silently')
+        setSession(session)
+        // Don't reload profile, just update session
       }
     })
 
@@ -78,45 +106,20 @@ export function useAuth() {
   }, [])
 
   const loadUserProfile = async (userId: string, email: string, name?: string, retryCount = 0) => {
-    console.log('📋 Loading profile for:', email, '| User ID:', userId.substring(0, 8), '| Attempt:', retryCount + 1)
+    console.log('📋 Loading profile for:', email, '| Attempt:', retryCount + 1)
     
     try {
-      // Force refresh the Supabase client session with timeout
-      console.log('🔄 Refreshing Supabase session...')
-      
-      const refreshTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Session refresh timeout')), 5000)
-      })
-      
-      try {
-        await Promise.race([supabase.auth.refreshSession(), refreshTimeout])
-        console.log('✅ Session refresh completed')
-      } catch (refreshError: any) {
-        console.warn('⚠️ Session refresh failed or timed out:', refreshError.message)
-        // Continue anyway - sometimes the query works even if refresh fails
-      }
-      
-      // Set a reasonable timeout for the database query
-      const queryTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Database query timeout')), 8000)
-      })
-      
-      // Race the query against timeout
-      const queryPromise = supabase
+      const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
 
-      console.log('🔍 Executing database query...')
-      const result = await Promise.race([queryPromise, queryTimeout])
-      const { data: existingUser, error: fetchError } = result as any
-
       if (fetchError) {
         console.error('❌ Database query error:', fetchError)
         
-        // Retry logic for specific errors or connection issues
-        if (retryCount < 2) {
+        // Retry logic for connection issues
+        if (retryCount < 2 && (fetchError.message.includes('connection') || fetchError.message.includes('timeout'))) {
           console.log('🔄 Retrying database query in 2 seconds... (attempt', retryCount + 2, ')')
           setTimeout(() => {
             loadUserProfile(userId, email, name, retryCount + 1)
@@ -137,12 +140,10 @@ export function useAuth() {
       }
 
       // Success!
-      console.log('✅ User found in database:', {
+      console.log('✅ User profile loaded:', {
         email: existingUser.email,
         role: existingUser.role,
-        status: existingUser.status,
-        emailVerified: existingUser.email_verified,
-        adminApproved: existingUser.admin_approved
+        status: existingUser.status
       })
       
       setUser(existingUser)
@@ -151,8 +152,8 @@ export function useAuth() {
     } catch (error: any) {
       console.error('❌ Profile loading exception:', error.message)
       
-      // If it's any timeout, retry
-      if ((error.message.includes('timeout') || error.message.includes('Timeout')) && retryCount < 2) {
+      // Retry on timeout
+      if (error.message.includes('timeout') && retryCount < 2) {
         console.log('⏰ Operation timed out, retrying... (attempt', retryCount + 2, ')')
         setTimeout(() => {
           loadUserProfile(userId, email, name, retryCount + 1)
@@ -224,7 +225,14 @@ export function useAuth() {
       }
 
       console.log('✅ Authentication successful for:', data.user.email)
-      return { success: true }
+      
+      // Set session immediately
+      setSession(data.session)
+      
+      // Load user profile
+      await loadUserProfile(data.user.id, data.user.email!, data.user.user_metadata?.name)
+      
+      return { success: true, user: data.user }
 
     } catch (error: any) {
       console.error('❌ Login exception:', error)

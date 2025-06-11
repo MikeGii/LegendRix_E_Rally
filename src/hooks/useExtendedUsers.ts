@@ -99,7 +99,13 @@ export function useUserAction() {
     },
     onSuccess: (data) => {
       console.log(`✅ User ${data.action} completed successfully`)
+      // Force immediate refetch of user data
       queryClient.invalidateQueries({ queryKey: extendedUserKeys.all })
+      queryClient.refetchQueries({ queryKey: extendedUserKeys.all })
+      
+      // Also invalidate the regular users query from the admin dashboard
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.refetchQueries({ queryKey: ['users'] })
     },
     onError: (error) => {
       console.error('❌ User action error:', error)
@@ -132,8 +138,15 @@ export function useDeleteUser() {
       console.log('✅ User deleted successfully:', result.deletedUser)
       return result
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log('🔄 Invalidating user queries after deletion')
+      // Force immediate refetch of user data
       queryClient.invalidateQueries({ queryKey: extendedUserKeys.all })
+      queryClient.refetchQueries({ queryKey: extendedUserKeys.all })
+      
+      // Also invalidate the regular users query from the admin dashboard
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.refetchQueries({ queryKey: ['users'] })
     },
     onError: (error) => {
       console.error('❌ Delete user error:', error)
@@ -168,7 +181,14 @@ export function usePromoteUser() {
       return { userId }
     },
     onSuccess: () => {
+      console.log('🔄 Invalidating user queries after promotion')
+      // Force immediate refetch of user data
       queryClient.invalidateQueries({ queryKey: extendedUserKeys.all })
+      queryClient.refetchQueries({ queryKey: extendedUserKeys.all })
+      
+      // Also invalidate the regular users query from the admin dashboard
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.refetchQueries({ queryKey: ['users'] })
     },
     onError: (error) => {
       console.error('❌ Promote user error:', error)

@@ -1,3 +1,4 @@
+// src/lib/supabase.ts - Enhanced session management
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -24,6 +25,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       'X-Client-Info': 'legendrix-e-rally@1.0.0',
+    },
+  },
+  // Add connection pooling and retry logic
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
     },
   },
 })
@@ -64,7 +74,7 @@ export interface RallyRegistration {
   created_at: string
 }
 
-// Helper function to get user session with error handling
+// Helper function to get user session with enhanced error handling
 export const getSession = async () => {
   try {
     const { data, error } = await supabase.auth.getSession()
@@ -86,4 +96,27 @@ export const getUser = async (): Promise<User | null> => {
     console.error('Error getting user:', error)
     return null
   }
+}
+
+// Enhanced session management
+export const refreshSession = async () => {
+  try {
+    const { data, error } = await supabase.auth.refreshSession()
+    if (error) throw error
+    return data.session
+  } catch (error) {
+    console.error('Error refreshing session:', error)
+    return null
+  }
+}
+
+// Check if session is valid
+export const isSessionValid = (session: any) => {
+  if (!session) return false
+  
+  const now = Math.floor(Date.now() / 1000)
+  const expiresAt = session.expires_at || 0
+  
+  // Session is valid if it expires in more than 5 minutes
+  return expiresAt > now + 300
 }

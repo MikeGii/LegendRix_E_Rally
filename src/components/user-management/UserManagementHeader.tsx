@@ -14,11 +14,24 @@ export function UserManagementHeader({
   isLoading, 
   onRefresh 
 }: UserManagementHeaderProps) {
+  const handleBackToAdmin = () => {
+    window.location.href = '/admin-dashboard'
+  }
+
   return (
     <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">User Management</h1>
+          <div className="flex items-center space-x-4 mb-2">
+            <button
+              onClick={handleBackToAdmin}
+              className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded-lg transition-all duration-200"
+            >
+              <span>←</span>
+              <span>Back to Admin</span>
+            </button>
+            <h1 className="text-3xl font-bold text-white">User Management</h1>
+          </div>
           <p className="text-slate-400">Manage all user accounts and permissions</p>
           <div className="flex items-center space-x-6 mt-4">
             <div className="flex items-center space-x-2">
