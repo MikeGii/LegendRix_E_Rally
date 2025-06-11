@@ -99,31 +99,6 @@ export function UserDashboard() {
     }
   }
 
-  const handleRegister = async (rallyId: string) => {
-    if (!user) return
-
-    try {
-      const { data, error } = await supabase
-        .from('rally_registrations')
-        .insert([{
-          rally_id: rallyId,
-          user_id: user.id,
-          status: 'registered'
-        }])
-
-      if (error) {
-        console.error('Registration error:', error)
-        alert('Failed to register for rally. Please try again.')
-        return
-      }
-
-      alert('Successfully registered for rally!')
-    } catch (error) {
-      console.error('Registration error:', error)
-      alert('Failed to register for rally. Please try again.')
-    }
-  }
-
   if (!user) return null
 
   // Check if this is an admin viewing as user
