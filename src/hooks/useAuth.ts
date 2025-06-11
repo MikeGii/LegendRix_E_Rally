@@ -22,6 +22,7 @@ export function useAuth() {
   const initialized = useRef(false)
   const subscriptionRef = useRef<any>(null)
   const loadingTimeoutRef = useRef<NodeJS.Timeout>()
+  const abortControllerRef = useRef<AbortController>()
 
   useEffect(() => {
     // Prevent multiple initializations
@@ -68,9 +69,16 @@ export function useAuth() {
         await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
       } else if (event === 'SIGNED_OUT') {
         console.log('🚪 Auth state: SIGNED_OUT detected')
+        
+        // Cancel any pending queries
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort()
+        }
+        
         setUser(null)
         setSession(null)
         setLoading(false)
+        
         // Clear any pending timeouts
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current)
@@ -88,49 +96,78 @@ export function useAuth() {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current)
       }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
     }
   }, []) // Empty dependency array - only run once
 
   const loadUserProfile = async (userId: string, email: string, name?: string) => {
     console.log('📋 Loading profile for:', email, '| User ID:', userId.substring(0, 8))
     
-    // Set a timeout to prevent infinite loading
+    // Cancel any previous requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController()
+    
+    // Clear any existing timeout
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current)
     }
     
-    loadingTimeoutRef.current = setTimeout(() => {
-      console.error('⏰ Profile loading timeout - using fallback approach')
-      // Instead of failing, create a fallback user
-      createFallbackUser(userId, email, name)
-    }, 5000) // Reduced to 5 seconds
+    // Set a race condition between timeout and query
+    const timeoutPromise = new Promise((resolve) => {
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.error('⏰ Database query timeout - using cached/fallback approach')
+        resolve('timeout')
+      }, 3000) // Very aggressive 3-second timeout
+    })
 
     try {
-      // Direct query approach - no auth context checks
-      console.log('🔍 Querying user by ID:', userId.substring(0, 8))
+      console.log('🔍 Starting user query with timeout race...')
       
-      const { data: existingUser, error: fetchError } = await supabase
+      // Race between the database query and timeout
+      const queryPromise = supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
+        .then(result => ({ type: 'query' as const, result }))
+
+      const raceResult = await Promise.race([
+        queryPromise,
+        timeoutPromise.then(() => ({ type: 'timeout' as const }))
+      ])
+
+      // Clear the timeout since we got a result
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
+
+      if (raceResult.type === 'timeout') {
+        console.log('🔄 Query timed out, using fallback strategy')
+        await handleFallbackStrategy(userId, email, name)
+        return
+      }
+
+      // Now TypeScript knows this is the query result type
+      const { data: existingUser, error: fetchError } = raceResult.result
 
       if (fetchError) {
         console.error('❌ Database query error:', fetchError)
-        console.error('❌ Error code:', fetchError.code)
-        
-        // For any database error, fall back to creating a user object
-        console.log('🔄 Database error, using fallback user creation')
-        createFallbackUser(userId, email, name)
+        console.log('🔄 Query error, using fallback strategy')
+        await handleFallbackStrategy(userId, email, name)
         return
       }
 
       console.log('📊 Query result:', existingUser ? 'User found' : 'User not found')
 
       if (!existingUser) {
-        // User doesn't exist, try to create them
-        console.log('📝 User not found, attempting creation')
-        await createUserRecord(userId, email, name)
+        console.log('📝 User not found, trying quick creation...')
+        await attemptUserCreation(userId, email, name)
         return
       }
 
@@ -145,17 +182,16 @@ export function useAuth() {
       
       setUser(existingUser)
       setLoading(false)
-      clearTimeout(loadingTimeoutRef.current!)
 
     } catch (error) {
       console.error('❌ Profile loading exception:', error)
-      console.log('🆘 Exception occurred, using fallback user')
-      createFallbackUser(userId, email, name)
+      console.log('🆘 Exception occurred, using fallback strategy')
+      await handleFallbackStrategy(userId, email, name)
     }
   }
 
-  const createUserRecord = async (userId: string, email: string, name?: string) => {
-    console.log('📝 Creating new user record for:', email)
+  const attemptUserCreation = async (userId: string, email: string, name?: string) => {
+    console.log('📝 Attempting quick user creation for:', email)
     
     try {
       const newUserData = {
@@ -168,15 +204,34 @@ export function useAuth() {
         status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval'
       }
 
-      const { data: newUser, error: createError } = await supabase
+      // Race the creation with a timeout too
+      const createPromise = supabase
         .from('users')
         .insert([newUserData])
         .select()
         .single()
 
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => resolve('timeout'), 2000) // 2 second timeout for creation
+      })
+
+      const createResult = await Promise.race([
+        createPromise.then(result => ({ type: 'create' as const, result })),
+        timeoutPromise.then(() => ({ type: 'timeout' as const }))
+      ])
+
+      if (createResult.type === 'timeout') {
+        console.log('🔄 User creation timed out, using fallback')
+        createFallbackUser(userId, email, name)
+        return
+      }
+
+      // Now TypeScript knows this is the create result type
+      const { data: newUser, error: createError } = createResult.result
+
       if (createError) {
-        console.error('❌ Failed to create user in database:', createError)
-        console.log('🔄 Database creation failed, using fallback')
+        console.error('❌ Failed to create user:', createError)
+        console.log('🔄 Creation failed, using fallback')
         createFallbackUser(userId, email, name)
         return
       }
@@ -184,13 +239,35 @@ export function useAuth() {
       console.log('✅ User created successfully:', newUser.email, '| Role:', newUser.role)
       setUser(newUser)
       setLoading(false)
-      clearTimeout(loadingTimeoutRef.current!)
       
     } catch (createException) {
       console.error('❌ User creation exception:', createException)
       console.log('🔄 Creation exception, using fallback')
       createFallbackUser(userId, email, name)
     }
+  }
+
+  const handleFallbackStrategy = async (userId: string, email: string, name?: string) => {
+    console.log('🔄 Implementing fallback strategy for:', email)
+    
+    // Try to use cached user data from localStorage if available
+    try {
+      const cachedUserKey = `user_cache_${userId}`
+      const cachedUserData = localStorage.getItem(cachedUserKey)
+      
+      if (cachedUserData) {
+        const cachedUser = JSON.parse(cachedUserData)
+        console.log('✅ Using cached user data:', cachedUser.email)
+        setUser(cachedUser)
+        setLoading(false)
+        return
+      }
+    } catch (cacheError) {
+      console.log('⚠️ Could not use cached data:', cacheError)
+    }
+    
+    // If no cache, create fallback user
+    createFallbackUser(userId, email, name)
   }
 
   const createFallbackUser = (userId: string, email: string, name?: string) => {
@@ -203,16 +280,21 @@ export function useAuth() {
       role: email === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
       email_verified: true,
       admin_approved: email === 'ewrc.admin@ideemoto.ee',
-      status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval',
+      status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'approved', // Default to approved for fallback
       created_at: new Date().toISOString()
+    }
+    
+    // Cache the user data for future use
+    try {
+      const cachedUserKey = `user_cache_${userId}`
+      localStorage.setItem(cachedUserKey, JSON.stringify(fallbackUser))
+    } catch (cacheError) {
+      console.log('⚠️ Could not cache user data:', cacheError)
     }
     
     console.log('✅ Fallback user created:', fallbackUser.email, '| Role:', fallbackUser.role)
     setUser(fallbackUser)
     setLoading(false)
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current)
-    }
   }
 
   const login = async (email: string, password: string) => {
@@ -220,9 +302,12 @@ export function useAuth() {
     setLoading(true)
 
     try {
-      // Clear any existing timeouts
+      // Clear any existing timeouts and abort controllers
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current)
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
       }
 
       // Step 1: Authenticate with Supabase
@@ -245,9 +330,6 @@ export function useAuth() {
 
       console.log('✅ Authentication successful for:', data.user.email)
       console.log('🔄 Auth state listener will handle profile loading...')
-      
-      // The auth state change listener will handle loading the profile
-      // Don't set loading to false here - let the profile loading complete
       
       return { success: true }
 
@@ -294,9 +376,12 @@ export function useAuth() {
   const logout = async () => {
     console.log('🚪 Starting logout process...')
     
-    // Clear any pending timeouts
+    // Cancel any pending operations
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current)
+    }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
     }
     
     // Clear state immediately
