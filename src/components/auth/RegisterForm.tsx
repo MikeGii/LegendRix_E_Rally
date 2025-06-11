@@ -9,6 +9,7 @@ interface RegisterFormData {
   email: string
   password: string
   confirmPassword: string
+  agreeToRules: boolean
 }
 
 interface RegisterFormProps {
@@ -51,7 +52,8 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
       console.log('Registration form data:', {
         name: data.name,
         email: data.email,
-        password: '***hidden***'
+        password: '***hidden***',
+        agreeToRules: data.agreeToRules
       })
 
       // Pass parameters in correct order: email, password, name
@@ -166,6 +168,55 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         />
         {errors.confirmPassword && (
           <p className="mt-2 text-sm text-red-400">{errors.confirmPassword.message}</p>
+        )}
+      </div>
+
+      {/* Rules Agreement Section */}
+      <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-5 space-y-4">
+        <h3 className="text-base font-semibold text-white mb-3">
+          Kasutajakonto loomisega kinnitan et olen tutvunud veebisaidi reeglitega:
+        </h3>
+        
+        <div className="space-y-3 text-sm text-slate-300 leading-relaxed max-h-32 overflow-y-auto pr-2">
+          <div className="flex items-start space-x-3">
+            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">1.</span>
+            <p>Võistlustel osalemiseks pean ennast eelnevalt registreerima kasutades selleks registreerimisvormi, mis asub töölaual.</p>
+          </div>
+          
+          <div className="flex items-start space-x-3">
+            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">2.</span>
+            <p>Võistlustele registreerides ja vähemalt 3 korral mitte osaledes ennast registreerimisnimekirjast kustutamast võidakse minu konto jäädavalt blokeerida.</p>
+          </div>
+          
+          <div className="flex items-start space-x-3">
+            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">3.</span>
+            <p>Võistlustel võib olla piiratud koht arvi ja kehtib reegel, et esimesena registreerunud pääsevad võistlema.</p>
+          </div>
+          
+          <div className="flex items-start space-x-3">
+            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">4.</span>
+            <p>Võistlustel osaledes olen viisakas ja järgin vastava mängu reegleid. Mistahes viisil mängu enda reeglite rikkumisel võidakse minu konto jäädavalt blokeerida.</p>
+          </div>
+        </div>
+
+        {/* Agreement Checkbox */}
+        <div className="flex items-start space-x-3 pt-3 border-t border-slate-700/50">
+          <input
+            type="checkbox"
+            id="agreeToRules"
+            disabled={isLoading}
+            {...register('agreeToRules', {
+              required: 'Peate nõustuma reeglitega kontot luua saamiseks'
+            })}
+            className="mt-1 w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0"
+          />
+          <label htmlFor="agreeToRules" className="text-sm text-slate-300 cursor-pointer select-none">
+            Kinnitan, et olen reeglitega tutvunud
+          </label>
+        </div>
+        
+        {errors.agreeToRules && (
+          <p className="text-sm text-red-400 mt-2">{errors.agreeToRules.message}</p>
         )}
       </div>
 
