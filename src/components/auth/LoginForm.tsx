@@ -199,13 +199,6 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
           </button>
         </p>
       </div>
-
-      {/* Debug info - remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 p-2 bg-gray-800 rounded text-xs text-gray-400">
-          Debug: user={user?.email || 'none'} | authLoading={authLoading.toString()} | isLoading={isLoading.toString()} | redirecting={redirecting.toString()}
-        </div>
-      )}
     </form>
   )
 }
