@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
@@ -33,7 +33,7 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
     )
   }
 
-  const { login } = auth
+  const { login, user, loading: authLoading } = auth
   const router = useRouter()
   
   const {
@@ -42,13 +42,30 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
     formState: { errors }
   } = useForm<LoginFormData>()
 
+  // Handle successful login redirect
+  useEffect(() => {
+    if (!authLoading && user && !isLoading) {
+      console.log('User logged in successfully, redirecting...')
+      
+      // Determine redirect based on user role
+      const redirectUrl = user.role === 'admin' ? '/admin-dashboard' : '/user-dashboard'
+      
+      // Add small delay to ensure state is properly set
+      setTimeout(() => {
+        router.push(redirectUrl)
+      }, 100)
+    }
+  }, [user, authLoading, isLoading, router])
+
   const onSubmit = async (data: LoginFormData) => {
+    if (isLoading || authLoading) return
+    
     setIsLoading(true)
     setMessage('')
     onLoginStart()
     
     try {
-      console.log('Login form data:', {
+      console.log('Login form submission:', {
         email: data.email,
         password: '***hidden***'
       })
@@ -56,20 +73,25 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
       const result = await login(data.email, data.password)
       
       if (result.success) {
-        // Redirect to appropriate dashboard
-        router.push('/user-dashboard')
+        console.log('Login API call successful, waiting for auth state...')
+        // Don't set loading to false here - let the useEffect handle redirection
+        // The loading state will be cleared when user state is updated
       } else {
+        console.error('Login failed:', result.error)
         setMessage(result.error || 'Login failed')
+        setIsLoading(false)
         onLoginError()
       }
     } catch (error) {
       console.error('Login submission error:', error)
       setMessage('Login failed. Please try again.')
+      setIsLoading(false)
       onLoginError()
     }
-    
-    setIsLoading(false)
   }
+
+  // Show loading while auth is initializing or user is being fetched
+  const showLoading = isLoading || (authLoading && !user)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -83,7 +105,7 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
         <input
           type="email"
           placeholder="Email address"
-          disabled={isLoading}
+          disabled={showLoading}
           autoComplete="email"
           {...register('email', {
             required: 'Email is required',
@@ -103,7 +125,7 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
         <input
           type="password"
           placeholder="Password"
-          disabled={isLoading}
+          disabled={showLoading}
           autoComplete="current-password"
           {...register('password', {
             required: 'Password is required',
@@ -121,13 +143,15 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
 
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={showLoading}
         className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
       >
-        {isLoading ? (
+        {showLoading ? (
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-            Signing in...
+            <span>
+              {isLoading ? 'Signing in...' : 'Loading...'}
+            </span>
           </div>
         ) : (
           'Sign In'
@@ -141,7 +165,7 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
           <button
             type="button"
             onClick={onSwitchToRegister}
-            disabled={isLoading}
+            disabled={showLoading}
             className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Register here

@@ -27,10 +27,11 @@ export function useAuth() {
         
         if (session?.user) {
           await fetchUserProfile(session.user.id)
+        } else {
+          setLoading(false)
         }
       } catch (error) {
         console.error('Error getting session:', error)
-      } finally {
         setLoading(false)
       }
     }
@@ -43,12 +44,14 @@ export function useAuth() {
         console.log('Auth state changed:', event, session?.user?.email)
         setSession(session)
         
-        if (session?.user) {
+        if (session?.user && event === 'SIGNED_IN') {
+          console.log('User signed in, fetching profile...')
           await fetchUserProfile(session.user.id)
-        } else {
+        } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out')
           setUser(null)
+          setLoading(false)
         }
-        setLoading(false)
       }
     )
 
@@ -57,6 +60,8 @@ export function useAuth() {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('Fetching user profile for:', userId)
+      
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -65,23 +70,33 @@ export function useAuth() {
 
       if (error) {
         console.error('Error fetching user profile:', error)
-        setUser(null)
-      } else {
-        console.log('User profile loaded:', data.email)
-        setUser({
-          id: data.id,
-          name: data.name,
-          email: data.email,
-          role: data.role,
-          email_verified: data.email_verified,
-          admin_approved: data.admin_approved,
-          status: data.status,
-          created_at: data.created_at
-        })
+        
+        // If user doesn't exist in users table, create a basic profile
+        if (error.code === 'PGRST116') {
+          console.log('User not found in users table, this might be expected for new signups')
+          setUser(null)
+        }
+        setLoading(false)
+        return
       }
+
+      console.log('User profile loaded successfully:', data.email)
+      setUser({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        email_verified: data.email_verified,
+        admin_approved: data.admin_approved,
+        status: data.status,
+        created_at: data.created_at
+      })
+      setLoading(false)
+      
     } catch (error) {
       console.error('Error fetching user profile:', error)
       setUser(null)
+      setLoading(false)
     }
   }
 
@@ -90,9 +105,7 @@ export function useAuth() {
       console.log('=== REGISTRATION START ===')
       console.log('Email:', email)
       console.log('Name:', name)
-      console.log('Password length:', password.length)
       
-      // Sign up with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
@@ -105,7 +118,6 @@ export function useAuth() {
 
       console.log('Supabase signup response:', {
         user: data.user?.email,
-        userData: data.user?.user_metadata,
         session: !!data.session,
         error: error?.message
       })
@@ -115,22 +127,18 @@ export function useAuth() {
         return { success: false, error: error.message }
       }
 
-      // If signup successful but no session, email confirmation is required
       if (data.user && !data.session) {
-        console.log('Registration successful, email confirmation required')
         return { 
           success: true, 
           message: 'Registration successful! Please check your email to verify your account.' 
         }
       }
 
-      // If we have a session, user is immediately logged in
       if (data.user && data.session) {
         console.log('Registration successful with immediate login')
         return { success: true }
       }
 
-      console.log('Registration completed')
       return { success: true }
     } catch (error: any) {
       console.error('Registration error:', error)
@@ -159,8 +167,13 @@ export function useAuth() {
         return { success: false, error: error.message }
       }
 
-      console.log('Login successful:', data.user?.email)
-      return { success: true }
+      if (data.session && data.user) {
+        console.log('Login successful, session created')
+        // Don't fetch profile here, let the auth state change handler do it
+        return { success: true }
+      }
+
+      return { success: false, error: 'Login failed - no session created' }
     } catch (error: any) {
       console.error('Login error:', error)
       return { success: false, error: error.message || 'Login failed' }
@@ -171,7 +184,7 @@ export function useAuth() {
     try {
       console.log('=== LOGOUT START ===')
       
-      // Clear local state immediately for better UX
+      // Clear local state immediately
       setUser(null)
       setSession(null)
       setLoading(false)
@@ -181,17 +194,15 @@ export function useAuth() {
       
       if (error) {
         console.error('Logout error:', error)
-        // Don't throw error, just log it since we already cleared local state
       } else {
         console.log('✅ Logout successful')
       }
       
-      // Force page reload to clear any cached data and redirect to login
+      // Redirect to login page
       window.location.href = '/'
       
     } catch (error) {
       console.error('Logout error:', error)
-      // Still redirect even if there's an error
       window.location.href = '/'
     }
   }
