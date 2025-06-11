@@ -19,6 +19,7 @@ interface LoginFormProps {
 export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [redirecting, setRedirecting] = useState(false)
   
   // Add error boundary for useAuth
   let auth;
@@ -44,24 +45,34 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
 
   // Handle successful login redirect
   useEffect(() => {
-    if (!authLoading && user && !isLoading) {
-      console.log('User logged in successfully, redirecting...')
+    console.log('LoginForm useEffect:', { 
+      user: user?.email, 
+      authLoading, 
+      isLoading, 
+      redirecting 
+    })
+    
+    if (!authLoading && user && !redirecting) {
+      console.log('🚀 User authenticated, starting redirect...')
+      setRedirecting(true)
+      setIsLoading(false)
       
       // Determine redirect based on user role
       const redirectUrl = user.role === 'admin' ? '/admin-dashboard' : '/user-dashboard'
+      console.log(`🎯 Redirecting to: ${redirectUrl}`)
       
-      // Add small delay to ensure state is properly set
-      setTimeout(() => {
-        router.push(redirectUrl)
-      }, 100)
+      // Use replace instead of push to prevent back button issues
+      router.replace(redirectUrl)
     }
-  }, [user, authLoading, isLoading, router])
+  }, [user, authLoading, redirecting, router])
 
   const onSubmit = async (data: LoginFormData) => {
-    if (isLoading || authLoading) return
+    if (isLoading || authLoading || redirecting) return
     
+    console.log('🔄 Starting login process...')
     setIsLoading(true)
     setMessage('')
+    setRedirecting(false)
     onLoginStart()
     
     try {
@@ -73,11 +84,10 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
       const result = await login(data.email, data.password)
       
       if (result.success) {
-        console.log('Login API call successful, waiting for auth state...')
-        // Don't set loading to false here - let the useEffect handle redirection
-        // The loading state will be cleared when user state is updated
+        console.log('✅ Login API call successful, waiting for auth state...')
+        // Keep loading state - useEffect will handle redirect when user is set
       } else {
-        console.error('Login failed:', result.error)
+        console.error('❌ Login failed:', result.error)
         setMessage(result.error || 'Login failed')
         setIsLoading(false)
         onLoginError()
@@ -90,14 +100,29 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
     }
   }
 
-  // Show loading while auth is initializing or user is being fetched
-  const showLoading = isLoading || (authLoading && !user)
+  // Show loading while auth is initializing, processing login, or redirecting
+  const showLoading = isLoading || authLoading || redirecting
+
+  // Show different loading messages
+  const getLoadingMessage = () => {
+    if (redirecting) return 'Redirecting...'
+    if (isLoading) return 'Signing in...'
+    if (authLoading) return 'Loading...'
+    return 'Sign In'
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {message && (
         <div className="p-3 rounded-lg border bg-red-900/50 border-red-700 text-red-300">
           <p className="text-sm text-center">{message}</p>
+        </div>
+      )}
+
+      {/* Success message when redirecting */}
+      {redirecting && (
+        <div className="p-3 rounded-lg border bg-green-900/50 border-green-700 text-green-300">
+          <p className="text-sm text-center">Login successful! Redirecting...</p>
         </div>
       )}
 
@@ -144,14 +169,16 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
       <button
         type="submit"
         disabled={showLoading}
-        className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+        className={`w-full px-6 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+          redirecting 
+            ? 'bg-green-600 text-white' 
+            : 'bg-blue-600 hover:bg-blue-500 text-white disabled:hover:bg-blue-600'
+        }`}
       >
         {showLoading ? (
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-            <span>
-              {isLoading ? 'Signing in...' : 'Loading...'}
-            </span>
+            <span>{getLoadingMessage()}</span>
           </div>
         ) : (
           'Sign In'
@@ -172,6 +199,13 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
           </button>
         </p>
       </div>
+
+      {/* Debug info - remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-4 p-2 bg-gray-800 rounded text-xs text-gray-400">
+          Debug: user={user?.email || 'none'} | authLoading={authLoading.toString()} | isLoading={isLoading.toString()} | redirecting={redirecting.toString()}
+        </div>
+      )}
     </form>
   )
 }
