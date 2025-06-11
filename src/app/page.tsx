@@ -1,43 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, Suspense } from 'react'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { RegisterForm } from '@/components/auth/RegisterForm'
+import { VerificationMessage } from '@/components/auth/VerificationMessage'
 
 type AuthView = 'login' | 'register'
 
-export default function Home() {
+function HomeContent() {
   const [authView, setAuthView] = useState<AuthView>('login')
   const [isLoggingIn, setIsLoggingIn] = useState(false)
-  const [verificationMessage, setVerificationMessage] = useState<string | null>(null)
-  
-  const searchParams = useSearchParams()
-
-  useEffect(() => {
-    // Check for verification success
-    if (searchParams.get('verified') === 'true') {
-      setVerificationMessage('Email verified successfully! You can now sign in.')
-      setAuthView('login')
-      
-      // Clear the URL parameter after 5 seconds
-      setTimeout(() => {
-        setVerificationMessage(null)
-        window.history.replaceState({}, '', '/')
-      }, 5000)
-    }
-
-    // Check for auth errors
-    if (searchParams.get('error') === 'auth_error') {
-      setVerificationMessage('There was an error with email verification. Please try again.')
-      
-      // Clear the URL parameter after 5 seconds
-      setTimeout(() => {
-        setVerificationMessage(null)
-        window.history.replaceState({}, '', '/')
-      }, 5000)
-    }
-  }, [searchParams])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4">
@@ -63,15 +35,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Verification Message */}
-          {verificationMessage && (
-            <div className="mb-6 p-4 rounded-lg border bg-green-900/50 border-green-700 text-green-300">
-              <div className="flex items-center space-x-3">
-                <span className="text-lg">✅</span>
-                <p className="font-medium">{verificationMessage}</p>
-              </div>
-            </div>
-          )}
+          {/* Verification Message - wrapped in Suspense */}
+          <Suspense fallback={null}>
+            <VerificationMessage />
+          </Suspense>
 
           {/* Form Title */}
           <h2 className="text-center text-2xl font-bold text-white mb-6">
@@ -90,5 +57,17 @@ export default function Home() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-gray-600 border-t-blue-500 rounded-full animate-spin"></div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   )
 }
