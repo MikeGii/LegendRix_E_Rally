@@ -1,6 +1,40 @@
+# Dependencies
 node_modules/
-dist/
+
+# Next.js build output
+.next/
+out/
+
+# Environment variables
 .env
 .env.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# OS generated files
 .DS_Store
-.next/
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Vercel
+.vercel
