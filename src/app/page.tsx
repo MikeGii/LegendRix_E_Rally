@@ -39,6 +39,7 @@ export default function Home() {
             {authView === 'login' ? 'Welcome Back' : 'Create Account'}
           </h2>
 
+          {/* Forms with their own switch links - no duplicate footer needed */}
           {authView === 'login' ? (
             <LoginForm 
               onSwitchToRegister={() => setAuthView('register')}
@@ -48,21 +49,6 @@ export default function Home() {
           ) : (
             <RegisterForm onSwitchToLogin={() => setAuthView('login')} />
           )}
-
-          {/* Footer */}
-          <div className="mt-8 text-center text-sm text-gray-400">
-            <p>
-              {authView === 'login' 
-                ? "Don't have an account?" 
-                : "Already have an account?"}{' '}
-              <button
-                onClick={() => setAuthView(authView === 'login' ? 'register' : 'login')}
-                className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
-              >
-                {authView === 'login' ? 'Register' : 'Login'}
-              </button>
-            </p>
-          </div>
         </div>
       </div>
     </div>

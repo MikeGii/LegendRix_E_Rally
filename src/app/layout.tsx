@@ -1,12 +1,13 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
+import { Inter } from 'next/font/google'
+import { AuthProvider } from '@/components/AuthProvider'
+import { ViewProvider } from '@/components/ViewProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'LegendRix E-Rally',
-  description: 'The ultimate e-rally experience',
+  description: 'E-Sports Rally Championship Registration System',
 }
 
 export default function RootLayout({
@@ -17,7 +18,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {children}
+        <AuthProvider>
+          <ViewProvider>
+            {children}
+          </ViewProvider>
+        </AuthProvider>
       </body>
     </html>
   )

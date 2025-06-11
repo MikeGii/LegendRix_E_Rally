@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useAuth } from '@/components/AuthProvider'
 
 interface RegisterFormData {
   name: string
@@ -16,7 +17,22 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  
+  // Add error boundary for useAuth
+  let auth;
+  try {
+    auth = useAuth()
+  } catch (error) {
+    console.error('Auth context error:', error)
+    return (
+      <div className="p-4 bg-red-900/50 border border-red-700 rounded-lg">
+        <p className="text-red-300">Authentication system not available. Please refresh the page.</p>
+      </div>
+    )
+  }
+
+  const { register: registerUser } = auth
   
   const {
     register,
@@ -29,24 +45,49 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true)
-    setMessage('')
+    setMessage(null)
     
-    console.log('Registration attempt with:', data)
+    try {
+      const result = await registerUser(data.email, data.password, data.name)
+      
+      if (result.success) {
+        setMessage({
+          type: 'success',
+          text: 'Registration successful! Check your email to verify your account.'
+        })
+      } else {
+        setMessage({
+          type: 'error',
+          text: result.error || 'Registration failed'
+        })
+      }
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: 'Registration failed. Please try again.'
+      })
+    }
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Registration would be processed here')
-      setMessage('Registration would be processed here (simulated)')
-      setIsLoading(false)
-    }, 1500)
+    setIsLoading(false)
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {message && (
+        <div className={`p-3 rounded-lg border ${
+          message.type === 'success' 
+            ? 'bg-green-900/50 border-green-700 text-green-300' 
+            : 'bg-red-900/50 border-red-700 text-red-300'
+        }`}>
+          <p className="text-sm text-center">{message.text}</p>
+        </div>
+      )}
+
       <div>
         <input
           type="text"
           placeholder="Full name"
+          disabled={isLoading}
           {...register('name', {
             required: 'Name is required',
             minLength: {
@@ -65,6 +106,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         <input
           type="email"
           placeholder="Email address"
+          disabled={isLoading}
           {...register('email', {
             required: 'Email is required',
             pattern: {
@@ -83,6 +125,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         <input
           type="password"
           placeholder="Password"
+          disabled={isLoading}
           {...register('password', {
             required: 'Password is required',
             minLength: {
@@ -101,6 +144,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         <input
           type="password"
           placeholder="Confirm password"
+          disabled={isLoading}
           {...register('confirmPassword', {
             required: 'Please confirm your password',
             validate: (value) => value === password || 'Passwords do not match'
@@ -127,13 +171,6 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         )}
       </button>
 
-      {/* Message */}
-      {message && (
-        <div className="p-3 rounded-lg border bg-gray-800/50 border-gray-700 text-gray-300">
-          <p className="text-sm text-center">{message}</p>
-        </div>
-      )}
-
       {/* Switch to Login */}
       <div className="text-center">
         <p className="text-gray-500 text-sm">
@@ -141,6 +178,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           <button
             type="button"
             onClick={onSwitchToLogin}
+            disabled={isLoading}
             className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Sign in here

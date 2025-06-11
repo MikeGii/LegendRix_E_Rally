@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useAuth } from '@/components/AuthProvider'
+import { useRouter } from 'next/navigation'
 
 interface LoginFormData {
   email: string
@@ -16,6 +18,23 @@ interface LoginFormProps {
 
 export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  
+  // Add error boundary for useAuth
+  let auth;
+  try {
+    auth = useAuth()
+  } catch (error) {
+    console.error('Auth context error:', error)
+    return (
+      <div className="p-4 bg-red-900/50 border border-red-700 rounded-lg">
+        <p className="text-red-300">Authentication system not available. Please refresh the page.</p>
+      </div>
+    )
+  }
+
+  const { login } = auth
+  const router = useRouter()
   
   const {
     register,
@@ -25,20 +44,35 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true)
+    setMessage('')
     onLoginStart()
     
-    console.log('Login attempt with:', data)
+    try {
+      const result = await login(data.email, data.password)
+      
+      if (result.success) {
+        // Redirect to appropriate dashboard
+        router.push('/user-dashboard')
+      } else {
+        setMessage(result.error || 'Login failed')
+        onLoginError()
+      }
+    } catch (error) {
+      setMessage('Login failed. Please try again.')
+      onLoginError()
+    }
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Login would be processed here')
-      setIsLoading(false)
-      onLoginError() // Always show error since we're not implementing real auth yet
-    }, 1500)
+    setIsLoading(false)
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {message && (
+        <div className="p-3 rounded-lg border bg-red-900/50 border-red-700 text-red-300">
+          <p className="text-sm text-center">{message}</p>
+        </div>
+      )}
+
       <div>
         <input
           type="email"
@@ -85,7 +119,7 @@ export function LoginForm({ onSwitchToRegister, onLoginStart, onLoginError }: Lo
         {isLoading ? (
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-            Authenticating...
+            Signing in...
           </div>
         ) : (
           'Sign In'
