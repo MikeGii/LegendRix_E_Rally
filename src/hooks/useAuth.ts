@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+// src/hooks/useAuth.ts
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface UserProfile {
@@ -16,233 +17,272 @@ export function useAuth() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [session, setSession] = useState<any>(null)
+  
+  // Prevent multiple initializations
+  const initialized = useRef(false)
+  const subscriptionRef = useRef<any>(null)
 
   useEffect(() => {
-    // Get initial session but don't auto-login
-    const getInitialSession = async () => {
+    // Prevent multiple initializations
+    if (initialized.current) return
+
+    initialized.current = true
+    console.log('🔄 Starting auth initialization...')
+
+    const initAuth = async () => {
       try {
-        console.log('🔍 Checking for existing session...')
+        // Step 1: Get current session
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
-          console.error('Session error:', error)
+          console.error('❌ Session error:', error)
           setLoading(false)
           return
         }
 
         if (session) {
-          console.log('📱 Found existing session:', session.user.email)
+          console.log('✅ Session found for:', session.user.email)
+          setSession(session)
           
-          // Check if user intentionally logged in (stored in localStorage for persistence across refreshes)
-          const intentionalLogin = localStorage.getItem('auth_intended_login')
-          
-          if (intentionalLogin) {
-            console.log('🔄 Restoring intentional login session')
-            setSession(session)
-            await fetchUserProfile(session.user.id)
-          } else {
-            console.log('🚪 No intentional login found, clearing session')
-            await supabase.auth.signOut()
-            setLoading(false)
-          }
+          // Step 2: Load user profile
+          await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
         } else {
-          console.log('❌ No session found')
+          console.log('ℹ️ No session found')
           setLoading(false)
         }
       } catch (error) {
-        console.error('Error getting session:', error)
+        console.error('❌ Auth initialization error:', error)
         setLoading(false)
       }
     }
 
-    getInitialSession()
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔄 Auth state changed:', event, session?.user?.email)
-        
-        if (event === 'SIGNED_IN' && session) {
-          console.log('✅ User signed in, fetching profile...')
-          setSession(session)
-          localStorage.setItem('auth_intended_login', 'true')
-          await fetchUserProfile(session.user.id)
-        } else if (event === 'SIGNED_OUT') {
-          console.log('🚪 User signed out')
-          setUser(null)
-          setSession(null)
-          localStorage.removeItem('auth_intended_login')
-          setLoading(false)
+    // Setup auth state listener (only once)
+    subscriptionRef.current = supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log('🔄 Auth event:', event)
+    
+    if (event === 'SIGNED_IN' && session) {
+        // Only proceed if we don't already have a user
+        if (!user) {
+        await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
         }
-      }
-    )
-
-    return () => {
-      subscription.unsubscribe()
+    } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setSession(null)
     }
-  }, [])
+    
+    // Always set loading to false after auth state change
+    setLoading(false)
+    })
 
-  const fetchUserProfile = async (userId: string) => {
+    initAuth()
+
+    // Cleanup function
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.data.subscription.unsubscribe()
+      }
+    }
+  }, []) // Empty dependency array - only run once
+
+  const loadUserProfile = async (userId: string, email: string, name?: string) => {
     try {
-      console.log('👤 Fetching user profile for:', userId)
+      console.log('📋 Loading profile for:', email)
       
-      const { data, error } = await supabase
+      // Step 1: Check if user exists in database
+      const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single()
 
-      if (error) {
-        console.error('❌ Error fetching user profile:', error)
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // User doesn't exist, create them
+        console.log('📝 Creating new user record...')
         
-        if (error.code === 'PGRST116') {
-          console.log('User not found in users table')
+        const newUserData = {
+          id: userId,
+          email: email,
+          name: name || email,
+          role: email === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
+          email_verified: true, // Assume verified if they can log in
+          admin_approved: email === 'ewrc.admin@ideemoto.ee',
+          status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval'
         }
-        setUser(null)
+
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert([newUserData])
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('❌ Failed to create user:', createError)
+          setLoading(false)
+          return
+        }
+
+        console.log('✅ User created:', newUser.email)
+        setUser(newUser)
         setLoading(false)
         return
       }
 
-      console.log('✅ User profile loaded:', data.email)
-      setUser({
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        email_verified: data.email_verified,
-        admin_approved: data.admin_approved,
-        status: data.status,
-        created_at: data.created_at
-      })
+      if (fetchError) {
+        console.error('❌ Failed to fetch user:', fetchError)
+        setLoading(false)
+        return
+      }
+
+      // User exists
+      console.log('✅ User loaded:', existingUser.email, '| Role:', existingUser.role)
+      setUser(existingUser)
       setLoading(false)
-      
+
     } catch (error) {
-      console.error('❌ Error fetching user profile:', error)
-      setUser(null)
+      console.error('❌ Profile loading error:', error)
       setLoading(false)
     }
   }
 
-  const register = async (email: string, password: string, name: string) => {
+  const login = async (email: string, password: string) => {
+    console.log('🔐 Starting login process...')
+    setLoading(true)
+
     try {
-      console.log('=== REGISTRATION START ===')
-      console.log('Email:', email)
-      console.log('Name:', name)
+      // Step 1: Authenticate with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      })
+
+      if (error) {
+        console.error('❌ Authentication failed:', error.message)
+        setLoading(false)
+        return { success: false, error: error.message }
+      }
+
+      if (!data.user || !data.session) {
+        console.error('❌ No user or session returned')
+        setLoading(false)
+        return { success: false, error: 'Login failed - no session created' }
+      }
+
+      console.log('✅ Authentication successful')
       
+      // Step 2: Check if user exists in database
+      const { data: dbUser, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email.trim())
+        .single()
+
+      if (dbError && dbError.code === 'PGRST116') {
+        // User not in database
+        console.log('📝 User not in database, creating...')
+        
+        const newUserData = {
+          id: data.user.id,
+          email: email.trim(),
+          name: data.user.user_metadata?.name || email.trim(),
+          role: email.trim() === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
+          email_verified: true,
+          admin_approved: email.trim() === 'ewrc.admin@ideemoto.ee',
+          status: email.trim() === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval'
+        }
+
+        const { data: createdUser, error: createError } = await supabase
+          .from('users')
+          .insert([newUserData])
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('❌ Failed to create user in database:', createError)
+          await supabase.auth.signOut() // Clean up auth session
+          setLoading(false)
+          return { success: false, error: 'Failed to create user profile' }
+        }
+
+        console.log('✅ User created in database')
+        setUser(createdUser)
+        setSession(data.session)
+        setLoading(false)
+        return { success: true, user: createdUser }
+      }
+
+      if (dbError) {
+        console.error('❌ Database error:', dbError)
+        await supabase.auth.signOut()
+        setLoading(false)
+        return { success: false, error: 'Database error during login' }
+      }
+
+      // Step 3: User exists, set them
+      console.log('✅ User found in database:', dbUser.role)
+      setUser(dbUser)
+      setSession(data.session)
+      setLoading(false)
+      return { success: true, user: dbUser }
+
+    } catch (error: any) {
+      console.error('❌ Login error:', error)
+      setLoading(false)
+      return { success: false, error: error.message || 'Login failed' }
+    }
+  }
+
+  const register = async (email: string, password: string, name: string) => {
+    console.log('📝 Starting registration...')
+    
+    try {
       const { data, error } = await supabase.auth.signUp({
-        email: email,
+        email: email.trim(),
         password: password,
         options: {
-          data: {
-            name: name
-          }
+          data: { name: name.trim() }
         }
       })
 
       if (error) {
-        console.error('Supabase auth signup error:', error)
+        console.error('❌ Registration error:', error)
         return { success: false, error: error.message }
       }
 
       if (data.user && !data.session) {
+        // Email confirmation required
         return { 
           success: true, 
           message: 'Registration successful! Please check your email to verify your account.' 
         }
       }
 
-      if (data.user && data.session) {
-        console.log('Registration successful with immediate login')
-        return { success: true }
-      }
-
+      // Immediate login (email confirmation disabled)
       return { success: true }
     } catch (error: any) {
-      console.error('Registration error:', error)
+      console.error('❌ Registration error:', error)
       return { success: false, error: error.message || 'Registration failed' }
     }
   }
 
-  const login = async (email: string, password: string) => {
-    try {
-      console.log('=== LOGIN START ===')
-      console.log('📧 Email:', email)
-      
-      // Mark this as an intended login
-      localStorage.setItem('auth_intended_login', 'true')
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password
-      })
-
-      console.log('📊 Supabase login response:', {
-        user: data.user?.email,
-        session: !!data.session,
-        error: error?.message
-      })
-
-      if (error) {
-        console.error('❌ Login error:', error)
-        localStorage.removeItem('auth_intended_login')
-        return { success: false, error: error.message }
-      }
-
-      if (data.session && data.user) {
-        console.log('✅ Login successful, session created')
-        return { success: true }
-      }
-
-      localStorage.removeItem('auth_intended_login')
-      return { success: false, error: 'Login failed - no session created' }
-    } catch (error: any) {
-      console.error('❌ Login error:', error)
-      localStorage.removeItem('auth_intended_login')
-      return { success: false, error: error.message || 'Login failed' }
-    }
-  }
-
   const logout = async () => {
-    try {
-      console.log('=== LOGOUT START ===')
-      
-      // Clear session storage first
-      localStorage.removeItem('auth_intended_login')
-      sessionStorage.clear()
-      
-      // Clear local storage to prevent auto-login
-      localStorage.removeItem('sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1] + '-auth-token')
-      
-      // Clear local state immediately for better UX
-      setUser(null)
-      setSession(null)
-      setLoading(false)
-      
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut({ scope: 'global' })
-      
-      if (error) {
-        console.error('❌ Logout error:', error)
-      } else {
-        console.log('✅ Logout successful')
-      }
-      
-      // Force a complete page reload to clear all state
-      window.location.href = '/'
-      
-    } catch (error) {
-      console.error('❌ Logout error:', error)
-      // Force redirect even if logout fails
-      window.location.href = '/'
-    }
+    console.log('🚪 Logging out...')
+    
+    // Clear state immediately
+    setUser(null)
+    setSession(null)
+    setLoading(false)
+    
+    // Sign out from Supabase
+    await supabase.auth.signOut()
+    console.log('✅ Logged out')
   }
 
   return {
     user,
     session,
     loading,
-    register,
     login,
+    register,
     logout
   }
 }

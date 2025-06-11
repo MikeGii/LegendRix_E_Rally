@@ -1,3 +1,4 @@
+// src/components/AuthProvider.tsx
 'use client'
 
 import { createContext, useContext, ReactNode } from 'react'
@@ -16,7 +17,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>
   register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string; message?: string }>
   logout: () => Promise<void>
   loading: boolean
@@ -24,9 +25,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Single instance of auth to prevent multiple initializations
+let authInstance: any = null
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const auth = useSupabaseAuth()
-
+  
   return (
     <AuthContext.Provider value={auth}>
       {children}

@@ -39,7 +39,6 @@ export default function Home() {
             {authView === 'login' ? 'Welcome Back' : 'Create Account'}
           </h2>
 
-          {/* Forms with their own switch links - no duplicate footer needed */}
           {authView === 'login' ? (
             <LoginForm 
               onSwitchToRegister={() => setAuthView('register')}

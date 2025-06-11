@@ -6,10 +6,12 @@ import { AdminDashboard } from './AdminDashboard'
 import { UserDashboard } from './UserDashboard'
 
 export function SmartDashboard() {
-  const { user } = useAuth()
-  const { currentView } = useView()
+const { user, loading } = useAuth()
+const { currentView } = useView()
 
-  if (!user) return null
+if (loading || !user) {
+    return <div>Loading...</div>
+}
 
   // For regular users, always show user dashboard
   if (user.role === 'user') {
