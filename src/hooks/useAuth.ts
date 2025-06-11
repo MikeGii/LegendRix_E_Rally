@@ -78,28 +78,42 @@ export function useAuth() {
   }, [])
 
   const loadUserProfile = async (userId: string, email: string, name?: string, retryCount = 0) => {
-    console.log('📋 Loading profile for:', email, '| User ID:', userId.substring(0, 8))
+    console.log('📋 Loading profile for:', email, '| User ID:', userId.substring(0, 8), '| Attempt:', retryCount + 1)
     
     try {
-      // Simple database query with retry logic
-      const { data: existingUser, error: fetchError } = await supabase
+      // Force refresh the Supabase client session to prevent stale connections
+      console.log('🔄 Refreshing Supabase session...')
+      await supabase.auth.refreshSession()
+      
+      // Set a reasonable timeout for the entire operation
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile loading timeout')), 8000)
+      })
+      
+      // Race the query against timeout
+      const queryPromise = supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
 
+      console.log('🔍 Executing database query...')
+      const result = await Promise.race([queryPromise, timeoutPromise])
+      const { data: existingUser, error: fetchError } = result as any
+
       if (fetchError) {
         console.error('❌ Database query error:', fetchError)
         
-        // Retry once if it's a connection issue
-        if (retryCount < 1 && (fetchError.code === '08000' || fetchError.code === '08006')) {
-          console.log('🔄 Retrying database query...')
+        // Retry logic for specific errors or connection issues
+        if (retryCount < 2) {
+          console.log('🔄 Retrying database query in 1 second... (attempt', retryCount + 2, ')')
           setTimeout(() => {
             loadUserProfile(userId, email, name, retryCount + 1)
           }, 1000)
           return
         }
         
+        console.error('❌ Max retries reached, giving up')
         setLoading(false)
         return
       }
@@ -123,8 +137,19 @@ export function useAuth() {
       setUser(existingUser)
       setLoading(false)
 
-    } catch (error) {
-      console.error('❌ Profile loading exception:', error)
+    } catch (error: any) {
+      console.error('❌ Profile loading exception:', error.message)
+      
+      // If it's a timeout, retry
+      if (error.message === 'Profile loading timeout' && retryCount < 2) {
+        console.log('⏰ Query timed out, retrying... (attempt', retryCount + 2, ')')
+        setTimeout(() => {
+          loadUserProfile(userId, email, name, retryCount + 1)
+        }, 1000)
+        return
+      }
+      
+      console.error('❌ Profile loading failed completely')
       setLoading(false)
     }
   }
