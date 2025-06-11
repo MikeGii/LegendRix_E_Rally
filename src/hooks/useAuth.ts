@@ -347,18 +347,61 @@ export function useAuth() {
     }
   }
 
-  const logout = async () => {
-    console.log('🚪 Starting logout process...')
+    const logout = async () => {
+    console.log('🚪 Starting comprehensive logout process...')
     
-    setUser(null)
-    setSession(null)
-    setLoading(false)
-    currentUserIdRef.current = null
-    loadingProfileRef.current = false
-    
-    await supabase.auth.signOut()
-    console.log('✅ Logout completed')
-  }
+    try {
+        // Clear React state immediately
+        setUser(null)
+        setSession(null)
+        setLoading(false)
+        currentUserIdRef.current = null
+        loadingProfileRef.current = false
+        
+        // Sign out from Supabase
+        const { error } = await supabase.auth.signOut({ scope: 'global' })
+        
+        if (error) {
+        console.error('❌ Supabase signOut error:', error)
+        }
+        
+        // Clear all possible storage locations
+        if (typeof window !== 'undefined') {
+        try {
+            // Clear localStorage
+            window.localStorage.removeItem('supabase.auth.token')
+            window.localStorage.removeItem('sb-localhost-auth-token')
+            window.localStorage.removeItem('sb-' + window.location.hostname + '-auth-token')
+            
+            // Clear any other Supabase keys
+            Object.keys(window.localStorage).forEach(key => {
+            if (key.startsWith('supabase') || key.startsWith('sb-')) {
+                window.localStorage.removeItem(key)
+            }
+            })
+            
+            // Clear sessionStorage
+            window.sessionStorage.clear()
+            
+            console.log('✅ All storage cleared')
+        } catch (storageError) {
+            console.error('❌ Storage clearing error:', storageError)
+        }
+        }
+        
+        console.log('✅ Logout process completed successfully')
+        
+    } catch (error) {
+        console.error('❌ Logout process failed:', error)
+        
+        // Force clear state even if logout fails
+        setUser(null)
+        setSession(null)
+        setLoading(false)
+        currentUserIdRef.current = null
+        loadingProfileRef.current = false
+    }
+    }
 
   return {
     user,

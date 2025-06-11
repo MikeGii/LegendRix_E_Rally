@@ -52,9 +52,35 @@ function HomeContent() {
   }
 
   const handleLogout = async () => {
-    await logout()
-    // Refresh page to ensure clean state
-    window.location.reload()
+    console.log('🚪 Main page logout initiated...')
+    
+    try {
+      // Clear all auth state first
+      await logout()
+      
+      // Clear any remaining session data
+      if (typeof window !== 'undefined') {
+        // Clear localStorage
+        window.localStorage.clear()
+        // Clear sessionStorage  
+        window.sessionStorage.clear()
+        // Clear any supabase specific storage
+        window.localStorage.removeItem('supabase.auth.token')
+        window.localStorage.removeItem('sb-localhost-auth-token')
+      }
+      
+      console.log('✅ Logout completed, forcing page reload...')
+      
+      // Force a hard reload to completely reset the app state
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 100)
+      
+    } catch (error) {
+      console.error('❌ Logout error:', error)
+      // Force reload even if logout fails
+      window.location.href = '/'
+    }
   }
 
   // Simple loading state to prevent hydration issues

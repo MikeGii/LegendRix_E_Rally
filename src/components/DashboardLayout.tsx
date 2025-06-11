@@ -14,9 +14,36 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
 
   const handleLogout = async () => {
-    await logout()
-    // Redirect to main page after logout and refresh to ensure clean state
-    window.location.href = '/'
+    console.log('🚪 Dashboard logout initiated...')
+    
+    try {
+      // Clear all auth state first
+      await logout()
+      
+      // Clear any remaining session data completely
+      if (typeof window !== 'undefined') {
+        // Clear all localStorage
+        window.localStorage.clear()
+        // Clear sessionStorage  
+        window.sessionStorage.clear()
+        // Clear specific supabase auth keys
+        window.localStorage.removeItem('supabase.auth.token')
+        window.localStorage.removeItem('sb-localhost-auth-token')
+        window.localStorage.removeItem('sb-' + window.location.hostname + '-auth-token')
+      }
+      
+      console.log('✅ Dashboard logout completed, redirecting to main page...')
+      
+      // Redirect to main page with a hard navigation to ensure clean state
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 100)
+      
+    } catch (error) {
+      console.error('❌ Dashboard logout error:', error)
+      // Force redirect even if logout fails
+      window.location.href = '/'
+    }
   }
 
   const handleBackToMain = () => {
