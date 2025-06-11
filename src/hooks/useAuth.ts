@@ -46,7 +46,7 @@ export function useAuth() {
           setSession(session)
           
           // Step 2: Load user profile with timeout protection
-          await loadUserProfileWithTimeout(session.user.id, session.user.email!, session.user.user_metadata?.name)
+          await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
         } else {
           console.log('ℹ️ No session found')
           setLoading(false)
@@ -62,11 +62,12 @@ export function useAuth() {
       console.log('🔄 Auth event:', event)
       
       if (event === 'SIGNED_IN' && session) {
+        console.log('🔄 Auth state: SIGNED_IN detected')
         setSession(session)
-        // Load profile with timeout protection
-        await loadUserProfileWithTimeout(session.user.id, session.user.email!, session.user.user_metadata?.name)
+        // Load profile for new sign-ins
+        await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
       } else if (event === 'SIGNED_OUT') {
-        console.log('🚪 Clearing user state on sign out')
+        console.log('🚪 Auth state: SIGNED_OUT detected')
         setUser(null)
         setSession(null)
         setLoading(false)
@@ -90,34 +91,23 @@ export function useAuth() {
     }
   }, []) // Empty dependency array - only run once
 
-  const loadUserProfileWithTimeout = async (userId: string, email: string, name?: string) => {
+  const loadUserProfile = async (userId: string, email: string, name?: string) => {
     console.log('📋 Loading profile for:', email, '| User ID:', userId.substring(0, 8))
     
     // Set a timeout to prevent infinite loading
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current)
+    }
+    
     loadingTimeoutRef.current = setTimeout(() => {
       console.error('⏰ Profile loading timeout - forcing completion')
       setLoading(false)
-    }, 10000) // 10 second timeout
+    }, 15000) // 15 second timeout
 
     try {
-      // Test database connection first
-      console.log('🔍 Testing database connection...')
-      const { data: testData, error: testError } = await supabase
-        .from('users')
-        .select('count(*)')
-        .limit(1)
-
-      if (testError) {
-        console.error('❌ Database connection test failed:', testError)
-        setLoading(false)
-        clearTimeout(loadingTimeoutRef.current!)
-        return
-      }
-
-      console.log('✅ Database connection OK, proceeding with user lookup')
-
-      // Step 1: Check if user exists in database
-      console.log('🔍 Querying user by ID:', userId)
+      // Step 1: Try to get user directly (no test query needed)
+      console.log('🔍 Querying user by ID:', userId.substring(0, 8))
+      
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
@@ -132,6 +122,14 @@ export function useAuth() {
           details: fetchError.details,
           hint: fetchError.hint
         })
+        
+        // If it's an RLS or permissions error, try to create the user anyway
+        if (fetchError.code === 'PGRST301' || fetchError.code === 'PGRST116') {
+          console.log('🔄 RLS/permissions error, attempting to create user...')
+          await createNewUser(userId, email, name)
+          return
+        }
+        
         setLoading(false)
         clearTimeout(loadingTimeoutRef.current!)
         return
@@ -141,47 +139,11 @@ export function useAuth() {
 
       if (!existingUser) {
         // User doesn't exist, create them
-        console.log('📝 Creating new user record for:', email)
-        
-        const newUserData = {
-          id: userId,
-          email: email,
-          name: name || email,
-          role: email === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
-          email_verified: true,
-          admin_approved: email === 'ewrc.admin@ideemoto.ee',
-          status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval'
-        }
-
-        console.log('📝 Inserting user data:', { ...newUserData, id: newUserData.id.substring(0, 8) })
-
-        const { data: newUser, error: createError } = await supabase
-          .from('users')
-          .insert([newUserData])
-          .select()
-          .single()
-
-        if (createError) {
-          console.error('❌ Failed to create user:', createError)
-          console.error('❌ Create error details:', {
-            code: createError.code,
-            message: createError.message,
-            details: createError.details,
-            hint: createError.hint
-          })
-          setLoading(false)
-          clearTimeout(loadingTimeoutRef.current!)
-          return
-        }
-
-        console.log('✅ User created successfully:', newUser.email, '| Role:', newUser.role)
-        setUser(newUser)
-        setLoading(false)
-        clearTimeout(loadingTimeoutRef.current!)
+        await createNewUser(userId, email, name)
         return
       }
 
-      // User exists
+      // User exists - success!
       console.log('✅ User found in database:', {
         email: existingUser.email,
         role: existingUser.role,
@@ -196,11 +158,56 @@ export function useAuth() {
 
     } catch (error) {
       console.error('❌ Profile loading exception:', error)
-      console.error('❌ Exception details:', {
-        name: (error as Error).name,
-        message: (error as Error).message,
-        stack: (error as Error).stack
+      setLoading(false)
+      clearTimeout(loadingTimeoutRef.current!)
+    }
+  }
+
+  const createNewUser = async (userId: string, email: string, name?: string) => {
+    console.log('📝 Creating new user record for:', email)
+    
+    try {
+      const newUserData = {
+        id: userId,
+        email: email,
+        name: name || email,
+        role: email === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
+        email_verified: true,
+        admin_approved: email === 'ewrc.admin@ideemoto.ee',
+        status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval'
+      }
+
+      console.log('📝 Inserting user data:', { 
+        ...newUserData, 
+        id: newUserData.id.substring(0, 8) + '...' 
       })
+
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert([newUserData])
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('❌ Failed to create user:', createError)
+        console.error('❌ Create error details:', {
+          code: createError.code,
+          message: createError.message,
+          details: createError.details,
+          hint: createError.hint
+        })
+        setLoading(false)
+        clearTimeout(loadingTimeoutRef.current!)
+        return
+      }
+
+      console.log('✅ User created successfully:', newUser.email, '| Role:', newUser.role)
+      setUser(newUser)
+      setLoading(false)
+      clearTimeout(loadingTimeoutRef.current!)
+      
+    } catch (createException) {
+      console.error('❌ User creation exception:', createException)
       setLoading(false)
       clearTimeout(loadingTimeoutRef.current!)
     }
@@ -235,7 +242,7 @@ export function useAuth() {
       }
 
       console.log('✅ Authentication successful for:', data.user.email)
-      console.log('🔄 Waiting for auth state listener to load profile...')
+      console.log('🔄 Auth state listener will handle profile loading...')
       
       // The auth state change listener will handle loading the profile
       // Don't set loading to false here - let the profile loading complete
