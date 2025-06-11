@@ -21,6 +21,7 @@ export function useAuth() {
   // Prevent multiple initializations
   const initialized = useRef(false)
   const subscriptionRef = useRef<any>(null)
+  const loadingTimeoutRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
     // Prevent multiple initializations
@@ -44,8 +45,8 @@ export function useAuth() {
           console.log('✅ Session found for:', session.user.email)
           setSession(session)
           
-          // Step 2: Load user profile with retry logic
-          await loadUserProfileWithRetry(session.user.id, session.user.email!, session.user.user_metadata?.name)
+          // Step 2: Load user profile with timeout protection
+          await loadUserProfileWithTimeout(session.user.id, session.user.email!, session.user.user_metadata?.name)
         } else {
           console.log('ℹ️ No session found')
           setLoading(false)
@@ -62,14 +63,17 @@ export function useAuth() {
       
       if (event === 'SIGNED_IN' && session) {
         setSession(session)
-        // Only proceed if we don't already have a user
-        if (!user) {
-          await loadUserProfileWithRetry(session.user.id, session.user.email!, session.user.user_metadata?.name)
-        }
+        // Load profile with timeout protection
+        await loadUserProfileWithTimeout(session.user.id, session.user.email!, session.user.user_metadata?.name)
       } else if (event === 'SIGNED_OUT') {
+        console.log('🚪 Clearing user state on sign out')
         setUser(null)
         setSession(null)
         setLoading(false)
+        // Clear any pending timeouts
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current)
+        }
       }
     })
 
@@ -80,48 +84,76 @@ export function useAuth() {
       if (subscriptionRef.current) {
         subscriptionRef.current.data.subscription.unsubscribe()
       }
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
     }
   }, []) // Empty dependency array - only run once
 
-  const loadUserProfileWithRetry = async (userId: string, email: string, name?: string, retryCount = 0) => {
+  const loadUserProfileWithTimeout = async (userId: string, email: string, name?: string) => {
+    console.log('📋 Loading profile for:', email, '| User ID:', userId.substring(0, 8))
+    
+    // Set a timeout to prevent infinite loading
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.error('⏰ Profile loading timeout - forcing completion')
+      setLoading(false)
+    }, 10000) // 10 second timeout
+
     try {
-      console.log('📋 Loading profile for:', email)
-      
-      // Step 1: Check if user exists in database with error handling
+      // Test database connection first
+      console.log('🔍 Testing database connection...')
+      const { data: testData, error: testError } = await supabase
+        .from('users')
+        .select('count(*)')
+        .limit(1)
+
+      if (testError) {
+        console.error('❌ Database connection test failed:', testError)
+        setLoading(false)
+        clearTimeout(loadingTimeoutRef.current!)
+        return
+      }
+
+      console.log('✅ Database connection OK, proceeding with user lookup')
+
+      // Step 1: Check if user exists in database
+      console.log('🔍 Querying user by ID:', userId)
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
-        .maybeSingle() // Use maybeSingle instead of single to avoid errors when no rows
-
-      // If there's a database error and we haven't retried yet, try once more
-      if (fetchError && retryCount < 1) {
-        console.warn('⚠️ Database error, retrying...', fetchError)
-        setTimeout(() => {
-          loadUserProfileWithRetry(userId, email, name, retryCount + 1)
-        }, 1000)
-        return
-      }
+        .maybeSingle()
 
       if (fetchError) {
-        console.error('❌ Persistent database error:', fetchError)
+        console.error('❌ Database query error:', fetchError)
+        console.error('❌ Error details:', {
+          code: fetchError.code,
+          message: fetchError.message,
+          details: fetchError.details,
+          hint: fetchError.hint
+        })
         setLoading(false)
+        clearTimeout(loadingTimeoutRef.current!)
         return
       }
+
+      console.log('📊 Query result:', existingUser ? 'User found' : 'User not found')
 
       if (!existingUser) {
         // User doesn't exist, create them
-        console.log('📝 Creating new user record...')
+        console.log('📝 Creating new user record for:', email)
         
         const newUserData = {
           id: userId,
           email: email,
           name: name || email,
           role: email === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
-          email_verified: true, // Assume verified if they can log in
+          email_verified: true,
           admin_approved: email === 'ewrc.admin@ideemoto.ee',
           status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval'
         }
+
+        console.log('📝 Inserting user data:', { ...newUserData, id: newUserData.id.substring(0, 8) })
 
         const { data: newUser, error: createError } = await supabase
           .from('users')
@@ -131,42 +163,59 @@ export function useAuth() {
 
         if (createError) {
           console.error('❌ Failed to create user:', createError)
+          console.error('❌ Create error details:', {
+            code: createError.code,
+            message: createError.message,
+            details: createError.details,
+            hint: createError.hint
+          })
           setLoading(false)
+          clearTimeout(loadingTimeoutRef.current!)
           return
         }
 
-        console.log('✅ User created:', newUser.email)
+        console.log('✅ User created successfully:', newUser.email, '| Role:', newUser.role)
         setUser(newUser)
         setLoading(false)
+        clearTimeout(loadingTimeoutRef.current!)
         return
       }
 
       // User exists
-      console.log('✅ User loaded:', existingUser.email, '| Role:', existingUser.role)
+      console.log('✅ User found in database:', {
+        email: existingUser.email,
+        role: existingUser.role,
+        status: existingUser.status,
+        emailVerified: existingUser.email_verified,
+        adminApproved: existingUser.admin_approved
+      })
+      
       setUser(existingUser)
       setLoading(false)
+      clearTimeout(loadingTimeoutRef.current!)
 
     } catch (error) {
-      console.error('❌ Profile loading error:', error)
-      
-      // If it's a network/connection error and we haven't retried, try once more
-      if (retryCount < 1) {
-        console.log('🔄 Retrying profile load...')
-        setTimeout(() => {
-          loadUserProfileWithRetry(userId, email, name, retryCount + 1)
-        }, 2000)
-        return
-      }
-      
+      console.error('❌ Profile loading exception:', error)
+      console.error('❌ Exception details:', {
+        name: (error as Error).name,
+        message: (error as Error).message,
+        stack: (error as Error).stack
+      })
       setLoading(false)
+      clearTimeout(loadingTimeoutRef.current!)
     }
   }
 
   const login = async (email: string, password: string) => {
-    console.log('🔐 Starting login process...')
+    console.log('🔐 Starting login process for:', email)
     setLoading(true)
 
     try {
+      // Clear any existing timeouts
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
+
       // Step 1: Authenticate with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -185,22 +234,23 @@ export function useAuth() {
         return { success: false, error: 'Login failed - no session created' }
       }
 
-      console.log('✅ Authentication successful')
+      console.log('✅ Authentication successful for:', data.user.email)
+      console.log('🔄 Waiting for auth state listener to load profile...')
       
       // The auth state change listener will handle loading the profile
-      // We don't need to do it here to avoid race conditions
+      // Don't set loading to false here - let the profile loading complete
       
       return { success: true }
 
     } catch (error: any) {
-      console.error('❌ Login error:', error)
+      console.error('❌ Login exception:', error)
       setLoading(false)
       return { success: false, error: error.message || 'Login failed' }
     }
   }
 
   const register = async (email: string, password: string, name: string) => {
-    console.log('📝 Starting registration...')
+    console.log('📝 Starting registration for:', email)
     
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -217,23 +267,28 @@ export function useAuth() {
       }
 
       if (data.user && !data.session) {
-        // Email confirmation required
+        console.log('✅ Registration successful, email confirmation required')
         return { 
           success: true, 
           message: 'Registration successful! Please check your email to verify your account.' 
         }
       }
 
-      // Immediate login (email confirmation disabled)
+      console.log('✅ Registration successful with immediate login')
       return { success: true }
     } catch (error: any) {
-      console.error('❌ Registration error:', error)
+      console.error('❌ Registration exception:', error)
       return { success: false, error: error.message || 'Registration failed' }
     }
   }
 
   const logout = async () => {
-    console.log('🚪 Logging out...')
+    console.log('🚪 Starting logout process...')
+    
+    // Clear any pending timeouts
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current)
+    }
     
     // Clear state immediately
     setUser(null)
@@ -242,7 +297,7 @@ export function useAuth() {
     
     // Sign out from Supabase
     await supabase.auth.signOut()
-    console.log('✅ Logged out')
+    console.log('✅ Logout completed')
   }
 
   return {
