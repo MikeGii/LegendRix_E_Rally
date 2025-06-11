@@ -44,8 +44,8 @@ export function useAuth() {
           console.log('✅ Session found for:', session.user.email)
           setSession(session)
           
-          // Step 2: Load user profile
-          await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
+          // Step 2: Load user profile with retry logic
+          await loadUserProfileWithRetry(session.user.id, session.user.email!, session.user.user_metadata?.name)
         } else {
           console.log('ℹ️ No session found')
           setLoading(false)
@@ -58,20 +58,19 @@ export function useAuth() {
 
     // Setup auth state listener (only once)
     subscriptionRef.current = supabase.auth.onAuthStateChange(async (event, session) => {
-    console.log('🔄 Auth event:', event)
-    
-    if (event === 'SIGNED_IN' && session) {
+      console.log('🔄 Auth event:', event)
+      
+      if (event === 'SIGNED_IN' && session) {
+        setSession(session)
         // Only proceed if we don't already have a user
         if (!user) {
-        await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
+          await loadUserProfileWithRetry(session.user.id, session.user.email!, session.user.user_metadata?.name)
         }
-    } else if (event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null)
         setSession(null)
-    }
-    
-    // Always set loading to false after auth state change
-    setLoading(false)
+        setLoading(false)
+      }
     })
 
     initAuth()
@@ -84,18 +83,33 @@ export function useAuth() {
     }
   }, []) // Empty dependency array - only run once
 
-  const loadUserProfile = async (userId: string, email: string, name?: string) => {
+  const loadUserProfileWithRetry = async (userId: string, email: string, name?: string, retryCount = 0) => {
     try {
       console.log('📋 Loading profile for:', email)
       
-      // Step 1: Check if user exists in database
+      // Step 1: Check if user exists in database with error handling
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle() // Use maybeSingle instead of single to avoid errors when no rows
 
-      if (fetchError && fetchError.code === 'PGRST116') {
+      // If there's a database error and we haven't retried yet, try once more
+      if (fetchError && retryCount < 1) {
+        console.warn('⚠️ Database error, retrying...', fetchError)
+        setTimeout(() => {
+          loadUserProfileWithRetry(userId, email, name, retryCount + 1)
+        }, 1000)
+        return
+      }
+
+      if (fetchError) {
+        console.error('❌ Persistent database error:', fetchError)
+        setLoading(false)
+        return
+      }
+
+      if (!existingUser) {
         // User doesn't exist, create them
         console.log('📝 Creating new user record...')
         
@@ -127,12 +141,6 @@ export function useAuth() {
         return
       }
 
-      if (fetchError) {
-        console.error('❌ Failed to fetch user:', fetchError)
-        setLoading(false)
-        return
-      }
-
       // User exists
       console.log('✅ User loaded:', existingUser.email, '| Role:', existingUser.role)
       setUser(existingUser)
@@ -140,6 +148,16 @@ export function useAuth() {
 
     } catch (error) {
       console.error('❌ Profile loading error:', error)
+      
+      // If it's a network/connection error and we haven't retried, try once more
+      if (retryCount < 1) {
+        console.log('🔄 Retrying profile load...')
+        setTimeout(() => {
+          loadUserProfileWithRetry(userId, email, name, retryCount + 1)
+        }, 2000)
+        return
+      }
+      
       setLoading(false)
     }
   }
@@ -169,60 +187,10 @@ export function useAuth() {
 
       console.log('✅ Authentication successful')
       
-      // Step 2: Check if user exists in database
-      const { data: dbUser, error: dbError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email.trim())
-        .single()
-
-      if (dbError && dbError.code === 'PGRST116') {
-        // User not in database
-        console.log('📝 User not in database, creating...')
-        
-        const newUserData = {
-          id: data.user.id,
-          email: email.trim(),
-          name: data.user.user_metadata?.name || email.trim(),
-          role: email.trim() === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
-          email_verified: true,
-          admin_approved: email.trim() === 'ewrc.admin@ideemoto.ee',
-          status: email.trim() === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval'
-        }
-
-        const { data: createdUser, error: createError } = await supabase
-          .from('users')
-          .insert([newUserData])
-          .select()
-          .single()
-
-        if (createError) {
-          console.error('❌ Failed to create user in database:', createError)
-          await supabase.auth.signOut() // Clean up auth session
-          setLoading(false)
-          return { success: false, error: 'Failed to create user profile' }
-        }
-
-        console.log('✅ User created in database')
-        setUser(createdUser)
-        setSession(data.session)
-        setLoading(false)
-        return { success: true, user: createdUser }
-      }
-
-      if (dbError) {
-        console.error('❌ Database error:', dbError)
-        await supabase.auth.signOut()
-        setLoading(false)
-        return { success: false, error: 'Database error during login' }
-      }
-
-      // Step 3: User exists, set them
-      console.log('✅ User found in database:', dbUser.role)
-      setUser(dbUser)
-      setSession(data.session)
-      setLoading(false)
-      return { success: true, user: dbUser }
+      // The auth state change listener will handle loading the profile
+      // We don't need to do it here to avoid race conditions
+      
+      return { success: true }
 
     } catch (error: any) {
       console.error('❌ Login error:', error)

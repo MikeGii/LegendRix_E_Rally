@@ -17,16 +17,21 @@ interface User {
 
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>
-  register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string; message?: string }>
+  login: (email: string, password: string) => Promise<{ 
+    success: boolean
+    error?: string
+    user?: any // Allow any user type to handle Supabase User vs our User interface
+  }>
+  register: (email: string, password: string, name: string) => Promise<{ 
+    success: boolean
+    error?: string
+    message?: string 
+  }>
   logout: () => Promise<void>
   loading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-// Single instance of auth to prevent multiple initializations
-let authInstance: any = null
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const auth = useSupabaseAuth()
