@@ -8,8 +8,7 @@ export function AdminQuickActions() {
   }
 
   const handleRallyManagement = () => {
-    // TODO: Implement rally management page
-    alert('Rally Management page coming soon!')
+    window.location.href = '/rally-management'
   }
 
   return (
