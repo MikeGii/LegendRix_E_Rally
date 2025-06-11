@@ -84,9 +84,9 @@ export function useAuth() {
       // Skip session refresh for the first attempt - just try the query directly
       console.log('🔍 Direct database query (no refresh)...')
       
-      // Set aggressive timeout - fail fast
+      // Set moderate timeout - fail fast but not too fast
       const queryTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Fast timeout')), 3000) // Only 3 seconds!
+        setTimeout(() => reject(new Error('Fast timeout')), 5000) // Increased to 5 seconds
       })
       
       const queryPromise = supabase
@@ -125,7 +125,8 @@ export function useAuth() {
 
     } catch (error) {
       console.error('❌ Fast profile loading failed:', error)
-      setLoading(false)
+      // Don't set loading to false here - let the fallback handle it
+      return loadUserProfileWithRefresh(userId, email, name)
     }
   }
 
@@ -137,7 +138,7 @@ export function useAuth() {
       console.log('🔄 Refreshing session...')
       
       const refreshTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Refresh timeout')), 2000) // Very short refresh timeout
+        setTimeout(() => reject(new Error('Refresh timeout')), 4000) // Increased to 4 seconds
       })
       
       try {
@@ -149,7 +150,7 @@ export function useAuth() {
       
       // Try the query again after refresh
       const queryTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Post-refresh timeout')), 4000)
+        setTimeout(() => reject(new Error('Post-refresh timeout')), 6000) // Increased to 6 seconds
       })
       
       const queryPromise = supabase
@@ -162,9 +163,9 @@ export function useAuth() {
       const { data: existingUser, error: fetchError } = result as any
 
       if (fetchError) {
-        console.error('❌ Refresh method also failed:', fetchError)
-        setLoading(false)
-        return
+        console.error('❌ Refresh method query failed:', fetchError)
+        // Try one more time with a simple approach
+        return loadUserProfileSimple(userId, email, name)
       }
 
       if (!existingUser) {
@@ -179,7 +180,41 @@ export function useAuth() {
       setLoading(false)
 
     } catch (error) {
-      console.error('❌ Refresh method failed completely:', error)
+      console.error('❌ Refresh method failed:', error)
+      // Try one more time with simple approach
+      return loadUserProfileSimple(userId, email, name)
+    }
+  }
+
+  const loadUserProfileSimple = async (userId: string, email: string, name?: string) => {
+    console.log('🔧 Simple fallback for:', email)
+    
+    try {
+      // Last resort - simple query with longer timeout
+      const { data: existingUser, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (fetchError) {
+        console.error('❌ Simple method failed:', fetchError)
+        setLoading(false)
+        return
+      }
+
+      if (!existingUser) {
+        console.log('📝 Creating user with simple method...')
+        await createUserRecord(userId, email, name)
+        return
+      }
+
+      console.log('✅ Simple method success:', existingUser.email)
+      setUser(existingUser)
+      setLoading(false)
+
+    } catch (error) {
+      console.error('❌ All methods failed:', error)
       setLoading(false)
     }
   }
