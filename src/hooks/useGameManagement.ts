@@ -690,3 +690,5 @@ export function useDeleteGameClass() {
     }
   })
 }
+
+export type { GameEvent }
