@@ -183,77 +183,94 @@ export function RallyDetailModal({
             </div>
           )}
 
-          {/* Events & Tracks */}
-          {rally.total_events && rally.total_events > 0 && (
-            <div>
-              <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
-                <span>🌍</span>
-                <span>Events & Tracks</span>
-              </h3>
-              <div className="bg-slate-700/30 rounded-xl p-6">
-                {rally.events && rally.events.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-slate-400">📍</span>
-                        <div>
-                          <p className="text-sm text-slate-400">Total Events</p>
-                          <p className="text-lg font-semibold text-white">{rally.total_events}</p>
-                        </div>
-                      </div>
-                      
-                      {rally.total_tracks && (
-                        <div className="flex items-center space-x-3">
-                          <span className="text-slate-400">🛤️</span>
-                          <div>
-                            <p className="text-sm text-slate-400">Total Tracks</p>
-                            <p className="text-lg font-semibold text-white">{rally.total_tracks}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-lg font-semibold text-white mb-3">Events:</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {rally.events.map((event, index) => (
-                          <div key={index} className="bg-slate-600/30 rounded-lg p-3">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-blue-400 font-medium">#{index + 1}</span>
-                              <span className="text-slate-300">{event.event_name || `Event ${index + 1}`}</span>
-                            </div>
-                            {event.surface_type && (
-                              <p className="text-xs text-slate-400 mt-1">Surface: {event.surface_type}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Events & Tracks Section - FIXED */}
+        {rally.total_events && rally.total_events > 0 && (
+        <div>
+            <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+            <span>🌍</span>
+            <span>Events & Tracks</span>
+            </h3>
+            <div className="bg-slate-700/30 rounded-xl p-6">
+            {rally.events && rally.events.length > 0 ? (
+                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div className="flex items-center space-x-3">
-                      <span className="text-slate-400">📍</span>
-                      <div>
+                    <span className="text-slate-400">📍</span>
+                    <div>
                         <p className="text-sm text-slate-400">Total Events</p>
                         <p className="text-lg font-semibold text-white">{rally.total_events}</p>
-                      </div>
+                    </div>
                     </div>
                     
                     {rally.total_tracks && (
-                      <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3">
                         <span className="text-slate-400">🛤️</span>
                         <div>
-                          <p className="text-sm text-slate-400">Total Tracks</p>
-                          <p className="text-lg font-semibold text-white">{rally.total_tracks}</p>
+                        <p className="text-sm text-slate-400">Total Tracks</p>
+                        <p className="text-lg font-semibold text-white">{rally.total_tracks}</p>
                         </div>
-                      </div>
+                    </div>
                     )}
-                  </div>
+                </div>
+                
+                <div>
+                    <h4 className="text-lg font-semibold text-white mb-3">Events:</h4>
+                    <div className="space-y-3">
+                    {rally.events.map((event, index) => (
+                        <div key={index} className="bg-slate-600/30 rounded-lg p-4">
+                        <div className="flex items-center space-x-2 mb-3">
+                            <span className="text-blue-400 font-medium">#{event.event_order}</span>
+                            <span className="text-slate-300 font-semibold">{event.event_name || `Event ${index + 1}`}</span>
+                        </div>
+                        
+                        {/* Show tracks for this event */}
+                        {event.tracks && event.tracks.length > 0 && (
+                            <div className="ml-6">
+                            <p className="text-sm text-slate-400 mb-2">Tracks ({event.tracks.length}):</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {event.tracks.map((track, trackIndex) => (
+                                <div key={trackIndex} className="bg-slate-700/40 rounded p-2">
+                                    <div className="flex items-center justify-between">
+                                    <span className="text-slate-300 text-sm font-medium">{track.name}</span>
+                                    <div className="flex items-center space-x-2 text-xs text-slate-400">
+                                        <span>{track.surface_type}</span>
+                                        {track.length_km && <span>{track.length_km}km</span>}
+                                    </div>
+                                    </div>
+                                </div>
+                                ))}
+                            </div>
+                            </div>
+                        )}
+                        </div>
+                    ))}
+                    </div>
+                </div>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-3">
+                    <span className="text-slate-400">📍</span>
+                    <div>
+                    <p className="text-sm text-slate-400">Total Events</p>
+                    <p className="text-lg font-semibold text-white">{rally.total_events}</p>
+                    </div>
+                </div>
+                
+                {rally.total_tracks && (
+                    <div className="flex items-center space-x-3">
+                    <span className="text-slate-400">🛤️</span>
+                    <div>
+                        <p className="text-sm text-slate-400">Total Tracks</p>
+                        <p className="text-lg font-semibold text-white">{rally.total_tracks}</p>
+                    </div>
+                    </div>
                 )}
-              </div>
+                </div>
+            )}
             </div>
-          )}
+        </div>
+        )}
 
         </div>
 

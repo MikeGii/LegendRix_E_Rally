@@ -117,52 +117,62 @@ export function RallyDetails({ rally, isLoading }: RallyDetailsProps) {
         </div>
       </div>
 
-      {/* Events Information */}
-      {rally.total_events && rally.total_events > 0 && (
+      {/* Events Information - FIXED */}
+        {rally.total_events && rally.total_events > 0 && (
         <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-white">Riigid</h4>
-          
-          <div className="space-y-3">
+            <h4 className="text-lg font-semibold text-white">Events</h4>
+            
+            <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-slate-400">Kokku riike</span>
-              <span className="text-slate-300 font-medium">{rally.total_events}</span>
+                <span className="text-slate-400">Total Events</span>
+                <span className="text-slate-300 font-medium">{rally.total_events}</span>
             </div>
             
             {rally.events && rally.events.length > 0 && (
-              <div>
-                <p className="text-slate-400 text-sm mb-3">Rallid:</p>
+                <div>
+                <p className="text-slate-400 text-sm mb-3">Event List:</p>
                 <div className="space-y-2">
-                  {rally.events.map((event, index) => (
+                    {rally.events.map((event, index) => (
                     <div key={index} className="bg-slate-700/30 rounded-lg p-3">
-                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                          <span className="text-blue-400 text-sm">🏁</span>
+                            <span className="text-blue-400 text-sm">🏁</span>
                         </div>
                         <div className="flex-1">
-                          <span className="text-slate-200 font-medium">
-                            {event.event_name || `Rally ${index + 1}`}
-                          </span>
-                          {event.country && (
-                            <p className="text-xs text-slate-400 mt-1">
-                              {event.country}
-                            </p>
-                          )}
-                          {event.surface_type && (
-                            <p className="text-xs text-slate-500 mt-1">
-                              Pind: {event.surface_type}
-                            </p>
-                          )}
+                            <span className="text-slate-200 font-medium">
+                            {event.event_name || `Event ${index + 1}`}
+                            </span>
+                            
+                            {/* Show tracks info */}
+                            {event.tracks && event.tracks.length > 0 && (
+                            <div className="mt-2">
+                                <p className="text-xs text-slate-400 mb-1">
+                                {event.tracks.length} track{event.tracks.length > 1 ? 's' : ''}
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                {event.tracks.slice(0, 3).map((track, trackIndex) => (
+                                    <span key={trackIndex} className="text-xs bg-slate-600/40 px-2 py-1 rounded">
+                                    {track.name} ({track.surface_type})
+                                    </span>
+                                ))}
+                                {event.tracks.length > 3 && (
+                                    <span className="text-xs text-slate-400">
+                                    +{event.tracks.length - 3} more
+                                    </span>
+                                )}
+                                </div>
+                            </div>
+                            )}
                         </div>
-                      </div>
+                        </div>
                     </div>
-                  ))}
+                    ))}
                 </div>
-              </div>
+                </div>
             )}
-          </div>
+            </div>
         </div>
-      )}
-
+        )}
       {/* Description */}
       {rally.description && (
         <div className="space-y-4">
