@@ -222,8 +222,8 @@ export function RallyDetailModal({
                               <span className="text-blue-400 font-medium">#{index + 1}</span>
                               <span className="text-slate-300">{event.event_name || `Event ${index + 1}`}</span>
                             </div>
-                            {event.event_surface_type && (
-                              <p className="text-xs text-slate-400 mt-1">Surface: {event.event_surface_type}</p>
+                            {event.surface_type && (
+                              <p className="text-xs text-slate-400 mt-1">Surface: {event.surface_type}</p>
                             )}
                           </div>
                         ))}
