@@ -1,4 +1,4 @@
-// src/lib/queryUtils.ts - Centralized query utilities and keys
+// src/lib/queryUtils.ts - UPDATED with missing query keys
 
 import { supabase } from './supabase'
 import type { QueryKeys, DatabaseTable, SortConfig, FilterConfig, ApiResponse } from '@/types'
@@ -12,15 +12,24 @@ export const createQueryKeys = (entity: string): QueryKeys => ({
   detail: (id: string) => [...createQueryKeys(entity).details(), id] as const,
 })
 
-// Centralized query keys
+// Centralized query keys - FIXED AND EXPANDED
 export const queryKeys = {
-  users: createQueryKeys('users'),
-  rallies: createQueryKeys('rallies'),
-  games: createQueryKeys('games'),
-  gameTypes: (gameId?: string) => ['games', 'types', gameId],
-  gameEvents: (gameId?: string) => ['games', 'events', gameId],
-  gameClasses: (gameId?: string) => ['games', 'classes', gameId],
-  eventTracks: (eventId?: string) => ['events', 'tracks', eventId],
+  users: {
+    all: ['users'] as const,
+    lists: () => [...queryKeys.users.all, 'list'] as const,
+  },
+  games: {
+    all: ['games'] as const,
+    lists: () => [...queryKeys.games.all, 'list'] as const,
+  },
+  gameTypes: (gameId?: string) => ['games', 'types', gameId] as const,
+  gameEvents: (gameId?: string) => ['games', 'events', gameId] as const,
+  gameClasses: (gameId?: string) => ['games', 'classes', gameId] as const,
+  eventTracks: (eventId?: string) => ['events', 'tracks', eventId] as const,
+  rallies: {
+    all: ['rallies'] as const,
+    lists: () => [...queryKeys.rallies.all, 'list'] as const,
+  }
 }
 
 // ============= Generic Database Operations =============

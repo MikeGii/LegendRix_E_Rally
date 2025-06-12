@@ -1,82 +1,73 @@
+// src/components/game-management/GameTypesTab.tsx - COMPLETE FIXED VERSION
+
+'use client'
+
 import { useState } from 'react'
-import { Game, GameType, useCreateGameType, useDeleteGameType, useUpdateGameType } from '@/hooks/useGameManagement'
-import { CreateGameTypeModal } from './CreateGameTypeModal'
+import { useGameTypeMutations } from '@/hooks/useGameManagement'
+import { EmptyState, SelectionRequired, LoadingState } from '@/components/shared/States'
+import { ConfirmModal, FormModal } from '@/components/shared/Modal'
+import { Input, Textarea, Select, FormGrid, FormActions, Button } from '@/components/shared/FormComponents'
+import { formatDateTime } from '@/lib/statusUtils'
+import type { Game, GameType } from '@/types'
 
 interface GameTypesTabProps {
   gameTypes: GameType[]
   selectedGame: Game | undefined
-  isLoading: boolean
   onRefresh: () => void
 }
 
-export function GameTypesTab({ gameTypes, selectedGame, isLoading, onRefresh }: GameTypesTabProps) {
+export function GameTypesTab({ gameTypes, selectedGame, onRefresh }: GameTypesTabProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingType, setEditingType] = useState<GameType | null>(null)
-  
-  const createGameTypeMutation = useCreateGameType()
-  const deleteGameTypeMutation = useDeleteGameType()
-  const updateGameTypeMutation = useUpdateGameType()
+  const [deletingType, setDeletingType] = useState<GameType | null>(null)
 
-  const handleCreateGameType = async (typeData: Partial<GameType>) => {
+  const { createGameType, updateGameType, deleteGameType } = useGameTypeMutations()
+
+  const handleCreate = async (typeData: Partial<GameType>) => {
     if (!selectedGame) return
     
     try {
-      await createGameTypeMutation.mutateAsync({
-        ...typeData,
-        game_id: selectedGame.id
-      })
+      await createGameType.mutateAsync({ ...typeData, game_id: selectedGame.id })
       setShowCreateModal(false)
+      onRefresh()
     } catch (error) {
       console.error('Failed to create game type:', error)
     }
   }
 
-  const handleUpdateGameType = async (typeData: Partial<GameType>) => {
+  const handleUpdate = async (typeData: Partial<GameType>) => {
     if (!editingType) return
     
     try {
-      await updateGameTypeMutation.mutateAsync({
-        id: editingType.id,
-        ...typeData
-      })
+      await updateGameType.mutateAsync({ id: editingType.id, ...typeData })
       setEditingType(null)
+      onRefresh()
     } catch (error) {
       console.error('Failed to update game type:', error)
     }
   }
 
-  const handleDeleteGameType = async (typeId: string, typeName: string) => {
-    if (!confirm(`Are you sure you want to delete "${typeName}"? This action cannot be undone.`)) {
-      return
-    }
-
+  const handleDelete = async () => {
+    if (!deletingType) return
+    
     try {
-      await deleteGameTypeMutation.mutateAsync(typeId)
+      await deleteGameType.mutateAsync(deletingType.id)
+      setDeletingType(null)
+      onRefresh()
     } catch (error) {
       console.error('Failed to delete game type:', error)
     }
   }
 
+  const isLoading = createGameType.isPending || updateGameType.isPending || deleteGameType.isPending
+
   if (!selectedGame) {
     return (
-      <div className="text-center py-16">
-        <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-4xl text-slate-500">🏆</span>
-        </div>
-        <h3 className="text-lg font-semibold text-white mb-2">No Game Selected</h3>
-        <p className="text-slate-400">Please select a game first to manage its types</p>
-      </div>
-    )
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading game types...</p>
-        </div>
-      </div>
+      <SelectionRequired
+        title="No Game Selected"
+        message="Please select a game first to manage its competition types"
+        icon="🏆"
+      />
     )
   }
 
@@ -87,107 +78,222 @@ export function GameTypesTab({ gameTypes, selectedGame, isLoading, onRefresh }: 
           <span>🏆</span>
           <span>Game Types for {selectedGame.name} ({gameTypes.length})</span>
         </h2>
-        <button
+        <Button
           onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-green-500/25"
+          variant="success"
+          icon="➕"
+          disabled={isLoading}
         >
-          <div className="flex items-center space-x-2">
-            <span>➕</span>
-            <span>Add Game Type</span>
-          </div>
-        </button>
+          Add Game Type
+        </Button>
       </div>
 
-      {gameTypes.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-4xl text-slate-500">🏆</span>
-          </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No Game Types</h3>
-          <p className="text-slate-400 mb-6">Add types like Championship, Quick Play, Training, etc.</p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all duration-200"
-          >
-            Add First Game Type
-          </button>
-        </div>
+      {isLoading && <LoadingState message="Processing game type operation..." />}
+
+      {!isLoading && gameTypes.length === 0 ? (
+        <EmptyState
+          title="No Game Types"
+          message="Add competition types like Championship, Quick Play, Training, etc."
+          icon="🏆"
+          action={{
+            label: "Add First Game Type",
+            onClick: () => setShowCreateModal(true)
+          }}
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {gameTypes.map((type) => (
-            <div key={type.id} className="bg-slate-900/50 rounded-xl border border-slate-700/30 p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                    <span className="text-purple-300 text-xl">🏆</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white">{type.name}</h3>
-                    <p className="text-sm text-slate-400">{type.duration_type}</p>
-                  </div>
-                </div>
-                
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setEditingType(type)}
-                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
-                    title="Edit"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={() => handleDeleteGameType(type.id, type.name)}
-                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
-                    title="Delete"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-
-              {type.description && (
-                <p className="text-slate-300 text-sm mb-4">{type.description}</p>
-              )}
-
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Min Participants:</span>
-                  <span className="text-slate-300">{type.min_participants || 1}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Max Participants:</span>
-                  <span className="text-slate-300">{type.max_participants || 'Unlimited'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Status:</span>
-                  <span className={`${type.is_active ? 'text-green-400' : 'text-red-400'}`}>
-                    {type.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <GameTypeCard
+              key={type.id}
+              gameType={type}
+              onEdit={setEditingType}
+              onDelete={setDeletingType}
+            />
           ))}
         </div>
       )}
 
-      {/* Create Modal */}
+      {/* Modals */}
       {showCreateModal && (
-        <CreateGameTypeModal
+        <GameTypeModal
           onClose={() => setShowCreateModal(false)}
-          onSubmit={handleCreateGameType}
-          isLoading={createGameTypeMutation.isPending}
+          onSubmit={handleCreate}
+          isLoading={createGameType.isPending}
         />
       )}
 
-      {/* Edit Modal */}
       {editingType && (
-        <CreateGameTypeModal
+        <GameTypeModal
           gameType={editingType}
           onClose={() => setEditingType(null)}
-          onSubmit={handleUpdateGameType}
-          isLoading={updateGameTypeMutation.isPending}
+          onSubmit={handleUpdate}
+          isLoading={updateGameType.isPending}
+        />
+      )}
+
+      {deletingType && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={() => setDeletingType(null)}
+          onConfirm={handleDelete}
+          title="Delete Game Type"
+          message={`Delete "${deletingType.name}"? This action cannot be undone.`}
+          confirmText="Delete Type"
+          confirmColor="red"
+          isLoading={deleteGameType.isPending}
         />
       )}
     </div>
+  )
+}
+
+// Game Type Card Component
+interface GameTypeCardProps {
+  gameType: GameType
+  onEdit: (type: GameType) => void
+  onDelete: (type: GameType) => void
+}
+
+function GameTypeCard({ gameType, onEdit, onDelete }: GameTypeCardProps) {
+  return (
+    <div className="bg-slate-900/50 rounded-xl border border-slate-700/30 p-6 group hover:border-slate-600 transition-all duration-200">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+            <span className="text-purple-300 text-xl">🏆</span>
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">{gameType.name}</h3>
+            <p className="text-sm text-slate-400 capitalize">{gameType.duration_type || 'Single Event'}</p>
+          </div>
+        </div>
+        
+        <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={() => onEdit(gameType)}
+            className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
+          >
+            ✏️
+          </button>
+          <button
+            onClick={() => onDelete(gameType)}
+            className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+          >
+            🗑️
+          </button>
+        </div>
+      </div>
+
+      {gameType.description && (
+        <p className="text-slate-300 text-sm mb-4 line-clamp-2">{gameType.description}</p>
+      )}
+
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-slate-400">Participants:</span>
+          <span className="text-slate-300">
+            {gameType.min_participants || 1} - {gameType.max_participants || '∞'}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-400">Status:</span>
+          <span className={gameType.is_active ? 'text-green-400' : 'text-red-400'}>
+            {gameType.is_active ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-400">Created:</span>
+          <span className="text-slate-300">
+            {formatDateTime(gameType.created_at, { short: true })}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Game Type Modal Component
+interface GameTypeModalProps {
+  gameType?: GameType | null
+  onClose: () => void
+  onSubmit: (typeData: Partial<GameType>) => void
+  isLoading: boolean
+}
+
+function GameTypeModal({ gameType, onClose, onSubmit, isLoading }: GameTypeModalProps) {
+  const [formData, setFormData] = useState({
+    name: gameType?.name || '',
+    description: gameType?.description || '',
+    max_participants: gameType?.max_participants?.toString() || '',
+    duration_type: gameType?.duration_type || 'single',
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit({
+      ...formData,
+      max_participants: formData.max_participants ? parseInt(formData.max_participants) : undefined,
+      min_participants: 1,
+    })
+  }
+
+  const durationOptions = [
+    { value: 'single', label: 'Single Event' },
+    { value: 'multi_stage', label: 'Multi-Stage' },
+    { value: 'season', label: 'Full Season' },
+  ]
+
+  return (
+    <FormModal
+      isOpen={true}
+      onClose={onClose}
+      title={`${gameType ? 'Edit' : 'Create'} Game Type`}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <FormGrid columns={1}>
+          <Input
+            label="Type Name"
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="e.g., Championship, Quick Play, Training"
+            required
+          />
+          
+          <Select
+            label="Duration Type"
+            value={formData.duration_type}
+            onChange={(e) => setFormData(prev => ({ ...prev, duration_type: e.target.value }))}
+            options={durationOptions}
+          />
+          
+          <Input
+            label="Max Participants"
+            type="number"
+            value={formData.max_participants}
+            onChange={(e) => setFormData(prev => ({ ...prev, max_participants: e.target.value }))}
+            placeholder="Leave empty for unlimited"
+            min="1"
+            hint="Leave empty for unlimited participants"
+          />
+          
+          <Textarea
+            label="Description"
+            value={formData.description}
+            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            placeholder="Describe this game type..."
+            rows={3}
+          />
+        </FormGrid>
+
+        <FormActions>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="success" loading={isLoading} disabled={!formData.name}>
+            {gameType ? 'Update Type' : 'Create Type'}
+          </Button>
+        </FormActions>
+      </form>
+    </FormModal>
   )
 }

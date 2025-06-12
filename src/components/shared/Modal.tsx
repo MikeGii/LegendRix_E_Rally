@@ -1,9 +1,12 @@
-// src/components/shared/Modal.tsx - Fixed version
+// src/components/shared/Modal.tsx - Complete Modal Components
 
 import { ReactNode } from 'react'
-import type { ModalProps } from '@/types'
 
-interface BaseModalProps extends ModalProps {
+// ============= Base Modal =============
+interface BaseModalProps {
+  isOpen: boolean
+  onClose: () => void
+  title?: string | ReactNode
   children: ReactNode
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
   showCloseButton?: boolean
@@ -54,6 +57,25 @@ export function BaseModal({
         </div>
       </div>
     </div>
+  )
+}
+
+// ============= Form Modal =============
+interface FormModalProps {
+  isOpen: boolean
+  onClose: () => void
+  title: string | ReactNode
+  children: ReactNode
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+}
+
+export function FormModal({ isOpen, onClose, title, children, maxWidth = 'md' }: FormModalProps) {
+  return (
+    <BaseModal isOpen={isOpen} onClose={onClose} title={title} maxWidth={maxWidth}>
+      <div className="p-6">
+        {children}
+      </div>
+    </BaseModal>
   )
 }
 
@@ -121,42 +143,6 @@ export function ConfirmModal({
             Cancel
           </button>
         </div>
-      </div>
-    </BaseModal>
-  )
-}
-
-// ============= Form Modal =============
-interface FormModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title: string
-  children: ReactNode
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
-}
-
-export function FormModal({ isOpen, onClose, title, children, maxWidth = 'md' }: FormModalProps) {
-  return (
-    <BaseModal isOpen={isOpen} onClose={onClose} title={title} maxWidth={maxWidth}>
-      <div className="p-6">
-        {children}
-      </div>
-    </BaseModal>
-  )
-}
-
-// ============= Loading Modal =============
-interface LoadingModalProps {
-  isOpen: boolean
-  message?: string
-}
-
-export function LoadingModal({ isOpen, message = 'Loading...' }: LoadingModalProps) {
-  return (
-    <BaseModal isOpen={isOpen} onClose={() => {}} showCloseButton={false} maxWidth="sm">
-      <div className="p-8 text-center">
-        <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-slate-300">{message}</p>
       </div>
     </BaseModal>
   )

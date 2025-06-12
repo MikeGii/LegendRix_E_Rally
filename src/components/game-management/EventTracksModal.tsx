@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { GameEvent, EventTrack, useEventTracks, useCreateEventTrack, useDeleteEventTrack, useUpdateEventTrack } from '@/hooks/useGameManagement'
+// ============= Event Tracks Modal =============
+// src/components/game-management/EventTracksModal.tsx
+import { useEventTrackMutations } from '@/hooks/useGameManagement'
 
 interface EventTracksModalProps {
   event: GameEvent
@@ -8,11 +9,9 @@ interface EventTracksModalProps {
 
 export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [editingTrack, setEditingTrack] = useState<EventTrack | null>(null)
+  const [editingTrack, setEditingTrack] = useState<any>(null)
   const { data: tracks = [], isLoading, refetch } = useEventTracks(event.id)
-  const createTrackMutation = useCreateEventTrack()
-  const deleteTrackMutation = useDeleteEventTrack()
-  const updateTrackMutation = useUpdateEventTrack()
+  const { createEventTrack, deleteEventTrack, updateEventTrack } = useEventTrackMutations()
 
   const [trackForm, setTrackForm] = useState({
     name: '',
@@ -34,7 +33,7 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
     })
   }
 
-  const handleEditTrack = (track: EventTrack) => {
+  const handleEditTrack = (track: any) => {
     setTrackForm({
       name: track.name,
       length_km: track.length_km?.toString() || '',
@@ -53,7 +52,7 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
     }
 
     try {
-      await deleteTrackMutation.mutateAsync(trackId)
+      await deleteEventTrack.mutateAsync(trackId)
       refetch()
     } catch (error) {
       console.error('Failed to delete track:', error)
@@ -72,12 +71,12 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
       }
 
       if (editingTrack) {
-        await updateTrackMutation.mutateAsync({
+        await updateEventTrack.mutateAsync({
           id: editingTrack.id,
           ...trackData
         })
       } else {
-        await createTrackMutation.mutateAsync(trackData)
+        await createEventTrack.mutateAsync(trackData)
       }
       
       resetForm()
@@ -103,20 +102,23 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
     setEditingTrack(null)
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-2xl border border-slate-700 p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-white flex items-center space-x-2">
-            <span>🏁</span>
-            <span>Tracks for {event.name}</span>
-          </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-            ✕
-          </button>
-        </div>
+  const surfaceOptions = [
+    { value: 'gravel', label: 'Gravel' },
+    { value: 'tarmac', label: 'Tarmac' },
+    { value: 'snow', label: 'Snow' },
+    { value: 'mixed', label: 'Mixed' },
+  ]
 
-        <div className="mb-6 p-4 bg-slate-700/30 rounded-xl">
+  return (
+    <FormModal
+      isOpen={true}
+      onClose={onClose}
+      title={`Tracks for ${event.name}`}
+      maxWidth="2xl"
+    >
+      <div className="space-y-6">
+        {/* Event Info */}
+        <div className="p-4 bg-slate-700/30 rounded-xl">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
               <span className="text-green-300 text-xl">🌍</span>
@@ -128,103 +130,78 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
           </div>
         </div>
 
-        <div className="flex justify-between items-center mb-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
           <h4 className="text-lg font-semibold text-white">
             Tracks ({tracks.length})
           </h4>
-          <button
+          <Button
             onClick={() => setShowCreateForm(!showCreateForm)}
             disabled={editingTrack !== null}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded-lg transition-all duration-200 disabled:opacity-50"
+            variant="success"
+            size="sm"
           >
             {showCreateForm ? 'Cancel' : '➕ Add Track'}
-          </button>
+          </Button>
         </div>
 
+        {/* Create Form */}
         {showCreateForm && (
-          <div className="mb-6 p-6 bg-slate-900/50 rounded-xl border border-slate-700/30">
+          <div className="p-6 bg-slate-900/50 rounded-xl border border-slate-700/30">
             <h5 className="text-md font-semibold text-white mb-4">
               {editingTrack ? 'Edit Track' : 'Add New Track'}
             </h5>
             <form onSubmit={handleCreateOrUpdateTrack} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Track Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={trackForm.name}
-                    onChange={handleFormChange}
-                    required
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., SS1 Otepää"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Stage Number
-                  </label>
-                  <input
-                    type="number"
-                    name="stage_number"
-                    value={trackForm.stage_number}
-                    onChange={handleFormChange}
-                    min="1"
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="1"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Length (km)
-                  </label>
-                  <input
-                    type="number"
-                    name="length_km"
-                    value={trackForm.length_km}
-                    onChange={handleFormChange}
-                    step="0.1"
-                    min="0"
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="12.5"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Surface Type
-                  </label>
-                  <select
-                    name="surface_type"
-                    value={trackForm.surface_type}
-                    onChange={handleFormChange}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="gravel">Gravel</option>
-                    <option value="tarmac">Tarmac</option>
-                    <option value="snow">Snow</option>
-                    <option value="mixed">Mixed</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={trackForm.description}
+              <FormGrid columns={2}>
+                <Input
+                  label="Track Name"
+                  name="name"
+                  value={trackForm.name}
                   onChange={handleFormChange}
-                  rows={2}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Track description..."
+                  required
+                  placeholder="e.g., SS1 Otepää"
                 />
-              </div>
+                
+                <Input
+                  label="Stage Number"
+                  name="stage_number"
+                  type="number"
+                  value={trackForm.stage_number}
+                  onChange={handleFormChange}
+                  min="1"
+                  placeholder="1"
+                />
+              </FormGrid>
+
+              <FormGrid columns={2}>
+                <Input
+                  label="Length (km)"
+                  name="length_km"
+                  type="number"
+                  value={trackForm.length_km}
+                  onChange={handleFormChange}
+                  step="0.1"
+                  min="0"
+                  placeholder="12.5"
+                />
+                
+                <Select
+                  label="Surface Type"
+                  name="surface_type"
+                  value={trackForm.surface_type}
+                  onChange={handleFormChange}
+                  options={surfaceOptions}
+                />
+              </FormGrid>
+
+              <Textarea
+                label="Description"
+                name="description"
+                value={trackForm.description}
+                onChange={handleFormChange}
+                rows={2}
+                placeholder="Track description..."
+              />
 
               <div className="flex items-center space-x-2">
                 <input
@@ -240,41 +217,40 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
                 </label>
               </div>
 
-              <div className="flex space-x-3">
-                <button
+              <FormActions align="left">
+                <Button
                   type="submit"
-                  disabled={createTrackMutation.isPending || updateTrackMutation.isPending || !trackForm.name}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded-lg transition-all duration-200 disabled:opacity-50"
+                  variant="success"
+                  disabled={!trackForm.name}
+                  loading={createEventTrack.isPending || updateEventTrack.isPending}
                 >
-                  {(createTrackMutation.isPending || updateTrackMutation.isPending) ? 
-                    (editingTrack ? 'Updating...' : 'Adding...') : 
-                    (editingTrack ? 'Update Track' : 'Add Track')
-                  }
-                </button>
-                <button
+                  {editingTrack ? 'Update Track' : 'Add Track'}
+                </Button>
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={handleCancelEdit}
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all duration-200"
                 >
                   Cancel
-                </button>
-              </div>
+                </Button>
+              </FormActions>
             </form>
           </div>
         )}
 
+        {/* Tracks List */}
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
-          </div>
+          <LoadingState message="Loading tracks..." />
         ) : tracks.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl text-slate-500">🏁</span>
-            </div>
-            <h5 className="text-lg font-semibold text-white mb-2">No Tracks</h5>
-            <p className="text-slate-400">Add tracks for this event</p>
-          </div>
+          <EmptyState
+            title="No Tracks"
+            message="Add tracks for this event"
+            icon="🏁"
+            action={{
+              label: "Add First Track",
+              onClick: () => setShowCreateForm(true)
+            }}
+          />
         ) : (
           <div className="space-y-3">
             {tracks.map((track) => (
@@ -315,15 +291,13 @@ export function EventTracksModal({ event, onClose }: EventTracksModalProps) {
           </div>
         )}
 
-        <div className="mt-6 pt-4 border-t border-slate-700">
-          <button
-            onClick={onClose}
-            className="w-full px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200"
-          >
+        {/* Close Button */}
+        <FormActions>
+          <Button onClick={onClose} variant="secondary" className="w-full">
             Close
-          </button>
-        </div>
+          </Button>
+        </FormActions>
       </div>
-    </div>
+    </FormModal>
   )
 }

@@ -1,694 +1,346 @@
-// src/hooks/useGameManagement.ts
+// src/hooks/useGameManagement.ts - COMPLETE FIXED VERSION
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { DatabaseService, queryKeys, handleQueryError } from '@/lib/queryUtils'
+import type { Game, GameType, GameEvent, GameClass, EventTrack } from '@/types'
 
-// Types
-export interface Game {
-  id: string
-  name: string
-  description?: string
-  developer?: string
-  platform?: string
-  release_year?: number
-  is_active: boolean
-  created_by?: string
-  created_at: string
-  updated_at: string
-}
-
-export interface GameType {
-  id: string
-  game_id: string
-  name: string
-  description?: string
-  max_participants?: number
-  min_participants?: number
-  duration_type?: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface GameEvent {
-  id: string
-  game_id: string
-  name: string
-  country?: string
-  region?: string
-  surface_type?: string
-  weather_conditions?: string
-  difficulty_level?: number
-  description?: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  tracks?: EventTrack[]
-}
-
-export interface EventTrack {
-  id: string
-  event_id: string
-  name: string
-  length_km?: number
-  stage_number?: number
-  description?: string
-  surface_type?: string
-  is_special_stage: boolean
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface GameClass {
-  id: string
-  game_id: string
-  name: string
-  description?: string
-  skill_level?: string
-  requirements?: string
-  max_participants?: number
-  entry_fee?: number
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-// Query Keys
-export const gameKeys = {
-  all: ['games'] as const,
-  games: () => [...gameKeys.all, 'list'] as const,
-  types: (gameId?: string | null) => [...gameKeys.all, 'types', gameId] as const,
-  events: (gameId?: string | null) => [...gameKeys.all, 'events', gameId] as const,
-  classes: (gameId?: string | null) => [...gameKeys.all, 'classes', gameId] as const,
-  tracks: (eventId?: string | null) => [...gameKeys.all, 'tracks', eventId] as const,
-}
-
-// Games Hook
-export function useGames() {
-  return useQuery({
-    queryKey: gameKeys.games(),
-    queryFn: async (): Promise<Game[]> => {
-      console.log('🔄 Loading games...')
-      
-      const { data: games, error } = await supabase
-        .from('games')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error loading games:', error)
-        throw error
-      }
-
-      console.log(`✅ Games loaded: ${games?.length || 0}`)
-      return games || []
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  })
-}
-
-// Game Types Hook
-export function useGameTypes(gameId?: string | null) {
-  return useQuery({
-    queryKey: gameKeys.types(gameId),
-    queryFn: async (): Promise<GameType[]> => {
-      if (!gameId) return []
-      
-      console.log('🔄 Loading game types for game:', gameId)
-      
-      const { data: types, error } = await supabase
-        .from('game_types')
-        .select('*')
-        .eq('game_id', gameId)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error loading game types:', error)
-        throw error
-      }
-
-      console.log(`✅ Game types loaded: ${types?.length || 0}`)
-      return types || []
-    },
-    enabled: !!gameId,
+// ============= Main Hook - Centralized Data Management =============
+export function useGameManagement(selectedGameId?: string) {
+  // Base queries
+  const gamesQuery = useQuery({
+    queryKey: queryKeys.games.lists(),
+    queryFn: () => DatabaseService.findMany<Game>('games', {
+      sort: [{ field: 'created_at', direction: 'desc' }]
+    }),
     staleTime: 5 * 60 * 1000,
   })
-}
 
-// Game Events Hook
-export function useGameEvents(gameId?: string | null) {
-  return useQuery({
-    queryKey: gameKeys.events(gameId),
-    queryFn: async (): Promise<GameEvent[]> => {
-      if (!gameId) return []
-      
-      console.log('🔄 Loading game events for game:', gameId)
-      
-      const { data: events, error } = await supabase
-        .from('game_events')
-        .select(`
-          *,
-          tracks:event_tracks(*)
-        `)
-        .eq('game_id', gameId)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error loading game events:', error)
-        throw error
-      }
-
-      console.log(`✅ Game events loaded: ${events?.length || 0}`)
-      return events || []
-    },
-    enabled: !!gameId,
+  const gameTypesQuery = useQuery({
+    queryKey: queryKeys.gameTypes(selectedGameId),
+    queryFn: () => selectedGameId ? DatabaseService.findMany<GameType>('game_types', {
+      filters: [{ field: 'game_id', operator: 'eq', value: selectedGameId }],
+      sort: [{ field: 'created_at', direction: 'desc' }]
+    }) : [],
+    enabled: !!selectedGameId,
     staleTime: 5 * 60 * 1000,
   })
-}
 
-// Game Classes Hook
-export function useGameClasses(gameId?: string | null) {
-  return useQuery({
-    queryKey: gameKeys.classes(gameId),
-    queryFn: async (): Promise<GameClass[]> => {
-      if (!gameId) return []
-      
-      console.log('🔄 Loading game classes for game:', gameId)
-      
-      const { data: classes, error } = await supabase
-        .from('game_classes')
-        .select('*')
-        .eq('game_id', gameId)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error loading game classes:', error)
-        throw error
-      }
-
-      console.log(`✅ Game classes loaded: ${classes?.length || 0}`)
-      return classes || []
-    },
-    enabled: !!gameId,
+  const gameEventsQuery = useQuery({
+    queryKey: queryKeys.gameEvents(selectedGameId),
+    queryFn: () => selectedGameId ? DatabaseService.findMany<GameEvent>('game_events', {
+      filters: [{ field: 'game_id', operator: 'eq', value: selectedGameId }],
+      sort: [{ field: 'created_at', direction: 'desc' }]
+    }) : [],
+    enabled: !!selectedGameId,
     staleTime: 5 * 60 * 1000,
   })
+
+  const gameClassesQuery = useQuery({
+    queryKey: queryKeys.gameClasses(selectedGameId),
+    queryFn: () => selectedGameId ? DatabaseService.findMany<GameClass>('game_classes', {
+      filters: [{ field: 'game_id', operator: 'eq', value: selectedGameId }],
+      sort: [{ field: 'created_at', direction: 'desc' }]
+    }) : [],
+    enabled: !!selectedGameId,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // Unified refetch
+  const refetch = () => {
+    gamesQuery.refetch()
+    if (selectedGameId) {
+      gameTypesQuery.refetch()
+      gameEventsQuery.refetch()
+      gameClassesQuery.refetch()
+    }
+  }
+
+  return {
+    games: gamesQuery.data || [],
+    gameTypes: gameTypesQuery.data || [],
+    gameEvents: gameEventsQuery.data || [],
+    gameClasses: gameClassesQuery.data || [],
+    isLoading: gamesQuery.isLoading || 
+               (selectedGameId && (gameTypesQuery.isLoading || gameEventsQuery.isLoading || gameClassesQuery.isLoading)),
+    error: gamesQuery.error || gameTypesQuery.error || gameEventsQuery.error || gameClassesQuery.error,
+    refetch
+  }
 }
 
-// Event Tracks Hook
-export function useEventTracks(eventId?: string | null) {
+// ============= Event Tracks Hook =============
+export function useEventTracks(eventId?: string) {
   return useQuery({
-    queryKey: gameKeys.tracks(eventId),
-    queryFn: async (): Promise<EventTrack[]> => {
-      if (!eventId) return []
-      
-      console.log('🔄 Loading tracks for event:', eventId)
-      
-      const { data: tracks, error } = await supabase
-        .from('event_tracks')
-        .select('*')
-        .eq('event_id', eventId)
-        .order('stage_number', { ascending: true })
-
-      if (error) {
-        console.error('Error loading event tracks:', error)
-        throw error
-      }
-
-      console.log(`✅ Event tracks loaded: ${tracks?.length || 0}`)
-      return tracks || []
-    },
+    queryKey: queryKeys.eventTracks(eventId),
+    queryFn: () => eventId ? DatabaseService.findMany<EventTrack>('event_tracks', {
+      filters: [{ field: 'event_id', operator: 'eq', value: eventId }],
+      sort: [{ field: 'stage_number', direction: 'asc' }]
+    }) : [],
     enabled: !!eventId,
     staleTime: 5 * 60 * 1000,
   })
 }
 
-// Create Game Mutation
-export function useCreateGame() {
+// ============= Game Mutations =============
+export function useGameMutations() {
   const queryClient = useQueryClient()
 
-  return useMutation({
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.games.all })
+  }
+
+  const createGame = useMutation({
     mutationFn: async (gameData: Partial<Game>) => {
-      console.log('🔄 Creating game:', gameData.name)
-      
-      const { data, error } = await supabase
-        .from('games')
-        .insert([{
+      try {
+        const result = await DatabaseService.create<Game>('games', {
           ...gameData,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        }])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating game:', error)
-        throw error
+          is_active: true
+        })
+        return result
+      } catch (error) {
+        throw handleQueryError(error, 'Create game')
       }
-
-      console.log('✅ Game created successfully:', data.name)
-      return data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.all })
-    },
-    onError: (error) => {
-      console.error('❌ Game creation failed:', error)
-    }
+    onSuccess: invalidateAll,
+    onError: (error) => console.error('❌ Game creation failed:', error)
   })
-}
 
-// Create Game Type Mutation
-export function useCreateGameType() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (typeData: Partial<GameType>) => {
-      console.log('🔄 Creating game type:', typeData.name)
-      
-      const { data, error } = await supabase
-        .from('game_types')
-        .insert([typeData])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating game type:', error)
-        throw error
-      }
-
-      console.log('✅ Game type created successfully:', data.name)
-      return data
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.types(data.game_id) })
-    },
-    onError: (error) => {
-      console.error('❌ Game type creation failed:', error)
-    }
-  })
-}
-
-// Create Game Event Mutation
-export function useCreateGameEvent() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (eventData: Partial<GameEvent>) => {
-      console.log('🔄 Creating game event:', eventData.name)
-      
-      const { data, error } = await supabase
-        .from('game_events')
-        .insert([eventData])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating game event:', error)
-        throw error
-      }
-
-      console.log('✅ Game event created successfully:', data.name)
-      return data
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.events(data.game_id) })
-    },
-    onError: (error) => {
-      console.error('❌ Game event creation failed:', error)
-    }
-  })
-}
-
-// Create Game Class Mutation
-export function useCreateGameClass() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (classData: Partial<GameClass>) => {
-      console.log('🔄 Creating game class:', classData.name)
-      
-      const { data, error } = await supabase
-        .from('game_classes')
-        .insert([classData])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating game class:', error)
-        throw error
-      }
-
-      console.log('✅ Game class created successfully:', data.name)
-      return data
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.classes(data.game_id) })
-    },
-    onError: (error) => {
-      console.error('❌ Game class creation failed:', error)
-    }
-  })
-}
-
-// Create Event Track Mutation
-export function useCreateEventTrack() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (trackData: Partial<EventTrack>) => {
-      console.log('🔄 Creating event track:', trackData.name)
-      
-      const { data, error } = await supabase
-        .from('event_tracks')
-        .insert([trackData])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating event track:', error)
-        throw error
-      }
-
-      console.log('✅ Event track created successfully:', data.name)
-      return data
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.tracks(data.event_id) })
-      // Also invalidate events to refresh track counts
-      queryClient.invalidateQueries({ queryKey: gameKeys.all })
-    },
-    onError: (error) => {
-      console.error('❌ Event track creation failed:', error)
-    }
-  })
-}
-
-// Delete Game Mutation
-export function useDeleteGame() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (gameId: string) => {
-      console.log('🔄 Deleting game:', gameId)
-      
-      const { error } = await supabase
-        .from('games')
-        .delete()
-        .eq('id', gameId)
-
-      if (error) {
-        console.error('Error deleting game:', error)
-        throw error
-      }
-
-      console.log('✅ Game deleted successfully')
-      return gameId
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.all })
-    },
-    onError: (error) => {
-      console.error('❌ Game deletion failed:', error)
-    }
-  })
-}
-
-// Update Game Mutation
-export function useUpdateGame() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
+  const updateGame = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Game> & { id: string }) => {
-      console.log('🔄 Updating game:', id)
-      
-      const { data, error } = await supabase
-        .from('games')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error updating game:', error)
-        throw error
+      try {
+        return await DatabaseService.update<Game>('games', id, updates)
+      } catch (error) {
+        throw handleQueryError(error, 'Update game')
       }
-
-      console.log('✅ Game updated successfully:', data.name)
-      return data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.all })
-    },
-    onError: (error) => {
-      console.error('❌ Game update failed:', error)
-    }
+    onSuccess: invalidateAll,
+    onError: (error) => console.error('❌ Game update failed:', error)
   })
+
+  const deleteGame = useMutation({
+    mutationFn: async (gameId: string) => {
+      try {
+        await DatabaseService.delete('games', gameId)
+        return gameId
+      } catch (error) {
+        throw handleQueryError(error, 'Delete game')
+      }
+    },
+    onSuccess: invalidateAll,
+    onError: (error) => console.error('❌ Game deletion failed:', error)
+  })
+
+  return { createGame, updateGame, deleteGame }
 }
 
-// Delete Game Type Mutation
-export function useDeleteGameType() {
+// ============= Game Type Mutations =============
+export function useGameTypeMutations() {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (typeId: string) => {
-      console.log('🔄 Deleting game type:', typeId)
-      
-      const { error } = await supabase
-        .from('game_types')
-        .delete()
-        .eq('id', typeId)
+  const invalidateTypes = (gameId?: string) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.gameTypes(gameId) })
+  }
 
-      if (error) {
-        console.error('Error deleting game type:', error)
-        throw error
+  const createGameType = useMutation({
+    mutationFn: async (typeData: Partial<GameType>) => {
+      try {
+        return await DatabaseService.create<GameType>('game_types', {
+          ...typeData,
+          is_active: true,
+          min_participants: 1
+        })
+      } catch (error) {
+        throw handleQueryError(error, 'Create game type')
       }
-
-      console.log('✅ Game type deleted successfully')
-      return typeId
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.all })
-    },
-    onError: (error) => {
-      console.error('❌ Game type deletion failed:', error)
-    }
+    onSuccess: (data) => invalidateTypes(data.game_id),
+    onError: (error) => console.error('❌ Game type creation failed:', error)
   })
-}
 
-// Update Game Type Mutation
-export function useUpdateGameType() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
+  const updateGameType = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<GameType> & { id: string }) => {
-      console.log('🔄 Updating game type:', id)
-      
-      const { data, error } = await supabase
-        .from('game_types')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error updating game type:', error)
-        throw error
+      try {
+        return await DatabaseService.update<GameType>('game_types', id, updates)
+      } catch (error) {
+        throw handleQueryError(error, 'Update game type')
       }
-
-      console.log('✅ Game type updated successfully:', data.name)
-      return data
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.types(data.game_id) })
-    },
-    onError: (error) => {
-      console.error('❌ Game type update failed:', error)
-    }
+    onSuccess: (data) => invalidateTypes(data.game_id),
+    onError: (error) => console.error('❌ Game type update failed:', error)
   })
+
+  const deleteGameType = useMutation({
+    mutationFn: async (typeId: string) => {
+      try {
+        await DatabaseService.delete('game_types', typeId)
+        return typeId
+      } catch (error) {
+        throw handleQueryError(error, 'Delete game type')
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.games.all }),
+    onError: (error) => console.error('❌ Game type deletion failed:', error)
+  })
+
+  return { createGameType, updateGameType, deleteGameType }
 }
 
-// Delete Game Event Mutation
-export function useDeleteGameEvent() {
+// ============= Game Event Mutations =============
+export function useGameEventMutations() {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (eventId: string) => {
-      console.log('🔄 Deleting game event:', eventId)
-      
-      const { error } = await supabase
-        .from('game_events')
-        .delete()
-        .eq('id', eventId)
+  const invalidateEvents = (gameId?: string) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.gameEvents(gameId) })
+  }
 
-      if (error) {
-        console.error('Error deleting game event:', error)
-        throw error
+  const createGameEvent = useMutation({
+    mutationFn: async (eventData: Partial<GameEvent>) => {
+      try {
+        return await DatabaseService.create<GameEvent>('game_events', {
+          ...eventData,
+          is_active: true
+        })
+      } catch (error) {
+        throw handleQueryError(error, 'Create game event')
       }
-
-      console.log('✅ Game event deleted successfully')
-      return eventId
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.all })
-    },
-    onError: (error) => {
-      console.error('❌ Game event deletion failed:', error)
-    }
+    onSuccess: (data) => invalidateEvents(data.game_id),
+    onError: (error) => console.error('❌ Game event creation failed:', error)
   })
-}
 
-// Update Game Event Mutation
-export function useUpdateGameEvent() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
+  const updateGameEvent = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<GameEvent> & { id: string }) => {
-      console.log('🔄 Updating game event:', id)
-      
-      const { data, error } = await supabase
-        .from('game_events')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error updating game event:', error)
-        throw error
+      try {
+        return await DatabaseService.update<GameEvent>('game_events', id, updates)
+      } catch (error) {
+        throw handleQueryError(error, 'Update game event')
       }
-
-      console.log('✅ Game event updated successfully:', data.name)
-      return data
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.events(data.game_id) })
-    },
-    onError: (error) => {
-      console.error('❌ Game event update failed:', error)
-    }
+    onSuccess: (data) => invalidateEvents(data.game_id),
+    onError: (error) => console.error('❌ Game event update failed:', error)
   })
+
+  const deleteGameEvent = useMutation({
+    mutationFn: async (eventId: string) => {
+      try {
+        await DatabaseService.delete('game_events', eventId)
+        return eventId
+      } catch (error) {
+        throw handleQueryError(error, 'Delete game event')
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.games.all }),
+    onError: (error) => console.error('❌ Game event deletion failed:', error)
+  })
+
+  return { createGameEvent, updateGameEvent, deleteGameEvent }
 }
 
-// Delete Game Class Mutation
-export function useDeleteGameClass() {
+// ============= Game Class Mutations =============
+export function useGameClassMutations() {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (classId: string) => {
-      console.log('🔄 Deleting game class:', classId)
-      
-      const { error } = await supabase
-        .from('game_classes')
-        .delete()
-        .eq('id', classId)
+  const invalidateClasses = (gameId?: string) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.gameClasses(gameId) })
+  }
 
-      if (error) {
-        console.error('Error deleting game class:', error)
-        throw error
+  const createGameClass = useMutation({
+    mutationFn: async (classData: Partial<GameClass>) => {
+      try {
+        return await DatabaseService.create<GameClass>('game_classes', {
+          ...classData,
+          is_active: true,
+          skill_level: 'intermediate'
+        })
+      } catch (error) {
+        throw handleQueryError(error, 'Create game class')
       }
-
-      console.log('✅ Game class deleted successfully')
-      return classId
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.all })
-    },
-    onError: (error) => {
-      console.error('❌ Game class deletion failed:', error)
-    }
+    onSuccess: (data) => invalidateClasses(data.game_id),
+    onError: (error) => console.error('❌ Game class creation failed:', error)
   })
-}
 
-// Update Game Class Mutation
-export function useUpdateGameClass() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
+  const updateGameClass = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<GameClass> & { id: string }) => {
-      console.log('🔄 Updating game class:', id)
-      
-      const { data, error } = await supabase
-        .from('game_classes')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error updating game class:', error)
-        throw error
+      try {
+        return await DatabaseService.update<GameClass>('game_classes', id, updates)
+      } catch (error) {
+        throw handleQueryError(error, 'Update game class')
       }
+    },
+    onSuccess: (data) => invalidateClasses(data.game_id),
+    onError: (error) => console.error('❌ Game class update failed:', error)
+  })
 
-      console.log('✅ Game class updated successfully:', data.name)
-      return data
+  const deleteGameClass = useMutation({
+    mutationFn: async (classId: string) => {
+      try {
+        await DatabaseService.delete('game_classes', classId)
+        return classId
+      } catch (error) {
+        throw handleQueryError(error, 'Delete game class')
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.games.all }),
+    onError: (error) => console.error('❌ Game class deletion failed:', error)
+  })
+
+  return { createGameClass, updateGameClass, deleteGameClass }
+}
+
+// ============= Event Track Mutations =============
+export function useEventTrackMutations() {
+  const queryClient = useQueryClient()
+
+  const invalidateTracks = (eventId?: string) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.eventTracks(eventId) })
+  }
+
+  const createEventTrack = useMutation({
+    mutationFn: async (trackData: Partial<EventTrack>) => {
+      try {
+        return await DatabaseService.create<EventTrack>('event_tracks', {
+          ...trackData,
+          is_active: true,
+          is_special_stage: trackData.is_special_stage || false
+        })
+      } catch (error) {
+        throw handleQueryError(error, 'Create event track')
+      }
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.classes(data.game_id) })
+      invalidateTracks(data.event_id)
+      queryClient.invalidateQueries({ queryKey: queryKeys.games.all })
     },
-    onError: (error) => {
-      console.error('❌ Game class update failed:', error)
-    }
+    onError: (error) => console.error('❌ Event track creation failed:', error)
   })
-}
 
-// Delete Event Track Mutation
-export function useDeleteEventTrack() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (trackId: string) => {
-      console.log('🔄 Deleting event track:', trackId)
-      
-      const { error } = await supabase
-        .from('event_tracks')
-        .delete()
-        .eq('id', trackId)
-
-      if (error) {
-        console.error('Error deleting event track:', error)
-        throw error
-      }
-
-      console.log('✅ Event track deleted successfully')
-      return trackId
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.all })
-    },
-    onError: (error) => {
-      console.error('❌ Event track deletion failed:', error)
-    }
-  })
-}
-
-// Update Event Track Mutation
-export function useUpdateEventTrack() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
+  const updateEventTrack = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<EventTrack> & { id: string }) => {
-      console.log('🔄 Updating event track:', id)
-      
-      const { data, error } = await supabase
-        .from('event_tracks')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error updating event track:', error)
-        throw error
+      try {
+        return await DatabaseService.update<EventTrack>('event_tracks', id, updates)
+      } catch (error) {
+        throw handleQueryError(error, 'Update event track')
       }
-
-      console.log('✅ Event track updated successfully:', data.name)
-      return data
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.tracks(data.event_id) })
-      queryClient.invalidateQueries({ queryKey: gameKeys.all })
+      invalidateTracks(data.event_id)
+      queryClient.invalidateQueries({ queryKey: queryKeys.games.all })
     },
-    onError: (error) => {
-      console.error('❌ Event track update failed:', error)
-    }
+    onError: (error) => console.error('❌ Event track update failed:', error)
   })
+
+  const deleteEventTrack = useMutation({
+    mutationFn: async (trackId: string) => {
+      try {
+        await DatabaseService.delete('event_tracks', trackId)
+        return trackId
+      } catch (error) {
+        throw handleQueryError(error, 'Delete event track')
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.games.all }),
+    onError: (error) => console.error('❌ Event track deletion failed:', error)
+  })
+
+  return { createEventTrack, updateEventTrack, deleteEventTrack }
 }

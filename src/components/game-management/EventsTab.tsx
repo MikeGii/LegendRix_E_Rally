@@ -1,84 +1,71 @@
+// src/components/game-management/EventsTab.tsx - Optimized version
 import { useState } from 'react'
-import { Game, GameEvent, useCreateGameEvent, useDeleteGameEvent, useUpdateGameEvent } from '@/hooks/useGameManagement'
-import { CreateGameEventModal } from './CreateGameEventModal'
-import { EventTracksModal } from './EventTracksModal'
+import { useGameEventMutations, useEventTracks } from '@/hooks/useGameManagement'
+import { EmptyState, SelectionRequired, LoadingState } from '@/components/shared/States'
+import { ConfirmModal, FormModal } from '@/components/shared/Modal'
+import { Input, Textarea, Select, FormGrid, FormActions, Button } from '@/components/shared/FormComponents'
+import { formatDateTime } from '@/lib/statusUtils'
+import type { Game, GameEvent } from '@/types'
 
 interface EventsTabProps {
   events: GameEvent[]
   selectedGame: Game | undefined
-  isLoading: boolean
   onRefresh: () => void
 }
 
-export function EventsTab({ events, selectedGame, isLoading, onRefresh }: EventsTabProps) {
+export function EventsTab({ events, selectedGame, onRefresh }: EventsTabProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState<GameEvent | null>(null)
+  const [deletingEvent, setDeletingEvent] = useState<GameEvent | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<GameEvent | null>(null)
-  
-  const createGameEventMutation = useCreateGameEvent()
-  const deleteGameEventMutation = useDeleteGameEvent()
-  const updateGameEventMutation = useUpdateGameEvent()
 
-  const handleCreateGameEvent = async (eventData: Partial<GameEvent>) => {
+  const { createGameEvent, updateGameEvent, deleteGameEvent } = useGameEventMutations()
+
+  const handleCreate = async (eventData: Partial<GameEvent>) => {
     if (!selectedGame) return
     
     try {
-      await createGameEventMutation.mutateAsync({
-        ...eventData,
-        game_id: selectedGame.id
-      })
+      await createGameEvent.mutateAsync({ ...eventData, game_id: selectedGame.id })
       setShowCreateModal(false)
+      onRefresh()
     } catch (error) {
       console.error('Failed to create game event:', error)
     }
   }
 
-  const handleUpdateGameEvent = async (eventData: Partial<GameEvent>) => {
+  const handleUpdate = async (eventData: Partial<GameEvent>) => {
     if (!editingEvent) return
     
     try {
-      await updateGameEventMutation.mutateAsync({
-        id: editingEvent.id,
-        ...eventData
-      })
+      await updateGameEvent.mutateAsync({ id: editingEvent.id, ...eventData })
       setEditingEvent(null)
+      onRefresh()
     } catch (error) {
       console.error('Failed to update game event:', error)
     }
   }
 
-  const handleDeleteGameEvent = async (eventId: string, eventName: string) => {
-    if (!confirm(`Are you sure you want to delete "${eventName}"? This will also delete all associated tracks.`)) {
-      return
-    }
-
+  const handleDelete = async () => {
+    if (!deletingEvent) return
+    
     try {
-      await deleteGameEventMutation.mutateAsync(eventId)
+      await deleteGameEvent.mutateAsync(deletingEvent.id)
+      setDeletingEvent(null)
+      onRefresh()
     } catch (error) {
       console.error('Failed to delete game event:', error)
     }
   }
 
+  const isLoading = createGameEvent.isPending || updateGameEvent.isPending || deleteGameEvent.isPending
+
   if (!selectedGame) {
     return (
-      <div className="text-center py-16">
-        <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-4xl text-slate-500">🌍</span>
-        </div>
-        <h3 className="text-lg font-semibold text-white mb-2">No Game Selected</h3>
-        <p className="text-slate-400">Please select a game first to manage its events</p>
-      </div>
-    )
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading game events...</p>
-        </div>
-      </div>
+      <SelectionRequired
+        title="No Game Selected"
+        message="Please select a game first to manage its events"
+        icon="🌍"
+      />
     )
   }
 
@@ -89,116 +76,73 @@ export function EventsTab({ events, selectedGame, isLoading, onRefresh }: Events
           <span>🌍</span>
           <span>Events for {selectedGame.name} ({events.length})</span>
         </h2>
-        <button
+        <Button
           onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-green-500/25"
+          variant="success"
+          icon="➕"
+          disabled={isLoading}
         >
-          <div className="flex items-center space-x-2">
-            <span>➕</span>
-            <span>Add Event</span>
-          </div>
-        </button>
+          Add Event
+        </Button>
       </div>
 
-      {events.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-4xl text-slate-500">🌍</span>
-          </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No Events</h3>
-          <p className="text-slate-400 mb-6">Add events like Rally Estonia, Rally Croatia, etc.</p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all duration-200"
-          >
-            Add First Event
-          </button>
-        </div>
+      {isLoading && <LoadingState message="Processing event operation..." />}
+
+      {!isLoading && events.length === 0 ? (
+        <EmptyState
+          title="No Events"
+          message="Add rally events like Rally Estonia, Rally Finland, etc."
+          icon="🌍"
+          action={{
+            label: "Add First Event",
+            onClick: () => setShowCreateModal(true)
+          }}
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {events.map((event) => (
-            <div key={event.id} className="bg-slate-900/50 rounded-xl border border-slate-700/30 p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
-                    <span className="text-green-300 text-xl">🌍</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white">{event.name}</h3>
-                    <p className="text-sm text-slate-400">{event.country || 'Unknown'}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setSelectedEvent(event)}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-all duration-200"
-                  >
-                    {event.tracks?.length || 0} Tracks
-                  </button>
-                  
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={() => setEditingEvent(event)}
-                      className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
-                      title="Edit"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDeleteGameEvent(event.id, event.name)}
-                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
-                      title="Delete"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {event.description && (
-                <p className="text-slate-300 text-sm mb-4">{event.description}</p>
-              )}
-
-              <div className="space-y-2 text-sm">
-                {event.surface_type && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Surface:</span>
-                    <span className="text-slate-300 capitalize">{event.surface_type}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Status:</span>
-                  <span className={`${event.is_active ? 'text-green-400' : 'text-red-400'}`}>
-                    {event.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <EventCard
+              key={event.id}
+              event={event}
+              onEdit={setEditingEvent}
+              onDelete={setDeletingEvent}
+              onViewTracks={() => setSelectedEvent(event)}
+            />
           ))}
         </div>
       )}
 
-      {/* Create Modal */}
+      {/* Modals */}
       {showCreateModal && (
-        <CreateGameEventModal
+        <EventModal
           onClose={() => setShowCreateModal(false)}
-          onSubmit={handleCreateGameEvent}
-          isLoading={createGameEventMutation.isPending}
+          onSubmit={handleCreate}
+          isLoading={createGameEvent.isPending}
         />
       )}
 
-      {/* Edit Modal */}
       {editingEvent && (
-        <CreateGameEventModal
-          gameEvent={editingEvent}
+        <EventModal
+          event={editingEvent}
           onClose={() => setEditingEvent(null)}
-          onSubmit={handleUpdateGameEvent}
-          isLoading={updateGameEventMutation.isPending}
+          onSubmit={handleUpdate}
+          isLoading={updateGameEvent.isPending}
         />
       )}
 
-      {/* Tracks Modal */}
+      {deletingEvent && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={() => setDeletingEvent(null)}
+          onConfirm={handleDelete}
+          title="Delete Event"
+          message={`Delete "${deletingEvent.name}"? This will also delete all associated tracks.`}
+          confirmText="Delete Event"
+          confirmColor="red"
+          isLoading={deleteGameEvent.isPending}
+        />
+      )}
+
       {selectedEvent && (
         <EventTracksModal
           event={selectedEvent}
@@ -206,5 +150,168 @@ export function EventsTab({ events, selectedGame, isLoading, onRefresh }: Events
         />
       )}
     </div>
+  )
+}
+
+// Event Card Component
+interface EventCardProps {
+  event: GameEvent
+  onEdit: (event: GameEvent) => void
+  onDelete: (event: GameEvent) => void
+  onViewTracks: () => void
+}
+
+function EventCard({ event, onEdit, onDelete, onViewTracks }: EventCardProps) {
+  const { data: tracks = [] } = useEventTracks(event.id)
+
+  return (
+    <div className="bg-slate-900/50 rounded-xl border border-slate-700/30 p-6 group hover:border-slate-600 transition-all duration-200">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+            <span className="text-green-300 text-xl">🌍</span>
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">{event.name}</h3>
+            <p className="text-sm text-slate-400">{event.country || 'Unknown'}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Button
+            onClick={onViewTracks}
+            variant="ghost"
+            size="sm"
+          >
+            {tracks.length} Tracks
+          </Button>
+          
+          <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button
+              onClick={() => onEdit(event)}
+              className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
+            >
+              ✏️
+            </button>
+            <button
+              onClick={() => onDelete(event)}
+              className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+            >
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {event.description && (
+        <p className="text-slate-300 text-sm mb-4 line-clamp-2">{event.description}</p>
+      )}
+
+      <div className="space-y-2 text-sm">
+        {event.surface_type && (
+          <div className="flex justify-between">
+            <span className="text-slate-400">Surface:</span>
+            <span className="text-slate-300 capitalize">{event.surface_type}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span className="text-slate-400">Status:</span>
+          <span className={event.is_active ? 'text-green-400' : 'text-red-400'}>
+            {event.is_active ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-400">Tracks:</span>
+          <span className="text-slate-300">{tracks.length} tracks</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Event Modal Component
+interface EventModalProps {
+  event?: GameEvent | null
+  onClose: () => void
+  onSubmit: (eventData: Partial<GameEvent>) => void
+  isLoading: boolean
+}
+
+function EventModal({ event, onClose, onSubmit, isLoading }: EventModalProps) {
+  const [formData, setFormData] = useState({
+    name: event?.name || '',
+    country: event?.country || '',
+    surface_type: event?.surface_type || 'gravel',
+    description: event?.description || '',
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
+  }
+
+  const surfaceOptions = [
+    { value: 'gravel', label: 'Gravel' },
+    { value: 'tarmac', label: 'Tarmac' },
+    { value: 'snow', label: 'Snow' },
+    { value: 'mixed', label: 'Mixed' },
+  ]
+
+  return (
+    <FormModal
+      isOpen={true}
+      onClose={onClose}
+      title={`${event ? 'Edit' : 'Create'} Game Event`}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+          <p className="text-blue-300 text-sm">
+            <strong>{event ? 'Update:' : 'Step 1:'}</strong> {event ? 'Modify' : 'Create'} the event first. 
+            You can add tracks to this event later.
+          </p>
+        </div>
+
+        <FormGrid columns={2}>
+          <Input
+            label="Event Name"
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="e.g., Rally Estonia, Rally Finland"
+            required
+          />
+          
+          <Input
+            label="Country"
+            value={formData.country}
+            onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
+            placeholder="e.g., Estonia, Finland"
+          />
+        </FormGrid>
+
+        <Select
+          label="Surface Type"
+          value={formData.surface_type}
+          onChange={(e) => setFormData(prev => ({ ...prev, surface_type: e.target.value }))}
+          options={surfaceOptions}
+        />
+        
+        <Textarea
+          label="Description"
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Event description..."
+          rows={3}
+        />
+
+        <FormActions>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="success" loading={isLoading} disabled={!formData.name}>
+            {event ? 'Update Event' : 'Create Event'}
+          </Button>
+        </FormActions>
+      </form>
+    </FormModal>
   )
 }
