@@ -1,5 +1,6 @@
-// src/lib/supabase.ts - Enhanced session management
+// src/lib/supabase.ts - Fixed version with proper type handling
 import { createClient } from '@supabase/supabase-js'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -38,7 +39,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 })
 
-// Database Types
+// Custom User interface for your application
 export interface User {
   id: string
   name: string
@@ -86,14 +87,31 @@ export const getSession = async () => {
   }
 }
 
-// Helper function to get user with type safety
-export const getUser = async (): Promise<User | null> => {
+// Helper function to get user with type safety - FIXED VERSION
+export const getUser = async (): Promise<SupabaseUser | null> => {
   try {
     const { data: { user }, error } = await supabase.auth.getUser()
     if (error) throw error
-    return user as User | null
+    return user // Return the original Supabase user, no type conversion
   } catch (error) {
     console.error('Error getting user:', error)
+    return null
+  }
+}
+
+// New function to get your custom User profile from the database
+export const getUserProfile = async (userId: string): Promise<User | null> => {
+  try {
+    const { data: profile, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (error) throw error
+    return profile as User
+  } catch (error) {
+    console.error('Error getting user profile:', error)
     return null
   }
 }

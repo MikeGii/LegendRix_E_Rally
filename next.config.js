@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    // Enable server components
-    serverComponentsExternalPackages: ['@supabase/supabase-js']
-  },
+  // Updated for Next.js 15 - moved from experimental.serverComponentsExternalPackages
+  serverExternalPackages: ['@supabase/supabase-js'],
   
   // Environment variables
   env: {
