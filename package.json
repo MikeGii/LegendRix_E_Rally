@@ -10,33 +10,25 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.50.0",
     "@tanstack/react-query": "^5.80.6",
     "@tanstack/react-query-devtools": "^5.80.6",
-    "next": "^14.1.0",
+    "next": "^15.3.3",
     "nodemailer": "^6.9.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.57.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^20.19.0",
     "@types/nodemailer": "^6.4.14",
-    "@types/react": "^18.2.45",
-    "@types/react-dom": "^18.2.18",
-    "@typescript-eslint/eslint-plugin": "^8.34.0",
-    "@typescript-eslint/parser": "^8.34.0",
-    "autoprefixer": "^10.4.21",
-    "eslint": "^9.28.0",
-    "eslint-config-next": "14.2.29",
-    "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-prettier": "^5.4.1",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.1.0",
-    "postcss": "^8.5.4",
-    "prettier": "^3.5.3",
-    "tailwindcss": "3.3.5",
-    "typescript": "^5.8.3"
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.1.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5"
   }
 }
