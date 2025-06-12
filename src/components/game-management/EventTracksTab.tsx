@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { Game, GameEvent, EventTrack } from '@/types'
 import { useCreateEventTrack, useUpdateEventTrack, useDeleteEventTrack } from '@/hooks/useGameManagement'
-import { FormModal } from '@/components/shared/Modal'
+import { FormModal } from '@/components/ui/Modal'
 
 interface EventTracksTabProps {
   eventTracks: EventTrack[]
@@ -28,22 +28,6 @@ const SURFACE_TYPES = [
   { value: 'asfalt', label: 'Asfalt (Tarmac)' },
   { value: 'lumi', label: 'Lumi (Snow)' },
   { value: 'muda', label: 'Muda (Mud)' }
-]
-
-// Common Estonian track names for suggestions
-const SUGGESTED_TRACK_NAMES = [
-  'Otepää',
-  'Tartu', 
-  'Elva',
-  'Tallinn',
-  'Pärnu',
-  'Viljandi',
-  'Rakvere',
-  'Narva',
-  'Kuressaare',
-  'Haapsalu',
-  'Võru',
-  'Valga'
 ]
 
 export function EventTracksTab({ 
@@ -129,10 +113,6 @@ export function EventTracksTab({
     setFormData({ name: '', surface_type: 'kruus', length_km: '' })
   }
 
-  const handleSuggestedTrack = (suggestedName: string) => {
-    setFormData(prev => ({ ...prev, name: suggestedName }))
-  }
-
   // No game selected
   if (!selectedGameId) {
     return (
@@ -157,29 +137,84 @@ export function EventTracksTab({
     )
   }
 
-  // No event selected
+  // No event selected - show available events to choose from
   if (!selectedEventId) {
     return (
-      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-3xl">🛣️</span>
+      <div className="space-y-6">
+        
+        {/* Header with Game Selection */}
+        <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-white mb-2">
+                Event Tracks for: <span className="text-blue-400">{selectedGame?.name}</span>
+              </h2>
+              <p className="text-slate-400">
+                First select an event to manage its tracks
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <select
+                value={selectedGameId}
+                onChange={(e) => onGameChange(e.target.value)}
+                className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 text-sm"
+              >
+                {games.map((game) => (
+                  <option key={game.id} value={game.id}>{game.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <h3 className="text-xl font-semibold text-white mb-3">No Event Selected</h3>
-          <p className="text-slate-400 mb-6">
-            Select an event to manage its tracks.
-          </p>
-          {gameEvents.length > 0 ? (
-            <button
-              onClick={() => onEventChange(gameEvents[0].id)}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200"
-            >
-              Select First Event
-            </button>
-          ) : (
-            <p className="text-slate-500">Create events first in the Game Events tab</p>
-          )}
         </div>
+
+        {/* Available Events to Choose From */}
+        {gameEvents.length === 0 ? (
+          <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">🏁</span>
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">No Events Available</h3>
+              <p className="text-slate-400 mb-4">
+                Create events first in the Game Events tab, then come back here to add tracks.
+              </p>
+              <button
+                onClick={() => {
+                  // Switch to events tab - you may need to pass this function from parent
+                  window.location.hash = '#events'
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
+              >
+                Go to Game Events
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Select an Event to Manage Tracks</h3>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {gameEvents.map((event) => (
+                <div 
+                  key={event.id}
+                  onClick={() => onEventChange(event.id)}
+                  className="bg-slate-700/50 rounded-xl border border-slate-600/50 p-4 hover:bg-slate-700 hover:border-blue-500/50 transition-all duration-200 cursor-pointer"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                      <span className="text-green-300 text-lg">🏁</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white">{event.name}</h4>
+                      <p className="text-sm text-slate-400">
+                        Click to manage tracks
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -316,36 +351,6 @@ export function EventTracksTab({
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* Suggested Track Names (only for new tracks) */}
-          {!editingTrack && (
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
-                Common Estonian Locations
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {SUGGESTED_TRACK_NAMES.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    onClick={() => handleSuggestedTrack(suggestion)}
-                    className={`
-                      px-3 py-2 text-left rounded-lg border transition-all duration-200 text-sm
-                      ${formData.name === suggestion
-                        ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                        : 'bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-slate-700 hover:border-slate-500'
-                      }
-                    `}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-              <div className="text-center my-4">
-                <span className="text-slate-500 text-sm">or enter custom track name below</span>
-              </div>
-            </div>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Track Name *
@@ -391,18 +396,6 @@ export function EventTracksTab({
               placeholder="Enter length in km..."
               className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
             />
-          </div>
-
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="text-yellow-400">⚠️</span>
-              <span className="text-yellow-300 font-medium">Track Requirements</span>
-            </div>
-            <ul className="text-sm text-yellow-200 space-y-1">
-              <li>• Only track name, surface type, and length are allowed</li>
-              <li>• No additional optional information permitted</li>
-              <li>• Keep track information simple and focused</li>
-            </ul>
           </div>
 
           <div className="flex space-x-3 pt-4">

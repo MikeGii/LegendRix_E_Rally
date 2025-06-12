@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { Game, GameClass } from '@/types'
 import { useCreateGameClass, useUpdateGameClass, useDeleteGameClass } from '@/hooks/useGameManagement'
-import { FormModal } from '@/components/shared/Modal'
+import { FormModal } from '@/components/ui/Modal'
 
 interface GameClassesTabProps {
   gameClasses: GameClass[]
@@ -16,30 +16,6 @@ interface GameClassesTabProps {
 interface GameClassFormData {
   name: string
 }
-
-// Common rally class names
-const SUGGESTED_CLASS_NAMES = [
-  'WRC',
-  'Rally2',
-  'Rally3',
-  'Rally4',
-  'Rally5',
-  'Historic',
-  'Junior WRC',
-  'R5',
-  'N5',
-  'A8',
-  'A7',
-  'A6',
-  'Group B',
-  'Group A',
-  'Open Class',
-  'Rookie',
-  'Veterans',
-  'Masters',
-  'Ladies',
-  'Co-drivers'
-]
 
 export function GameClassesTab({ gameClasses, games, selectedGameId, onGameChange }: GameClassesTabProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -102,10 +78,6 @@ export function GameClassesTab({ gameClasses, games, selectedGameId, onGameChang
     setIsCreateModalOpen(false)
     setEditingClass(null)
     setFormData({ name: '' })
-  }
-
-  const handleSuggestedClass = (suggestedName: string) => {
-    setFormData({ name: suggestedName })
   }
 
   // No game selected
@@ -242,36 +214,6 @@ export function GameClassesTab({ gameClasses, games, selectedGameId, onGameChang
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* Suggested Classes (only for new classes) */}
-          {!editingClass && (
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
-                Common Rally Classes
-              </label>
-              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                {SUGGESTED_CLASS_NAMES.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    onClick={() => handleSuggestedClass(suggestion)}
-                    className={`
-                      px-3 py-2 text-left rounded-lg border transition-all duration-200 text-sm
-                      ${formData.name === suggestion
-                        ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                        : 'bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-slate-700 hover:border-slate-500'
-                      }
-                    `}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-              <div className="text-center my-4">
-                <span className="text-slate-500 text-sm">or create custom class below</span>
-              </div>
-            </div>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Class Name *
@@ -284,22 +226,6 @@ export function GameClassesTab({ gameClasses, games, selectedGameId, onGameChang
               className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
               required
             />
-            <p className="text-sm text-slate-500 mt-2">
-              Examples: WRC, Rally2, Historic, Junior WRC
-            </p>
-          </div>
-
-          <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="text-purple-400">ℹ️</span>
-              <span className="text-purple-300 font-medium">Class Guidelines</span>
-            </div>
-            <ul className="text-sm text-purple-200 space-y-1">
-              <li>• Only class name is required - no difficulty levels or additional info</li>
-              <li>• Classes are used for participant registration in rallies</li>
-              <li>• Keep names simple and recognizable to rally participants</li>
-              <li>• No skill levels, car requirements, or other metadata allowed</li>
-            </ul>
           </div>
 
           <div className="flex space-x-3 pt-4">

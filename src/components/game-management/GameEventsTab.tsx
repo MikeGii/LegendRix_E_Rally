@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { Game, GameEvent } from '@/types'
 import { useCreateGameEvent, useUpdateGameEvent, useDeleteGameEvent } from '@/hooks/useGameManagement'
-import { FormModal } from '@/components/shared/Modal'
+import { FormModal } from '@/components/ui/Modal'
 
 interface GameEventsTabProps {
   gameEvents: GameEvent[]
@@ -17,25 +17,6 @@ interface GameEventsTabProps {
 interface GameEventFormData {
   name: string
 }
-
-// Predefined rally events for Estonia and neighboring regions
-const SUGGESTED_RALLY_EVENTS = [
-  'Rally Estonia',
-  'Rally Latvia', 
-  'Rally Finland',
-  'Rally Sweden',
-  'Rally Croatia',
-  'Rally Poland',
-  'Rally Sardinia',
-  'Rally Portugal',
-  'Rally Spain',
-  'Rally Monte Carlo',
-  'Rally Chile',
-  'Rally Turkey',
-  'Rally New Zealand',
-  'Rally Kenya',
-  'Rally Japan'
-]
 
 export function GameEventsTab({ 
   gameEvents, 
@@ -104,10 +85,6 @@ export function GameEventsTab({
     setIsCreateModalOpen(false)
     setEditingEvent(null)
     setFormData({ name: '' })
-  }
-
-  const handleSuggestedEvent = (suggestedName: string) => {
-    setFormData({ name: suggestedName })
   }
 
   // No game selected
@@ -251,36 +228,6 @@ export function GameEventsTab({
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* Suggested Events (only for new events) */}
-          {!editingEvent && (
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
-                Popular Rally Events
-              </label>
-              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                {SUGGESTED_RALLY_EVENTS.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    onClick={() => handleSuggestedEvent(suggestion)}
-                    className={`
-                      px-3 py-2 text-left rounded-lg border transition-all duration-200 text-sm
-                      ${formData.name === suggestion
-                        ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                        : 'bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-slate-700 hover:border-slate-500'
-                      }
-                    `}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-              <div className="text-center my-4">
-                <span className="text-slate-500 text-sm">or create custom event below</span>
-              </div>
-            </div>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Event Name *
@@ -293,21 +240,6 @@ export function GameEventsTab({
               className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
               required
             />
-            <p className="text-sm text-slate-500 mt-2">
-              Examples: Rally Estonia, Rally Latvia, Rally Finland
-            </p>
-          </div>
-
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="text-blue-400">ℹ️</span>
-              <span className="text-blue-300 font-medium">Event Guidelines</span>
-            </div>
-            <ul className="text-sm text-blue-200 space-y-1">
-              <li>• Only event name is required - no country or location details</li>
-              <li>• Track details will be managed separately in the Event Tracks tab</li>
-              <li>• Keep names simple and recognizable</li>
-            </ul>
           </div>
 
           <div className="flex space-x-3 pt-4">

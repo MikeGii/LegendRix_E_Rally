@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { Game, GameType } from '@/types'
 import { useCreateGameType, useUpdateGameType, useDeleteGameType } from '@/hooks/useGameManagement'
-import { FormModal } from '@/components/shared/Modal'
+import { FormModal } from '@/components/ui/Modal'
 
 interface GameTypesTabProps {
   gameTypes: GameType[]
@@ -16,13 +16,6 @@ interface GameTypesTabProps {
 interface GameTypeFormData {
   name: string
 }
-
-// Predefined game type options for Estonian rally terminology
-const SUGGESTED_GAME_TYPES = [
-  'Meistrivõistlused',
-  'Treening', 
-  'Kiire Mäng'
-]
 
 export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }: GameTypesTabProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -85,10 +78,6 @@ export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }:
     setIsCreateModalOpen(false)
     setEditingType(null)
     setFormData({ name: '' })
-  }
-
-  const handleSuggestedType = (suggestedName: string) => {
-    setFormData({ name: suggestedName })
   }
 
   // No game selected
@@ -219,36 +208,6 @@ export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }:
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* Suggested Types (only for new types) */}
-          {!editingType && (
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
-                Suggested Rally Types
-              </label>
-              <div className="grid grid-cols-1 gap-2">
-                {SUGGESTED_GAME_TYPES.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    onClick={() => handleSuggestedType(suggestion)}
-                    className={`
-                      px-4 py-3 text-left rounded-lg border transition-all duration-200
-                      ${formData.name === suggestion
-                        ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                        : 'bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-slate-700 hover:border-slate-500'
-                      }
-                    `}
-                  >
-                    <span className="font-medium">{suggestion}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="text-center my-4">
-                <span className="text-slate-500 text-sm">or create custom type below</span>
-              </div>
-            </div>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Type Name *
@@ -261,9 +220,6 @@ export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }:
               className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
               required
             />
-            <p className="text-sm text-slate-500 mt-2">
-              Examples: Meistrivõistlused, Treening, Kiire Mäng
-            </p>
           </div>
 
           <div className="flex space-x-3 pt-4">

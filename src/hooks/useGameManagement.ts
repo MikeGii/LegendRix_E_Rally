@@ -47,12 +47,17 @@ export function useCreateGame() {
     mutationFn: async (gameData: { name: string; description?: string }) => {
       console.log('🔄 Creating game:', gameData.name)
       
+      // Get current user session
+      const { data: { user } } = await supabase.auth.getUser()
+      console.log('👤 Current user for game creation:', user?.email)
+      
       const { data, error } = await supabase
         .from('games')
         .insert([{
           name: gameData.name.trim(),
           description: gameData.description?.trim() || null,
-          is_active: true
+          is_active: true,
+          created_by: user?.id || '026ecbe6-6741-4c17-a93d-760ea15d02df' // Fallback to your admin ID
         }])
         .select()
         .single()
