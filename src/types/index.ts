@@ -46,6 +46,7 @@ export interface GameType {
   max_participants?: number
   min_participants?: number
   duration_type?: string
+  duration_minutes?: number  // ADD THIS
   is_active: boolean
   created_at: string
   updated_at: string
@@ -61,6 +62,7 @@ export interface GameEvent {
   weather_conditions?: string
   difficulty_level?: number
   description?: string
+  max_participants?: number  // ADD THIS
   is_active: boolean
   created_at: string
   updated_at: string
@@ -76,7 +78,7 @@ export interface EventTrack {
   description?: string
   surface_type?: 'gravel' | 'tarmac' | 'snow' | 'mixed'
   is_special_stage: boolean
-  is_active: boolean
+  is_active: boolean  // ENSURE THIS EXISTS
   created_at: string
   updated_at: string
 }

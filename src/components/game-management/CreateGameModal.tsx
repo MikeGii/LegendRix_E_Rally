@@ -1,14 +1,13 @@
 // src/components/game-management/CreateGameModal.tsx - Optimized with form validation
+import { useState, useEffect } from 'react'
 import { FormModal } from '@/components/shared/Modal'
 import { Input, Textarea, Select, FormGrid, FormSection, FormActions, Button } from '@/components/shared/FormComponents'
 import type { Game } from '@/types'
-import type { GameFormData } from '@/types/game'
-import { useState, useEffect } from 'react'
 
 interface CreateGameModalProps {
   game?: Game | null
   onClose: () => void
-  onSubmit: (gameData: Partial<Game>) => void
+  onSubmit: (gameData: Partial<Game>) => void  // Change to match what GamesTab expects
   isLoading: boolean
 }
 
@@ -25,7 +24,7 @@ interface FormErrors {
   developer?: string
   platform?: string
   release_year?: string
-  description?: string  // Add missing description field
+  description?: string
 }
 
 const PLATFORM_OPTIONS = [
@@ -129,7 +128,7 @@ export function CreateGameModal({ game, onClose, onSubmit, isLoading }: CreateGa
       release_year: formData.release_year ? Number(formData.release_year) : undefined,
     }
 
-    onSubmit(submitData)
+    onSubmit(submitData)  // This now matches the expected Partial<Game> type
   }
 
   const hasErrors = Object.keys(errors).length > 0

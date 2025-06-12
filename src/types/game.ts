@@ -51,16 +51,17 @@ export interface GameClass {
 }
 
 export interface EventTrack {
-  length_km: any
-  is_special_stage: any
   id: string
   event_id: string
   name: string
   stage_number: number
   distance_km: number
+  length_km?: number
   difficulty: 'easy' | 'medium' | 'hard' | 'extreme'
   surface_type: string
   special_notes?: string
+  is_special_stage: boolean  // ADD THIS
+  is_active: boolean  // ADD THIS
   created_at: string
   updated_at: string
 }
