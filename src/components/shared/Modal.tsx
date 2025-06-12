@@ -1,85 +1,7 @@
-// src/components/shared/Modal.tsx - Complete Modal Components
-
+// src/components/shared/Modal.tsx - Universal Modal Components
 import { ReactNode } from 'react'
+import { Button } from './Button'
 
-// ============= Base Modal =============
-interface BaseModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title?: string | ReactNode
-  children: ReactNode
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
-  showCloseButton?: boolean
-}
-
-export function BaseModal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
-  maxWidth = 'md',
-  showCloseButton = true 
-}: BaseModalProps) {
-  if (!isOpen) return null
-
-  const maxWidthClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md', 
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl'
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div 
-        className="absolute inset-0"
-        onClick={onClose}
-      />
-      
-      <div className={`relative bg-slate-800 rounded-2xl border border-slate-700 w-full ${maxWidthClasses[maxWidth]} max-h-[90vh] overflow-hidden animate-fadeIn`}>
-        {title && (
-          <div className="flex items-center justify-between p-6 border-b border-slate-700">
-            <h3 className="text-xl font-semibold text-white">{title}</h3>
-            {showCloseButton && (
-              <button 
-                onClick={onClose}
-                className="text-slate-400 hover:text-white transition-colors"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        )}
-        
-        <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-          {children}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ============= Form Modal =============
-interface FormModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title: string | ReactNode
-  children: ReactNode
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
-}
-
-export function FormModal({ isOpen, onClose, title, children, maxWidth = 'md' }: FormModalProps) {
-  return (
-    <BaseModal isOpen={isOpen} onClose={onClose} title={title} maxWidth={maxWidth}>
-      <div className="p-6">
-        {children}
-      </div>
-    </BaseModal>
-  )
-}
-
-// ============= Confirmation Modal =============
 interface ConfirmModalProps {
   isOpen: boolean
   onClose: () => void
@@ -87,63 +9,140 @@ interface ConfirmModalProps {
   title: string
   message: string
   confirmText?: string
-  confirmColor?: 'red' | 'green' | 'blue' | 'purple'
-  isLoading?: boolean
-  icon?: string
+  cancelText?: string
+  variant?: 'danger' | 'warning' | 'info'
+  loading?: boolean
 }
 
 export function ConfirmModal({
   isOpen,
-  onClose, 
+  onClose,
   onConfirm,
   title,
   message,
   confirmText = 'Confirm',
-  confirmColor = 'blue',
-  isLoading = false,
-  icon
+  cancelText = 'Cancel',
+  variant = 'danger',
+  loading = false
 }: ConfirmModalProps) {
-  const colorClasses = {
-    red: 'bg-red-600 hover:bg-red-700 disabled:bg-red-800 hover:shadow-red-500/25',
-    green: 'bg-green-600 hover:bg-green-700 disabled:bg-green-800 hover:shadow-green-500/25',
-    blue: 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 hover:shadow-blue-500/25',
-    purple: 'bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 hover:shadow-purple-500/25'
+  if (!isOpen) return null
+
+  const variantConfig = {
+    danger: {
+      icon: '⚠️',
+      confirmVariant: 'danger' as const,
+      bgColor: 'bg-red-500/10',
+      borderColor: 'border-red-500/30'
+    },
+    warning: {
+      icon: '⚠️',
+      confirmVariant: 'primary' as const,
+      bgColor: 'bg-yellow-500/10',
+      borderColor: 'border-yellow-500/30'
+    },
+    info: {
+      icon: 'ℹ️',
+      confirmVariant: 'primary' as const,
+      bgColor: 'bg-blue-500/10',
+      borderColor: 'border-blue-500/30'
+    }
+  }
+
+  const config = variantConfig[variant]
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div 
+          className="fixed inset-0 transition-opacity bg-black bg-opacity-75"
+          onClick={onClose}
+        />
+        
+        <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-slate-800 shadow-xl rounded-2xl border border-slate-700">
+          <div className="flex items-start space-x-4">
+            <div className={`flex-shrink-0 w-12 h-12 rounded-full ${config.bgColor} border ${config.borderColor} flex items-center justify-center`}>
+              <span className="text-2xl">{config.icon}</span>
+            </div>
+            
+            <div className="flex-1 space-y-3">
+              <h3 className="text-lg font-semibold text-white">{title}</h3>
+              <p className="text-slate-300">{message}</p>
+              
+              <div className="flex space-x-3 pt-4">
+                <Button
+                  variant="secondary"
+                  onClick={onClose}
+                  disabled={loading}
+                  size="sm"
+                >
+                  {cancelText}
+                </Button>
+                <Button
+                  variant={config.confirmVariant}
+                  onClick={onConfirm}
+                  loading={loading}
+                  size="sm"
+                >
+                  {confirmText}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface InfoModalProps {
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  children: ReactNode
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+}
+
+export function InfoModal({ isOpen, onClose, title, children, maxWidth = 'md' }: InfoModalProps) {
+  if (!isOpen) return null
+
+  const maxWidthClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    '2xl': 'max-w-2xl'
   }
 
   return (
-    <BaseModal isOpen={isOpen} onClose={onClose} maxWidth="sm" showCloseButton={false}>
-      <div className="p-6">
-        <div className="flex items-center space-x-3 mb-4">
-          {icon && <span className="text-2xl">{icon}</span>}
-          <h3 className="text-xl font-semibold text-white">{title}</h3>
-        </div>
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div 
+          className="fixed inset-0 transition-opacity bg-black bg-opacity-75"
+          onClick={onClose}
+        />
         
-        <p className="text-slate-300 mb-6">{message}</p>
-        
-        <div className="flex space-x-4">
-          <button
-            onClick={onConfirm}
-            disabled={isLoading}
-            className={`flex-1 px-6 py-3 text-white rounded-xl font-medium transition-all duration-200 shadow-lg disabled:opacity-50 ${colorClasses[confirmColor]}`}
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                Processing...
-              </div>
-            ) : (
-              confirmText
-            )}
-          </button>
-          <button
-            onClick={onClose}
-            disabled={isLoading}
-            className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200"
-          >
-            Cancel
-          </button>
+        <div className={`inline-block w-full ${maxWidthClasses[maxWidth]} p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-slate-800 shadow-xl rounded-2xl border border-slate-700`}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-white">{title}</h3>
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-white transition-colors duration-200"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="text-slate-300">
+            {children}
+          </div>
+          
+          <div className="flex justify-end pt-6 border-t border-slate-700 mt-6">
+            <Button variant="secondary" onClick={onClose}>
+              Close
+            </Button>
+          </div>
         </div>
       </div>
-    </BaseModal>
+    </div>
   )
 }
