@@ -13,6 +13,7 @@ import type {
   GameEventFormData,
   GameClassFormData
 } from '@/types/game'
+import { handleQueryError, queryKeys } from '@/lib/queryUtils'
 
 // ============= Main Centralized Hook =============
 export function useGameManagement(selectedGameId?: string) {
@@ -265,44 +266,48 @@ export function useGameClassMutations() {
   const queryClient = useQueryClient()
 
   const invalidateClasses = (gameId?: string) => {
-    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.gameClasses(gameId) })
+    queryClient.invalidateQueries({ queryKey: queryKeys.gameClasses(gameId) })
   }
 
   const createGameClass = useMutation({
-    mutationFn: async (classData: GameClassFormData) => {
-      return DatabaseService.create<GameClass>('game_classes', {
-        ...classData,
-        is_active: true
-      })
+    mutationFn: async (classData: Partial<GameClass>) => {
+      try {
+        return await DatabaseService.create<GameClass>('game_classes', {
+          ...classData,
+          is_active: true,
+          skill_level: classData.skill_level || 'intermediate'
+        })
+      } catch (error) {
+        throw handleQueryError(error, 'Create game class')
+      }
     },
     onSuccess: (data) => invalidateClasses(data.game_id),
-    onError: (error) => {
-      console.error('❌ Game class creation failed:', error)
-      throw error
-    }
+    onError: (error) => console.error('❌ Game class creation failed:', error)
   })
 
   const updateGameClass = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<GameClass> & { id: string }) => {
-      return DatabaseService.update<GameClass>('game_classes', id, updates)
+      try {
+        return await DatabaseService.update<GameClass>('game_classes', id, updates)
+      } catch (error) {
+        throw handleQueryError(error, 'Update game class')
+      }
     },
     onSuccess: (data) => invalidateClasses(data.game_id),
-    onError: (error) => {
-      console.error('❌ Game class update failed:', error)
-      throw error
-    }
+    onError: (error) => console.error('❌ Game class update failed:', error)
   })
 
   const deleteGameClass = useMutation({
     mutationFn: async (classId: string) => {
-      await DatabaseService.delete('game_classes', classId)
-      return classId
+      try {
+        await DatabaseService.delete('game_classes', classId)
+        return classId
+      } catch (error) {
+        throw handleQueryError(error, 'Delete game class')
+      }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.games.all }),
-    onError: (error) => {
-      console.error('❌ Game class deletion failed:', error)
-      throw error
-    }
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.games.all }),
+    onError: (error) => console.error('❌ Game class deletion failed:', error)
   })
 
   return { 
@@ -312,6 +317,65 @@ export function useGameClassMutations() {
     isCreating: createGameClass.isPending,
     isUpdating: updateGameClass.isPending,
     isDeleting: deleteGameClass.isPending
+  }
+}
+
+// ============= Event Track Mutations =============
+export function useEventTrackMutations() {
+  const queryClient = useQueryClient()
+
+  const invalidateTracks = (eventId?: string) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.eventTracks(eventId) })
+  }
+
+  const createEventTrack = useMutation({
+    mutationFn: async (trackData: Partial<EventTrack>) => {
+      try {
+        return await DatabaseService.create<EventTrack>('event_tracks', {
+          ...trackData,
+          is_active: true,
+          is_special_stage: trackData.is_special_stage || false
+        })
+      } catch (error) {
+        throw handleQueryError(error, 'Create event track')
+      }
+    },
+    onSuccess: (data) => invalidateTracks(data.event_id),
+    onError: (error) => console.error('❌ Event track creation failed:', error)
+  })
+
+  const updateEventTrack = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<EventTrack> & { id: string }) => {
+      try {
+        return await DatabaseService.update<EventTrack>('event_tracks', id, updates)
+      } catch (error) {
+        throw handleQueryError(error, 'Update event track')
+      }
+    },
+    onSuccess: (data) => invalidateTracks(data.event_id),
+    onError: (error) => console.error('❌ Event track update failed:', error)
+  })
+
+  const deleteEventTrack = useMutation({
+    mutationFn: async (trackId: string) => {
+      try {
+        await DatabaseService.delete('event_tracks', trackId)
+        return trackId
+      } catch (error) {
+        throw handleQueryError(error, 'Delete event track')
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.games.all }),
+    onError: (error) => console.error('❌ Event track deletion failed:', error)
+  })
+
+  return { 
+    createEventTrack, 
+    updateEventTrack, 
+    deleteEventTrack,
+    isCreating: createEventTrack.isPending,
+    isUpdating: updateEventTrack.isPending,
+    isDeleting: deleteEventTrack.isPending
   }
 }
 

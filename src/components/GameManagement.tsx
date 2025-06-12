@@ -1,4 +1,4 @@
-// src/components/GameManagement.tsx - Clean Main Component
+// src/components/GameManagement.tsx - FIXED VERSION
 'use client'
 
 import { useState } from 'react'
@@ -10,7 +10,7 @@ import { GameTypesTab } from './game-management/GameTypesTab'
 import { EventsTab } from './game-management/EventsTab'
 import { ClassesTab } from './game-management/ClassesTab'
 import { LoadingState, ErrorState } from '@/components/shared/States'
-import type { Game } from '@/types/game'
+import type { Game } from '@/types'
 
 type TabType = 'games' | 'types' | 'events' | 'classes'
 
@@ -103,7 +103,7 @@ export function GameManagement() {
           totalGames={games.length}
           selectedGame={selectedGame}
           onRefresh={refetch}
-          isLoading={isLoading}
+          isLoading={Boolean(isLoading)}
         />
         
         {/* Navigation tabs */}
@@ -111,6 +111,7 @@ export function GameManagement() {
           tabs={tabs}
           activeTab={activeTab}
           onTabChange={handleTabChange}
+          selectedGame={selectedGame}
         />
         
         {/* Tab content with loading state */}
@@ -137,7 +138,7 @@ export function GameManagement() {
             
             {activeTab === 'events' && selectedGame && (
               <EventsTab 
-                gameEvents={gameEvents}
+                events={gameEvents}
                 selectedGame={selectedGame}
                 onRefresh={refetch}
               />

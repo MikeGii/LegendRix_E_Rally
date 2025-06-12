@@ -4,12 +4,11 @@ import { useGameEventMutations, useEventTracks } from '@/hooks/useGameManagement
 import { EmptyState, SelectionRequired, LoadingState } from '@/components/shared/States'
 import { ConfirmModal, FormModal } from '@/components/shared/Modal'
 import { Input, Textarea, Select, FormGrid, FormActions, Button } from '@/components/shared/FormComponents'
-import { formatDateTime } from '@/lib/statusUtils'
-import type { Game, GameEvent } from '@/types'
+import type { Game, GameClass, GameEvent, GameType, EventTrack } from '@/types'
 
 interface EventsTabProps {
-  events: GameEvent[]
-  selectedGame: Game | undefined
+  events: GameEvent[]  // Changed from gameEvents to events
+  selectedGame: Game | null
   onRefresh: () => void
 }
 

@@ -2,6 +2,7 @@
 
 import { supabase } from './supabase'
 import type { QueryKeys, DatabaseTable, SortConfig, FilterConfig, ApiResponse } from '@/types'
+import { QUERY_KEYS } from './constants'
 
 // ============= Query Key Generators =============
 export const createQueryKeys = (entity: string): QueryKeys => ({
@@ -13,24 +14,7 @@ export const createQueryKeys = (entity: string): QueryKeys => ({
 })
 
 // Centralized query keys - FIXED AND EXPANDED
-export const queryKeys = {
-  users: {
-    all: ['users'] as const,
-    lists: () => [...queryKeys.users.all, 'list'] as const,
-  },
-  games: {
-    all: ['games'] as const,
-    lists: () => [...queryKeys.games.all, 'list'] as const,
-  },
-  gameTypes: (gameId?: string) => ['games', 'types', gameId] as const,
-  gameEvents: (gameId?: string) => ['games', 'events', gameId] as const,
-  gameClasses: (gameId?: string) => ['games', 'classes', gameId] as const,
-  eventTracks: (eventId?: string) => ['events', 'tracks', eventId] as const,
-  rallies: {
-    all: ['rallies'] as const,
-    lists: () => [...queryKeys.rallies.all, 'list'] as const,
-  }
-}
+export const queryKeys = QUERY_KEYS
 
 // ============= Generic Database Operations =============
 export class DatabaseService {

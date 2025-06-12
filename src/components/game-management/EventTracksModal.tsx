@@ -1,6 +1,12 @@
 // ============= Event Tracks Modal =============
 // src/components/game-management/EventTracksModal.tsx
-import { useEventTrackMutations } from '@/hooks/useGameManagement'
+import { useEventTrackMutations, useEventTracks } from '@/hooks/useGameManagement'
+import { useState } from 'react'
+import type { Game, GameClass, GameEvent, GameType, EventTrack } from '@/types'
+import { FormModal } from '../shared/Modal'
+import { Button, FormGrid, Input, Select, Textarea } from '../shared/FormComponents'
+import { FormActions } from '../shared/FormComponents'
+import { LoadingState, EmptyState } from '../shared/States'
 
 interface EventTracksModalProps {
   event: GameEvent

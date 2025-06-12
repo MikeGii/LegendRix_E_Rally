@@ -82,3 +82,21 @@ export function EmptyState({ title, message, action, icon = '📦' }: EmptyState
     </div>
   )
 }
+
+interface SelectionRequiredProps {
+  title: string
+  message: string
+  icon?: string
+}
+
+export function SelectionRequired({ title, message, icon = '⚠️' }: SelectionRequiredProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 space-y-6">
+      <div className="text-6xl">{icon}</div>
+      <div className="text-center space-y-2">
+        <h3 className="text-xl font-semibold text-white">{title}</h3>
+        <p className="text-slate-400 max-w-md">{message}</p>
+      </div>
+    </div>
+  )
+}

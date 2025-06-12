@@ -51,6 +51,8 @@ export interface GameClass {
 }
 
 export interface EventTrack {
+  length_km: any
+  is_special_stage: any
   id: string
   event_id: string
   name: string

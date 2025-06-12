@@ -1,14 +1,21 @@
-// ============= Classes Tab =============
-// src/components/game-management/ClassesTab.tsx
-import type { GameClass } from '@/types'
+// src/components/game-management/ClassesTab.tsx - FIXED VERSION
+'use client'
+
+import { useState } from 'react'
+import { useGameClassMutations } from '@/hooks/useGameManagement'
+import { EmptyState, SelectionRequired, LoadingState } from '@/components/shared/States'
+import { ConfirmModal, FormModal } from '@/components/shared/Modal'
+import { Input, FormActions, Button } from '@/components/shared/FormComponents'
+import { formatDateTime } from '@/lib/statusUtils'
+import type { Game, GameClass } from '@/types'
 
 interface ClassesTabProps {
-  classes: GameClass[]
-  selectedGame: Game | undefined
+  gameClasses: GameClass[]
+  selectedGame: Game | null
   onRefresh: () => void
 }
 
-export function ClassesTab({ classes, selectedGame, onRefresh }: ClassesTabProps) {
+export function ClassesTab({ gameClasses, selectedGame, onRefresh }: ClassesTabProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingClass, setEditingClass] = useState<GameClass | null>(null)
   const [deletingClass, setDeletingClass] = useState<GameClass | null>(null)
@@ -57,7 +64,7 @@ export function ClassesTab({ classes, selectedGame, onRefresh }: ClassesTabProps
     return (
       <SelectionRequired
         title="No Game Selected"
-        message="Please select a game first to manage its classes"
+        message="Please select a game first to manage its competition classes"
         icon="🏅"
       />
     )
@@ -68,7 +75,7 @@ export function ClassesTab({ classes, selectedGame, onRefresh }: ClassesTabProps
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-white flex items-center space-x-2">
           <span>🏅</span>
-          <span>Classes for {selectedGame.name} ({classes.length})</span>
+          <span>Game Classes for {selectedGame.name} ({gameClasses.length})</span>
         </h2>
         <Button
           onClick={() => setShowCreateModal(true)}
@@ -76,60 +83,56 @@ export function ClassesTab({ classes, selectedGame, onRefresh }: ClassesTabProps
           icon="➕"
           disabled={isLoading}
         >
-          Add Class
+          Add Game Class
         </Button>
       </div>
 
-      {isLoading && <LoadingState message="Processing class operation..." />}
+      {isLoading && <LoadingState message="Processing game class operation..." />}
 
-      {!isLoading && classes.length === 0 ? (
+      {!isLoading && gameClasses.length === 0 ? (
         <EmptyState
-          title="No Classes"
-          message="Add classes like Pro, Semi-Pro, Amateur, etc."
+          title="No Game Classes Found"
+          message="Create your first competition class to organize participants by skill level or vehicle requirements."
           icon="🏅"
           action={{
-            label: "Add First Class",
+            label: "Create First Class",
             onClick: () => setShowCreateModal(true)
           }}
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {classes.map((gameClass) => (
-            <ClassCard
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {gameClasses.map((gameClass) => (
+            <GameClassCard
               key={gameClass.id}
               gameClass={gameClass}
-              onEdit={setEditingClass}
-              onDelete={setDeletingClass}
+              onEdit={(cls) => setEditingClass(cls)}
+              onDelete={(cls) => setDeletingClass(cls)}
             />
           ))}
         </div>
       )}
 
-      {/* Modals */}
-      {showCreateModal && (
-        <ClassModal
-          onClose={() => setShowCreateModal(false)}
-          onSubmit={handleCreate}
-          isLoading={createGameClass.isPending}
-        />
-      )}
-
-      {editingClass && (
-        <ClassModal
+      {/* Create/Edit Modal */}
+      {(showCreateModal || editingClass) && (
+        <GameClassModal
           gameClass={editingClass}
-          onClose={() => setEditingClass(null)}
-          onSubmit={handleUpdate}
-          isLoading={updateGameClass.isPending}
+          onClose={() => {
+            setShowCreateModal(false)
+            setEditingClass(null)
+          }}
+          onSubmit={editingClass ? handleUpdate : handleCreate}
+          isLoading={isLoading}
         />
       )}
 
+      {/* Delete Confirmation */}
       {deletingClass && (
         <ConfirmModal
           isOpen={true}
           onClose={() => setDeletingClass(null)}
           onConfirm={handleDelete}
           title="Delete Game Class"
-          message={`Delete "${deletingClass.name}" class? This action cannot be undone.`}
+          message={`Are you sure you want to delete "${deletingClass.name}"? This action cannot be undone.`}
           confirmText="Delete Class"
           confirmColor="red"
           isLoading={deleteGameClass.isPending}
@@ -139,24 +142,24 @@ export function ClassesTab({ classes, selectedGame, onRefresh }: ClassesTabProps
   )
 }
 
-// Class Card Component
-interface ClassCardProps {
+// Game Class Card Component
+interface GameClassCardProps {
   gameClass: GameClass
   onEdit: (cls: GameClass) => void
   onDelete: (cls: GameClass) => void
 }
 
-function ClassCard({ gameClass, onEdit, onDelete }: ClassCardProps) {
+function GameClassCard({ gameClass, onEdit, onDelete }: GameClassCardProps) {
   return (
     <div className="bg-slate-900/50 rounded-xl border border-slate-700/30 p-6 group hover:border-slate-600 transition-all duration-200">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-            <span className="text-blue-300 text-xl">🏅</span>
+          <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+            <span className="text-green-300 text-xl">🏅</span>
           </div>
           <div>
             <h3 className="font-semibold text-white">{gameClass.name}</h3>
-            <p className="text-sm text-slate-400">Competition Class</p>
+            <p className="text-sm text-slate-400 capitalize">{gameClass.skill_level || 'Intermediate'}</p>
           </div>
         </div>
         
@@ -176,7 +179,17 @@ function ClassCard({ gameClass, onEdit, onDelete }: ClassCardProps) {
         </div>
       </div>
 
+      {gameClass.description && (
+        <p className="text-slate-300 text-sm mb-4 line-clamp-2">{gameClass.description}</p>
+      )}
+
       <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-slate-400">Entry Fee:</span>
+          <span className="text-slate-300">
+            {gameClass.entry_fee ? `$${gameClass.entry_fee}` : 'Free'}
+          </span>
+        </div>
         <div className="flex justify-between">
           <span className="text-slate-400">Status:</span>
           <span className={gameClass.is_active ? 'text-green-400' : 'text-red-400'}>
@@ -194,25 +207,30 @@ function ClassCard({ gameClass, onEdit, onDelete }: ClassCardProps) {
   )
 }
 
-// Class Modal Component
-interface ClassModalProps {
+// Game Class Modal Component
+interface GameClassModalProps {
   gameClass?: GameClass | null
   onClose: () => void
   onSubmit: (classData: Partial<GameClass>) => void
   isLoading: boolean
 }
 
-function ClassModal({ gameClass, onClose, onSubmit, isLoading }: ClassModalProps) {
+function GameClassModal({ gameClass, onClose, onSubmit, isLoading }: GameClassModalProps) {
   const [formData, setFormData] = useState({
     name: gameClass?.name || '',
+    description: gameClass?.description || '',
+    skill_level: gameClass?.skill_level || 'intermediate',
+    requirements: gameClass?.requirements || '',
+    entry_fee: gameClass?.entry_fee?.toString() || '',
+    max_participants: gameClass?.max_participants?.toString() || '',
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit({
       ...formData,
-      skill_level: 'intermediate',
-      is_active: true
+      entry_fee: formData.entry_fee ? parseFloat(formData.entry_fee) : undefined,
+      max_participants: formData.max_participants ? parseInt(formData.max_participants) : undefined,
     })
   }
 
@@ -223,19 +241,12 @@ function ClassModal({ gameClass, onClose, onSubmit, isLoading }: ClassModalProps
       title={`${gameClass ? 'Edit' : 'Create'} Game Class`}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-          <p className="text-blue-300 text-sm">
-            <strong>Simple setup:</strong> Just add the class name. This will be used as a filter for rally registration.
-          </p>
-        </div>
-
         <Input
           label="Class Name"
           value={formData.name}
-          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-          placeholder="e.g., Pro, Semi-Pro, Amateur, Rookie"
+          onChange={(e) => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
+          placeholder="e.g., Novice, Expert, Open Class"
           required
-          hint="Examples: Pro, Semi-Pro, Amateur, Rookie, Beginner, Expert"
         />
 
         <FormActions>

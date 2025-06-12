@@ -46,16 +46,16 @@ export const QUERY_KEYS = {
     details: () => [...QUERY_KEYS.games.all, 'detail'] as const,
     detail: (id: string) => [...QUERY_KEYS.games.details(), id] as const,
   },
+  users: {
+    all: ['users'] as const,
+    lists: () => [...QUERY_KEYS.users.all, 'list'] as const,
+  },
+  rallies: {
+    all: ['rallies'] as const,
+    lists: () => [...QUERY_KEYS.rallies.all, 'list'] as const,
+  },
   gameTypes: (gameId?: string) => ['game-types', gameId] as const,
   gameEvents: (gameId?: string) => ['game-events', gameId] as const,
   gameClasses: (gameId?: string) => ['game-classes', gameId] as const,
   eventTracks: (eventId?: string) => ['event-tracks', eventId] as const,
-} as const
-
-export const API_ENDPOINTS = {
-  games: '/api/games',
-  gameTypes: '/api/game-types',
-  gameEvents: '/api/game-events',
-  gameClasses: '/api/game-classes',
-  eventTracks: '/api/event-tracks',
 } as const
