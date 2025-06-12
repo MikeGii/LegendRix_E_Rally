@@ -1,3 +1,4 @@
+// src/hooks/useOptimizedRallies.ts - Fixed with proper exports
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
@@ -39,6 +40,9 @@ export interface RealRally {
   }>
   creator_name?: string
 }
+
+// Add TransformedRally as an alias for backward compatibility
+export type TransformedRally = RealRally
 
 export interface UserRallyRegistration {
   id: string
@@ -185,60 +189,5 @@ export function useUserRallyRegistrations() {
       return transformedRegistrations
     },
     staleTime: 2 * 60 * 1000,
-  })
-}
-
-// Rally registration mutation
-export function useRallyRegistration() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({ rallyId, classId }: { rallyId: string; classId: string }) => {
-      console.log('🔄 Registering for rally:', rallyId)
-      
-      const { data: currentUser } = await supabase.auth.getUser()
-      
-      if (!currentUser.user) {
-        throw new Error('User not authenticated')
-      }
-
-      // Check if user is already registered
-      const { data: existing } = await supabase
-        .from('rally_registrations')
-        .select('id')
-        .eq('rally_id', rallyId)
-        .eq('user_id', currentUser.user.id)
-        .single()
-
-      if (existing) {
-        throw new Error('You are already registered for this rally')
-      }
-
-      const { data, error } = await supabase
-        .from('rally_registrations')
-        .insert([{
-          rally_id: rallyId,
-          user_id: currentUser.user.id,
-          class_id: classId,
-          status: 'registered'
-        }])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Registration error:', error)
-        throw error
-      }
-
-      console.log('✅ Rally registration successful')
-      return { success: true, data }
-    },
-    onSuccess: () => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: rallyKeys.all })
-    },
-    onError: (error) => {
-      console.error('❌ Rally registration failed:', error)
-    }
   })
 }
