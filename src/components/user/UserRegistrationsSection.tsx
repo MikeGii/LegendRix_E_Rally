@@ -66,27 +66,10 @@ export function UserRegistrationsSection({ registrations, isLoading }: UserRegis
                   </p>
                 </div>
                 
-                {registration.car_number && (
-                  <div>
-                    <span className="text-slate-400">Car Number:</span>
-                    <p className="text-slate-300">#{registration.car_number}</p>
-                  </div>
-                )}
+
                 
-                {registration.team_name && (
-                  <div>
-                    <span className="text-slate-400">Team:</span>
-                    <p className="text-slate-300">{registration.team_name}</p>
-                  </div>
-                )}
-                
-                <div>
-                  <span className="text-slate-400">Payment:</span>
-                  <p className={getPaymentColor(registration.payment_status)}>
-                    {registration.payment_status.toUpperCase()}
-                    {registration.entry_fee_paid > 0 && ` (€${registration.entry_fee_paid})`}
-                  </p>
-                </div>
+
+            
               </div>
 
               {registration.notes && (
