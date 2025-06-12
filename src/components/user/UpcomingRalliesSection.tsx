@@ -2,6 +2,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { TransformedRally } from '@/hooks/useOptimizedRallies'
 import { RallyDetailModal } from '@/components/rally/RallyDetailModal'
 
@@ -13,6 +14,7 @@ interface UpcomingRalliesSectionProps {
 
 export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }: UpcomingRalliesSectionProps) {
   const [selectedRally, setSelectedRally] = useState<TransformedRally | null>(null)
+  const router = useRouter()
 
   if (!canAccessRallies) return null
 
@@ -38,9 +40,8 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
   }
 
   const handleRegister = (rally: TransformedRally) => {
-    // TODO: Implement registration functionality
-    console.log('Register for rally:', rally.name)
-    alert(`Registration for ${rally.name} coming soon!`)
+    // Navigate to registration page with prefilled rally
+    router.push(`/registration?rallyId=${rally.id}`)
   }
 
   const handleShowMore = (rally: TransformedRally) => {

@@ -1,9 +1,21 @@
 // src/components/user/RallyActionButtons.tsx
+'use client'
+
+import { useRouter } from 'next/navigation'
+
 interface RallyActionButtonsProps {
   canAccessRallies: boolean
 }
 
 export function RallyActionButtons({ canAccessRallies }: RallyActionButtonsProps) {
+  const router = useRouter()
+
+  const handleRegistration = () => {
+    if (canAccessRallies) {
+      router.push('/registration')
+    }
+  }
+
   return (
     <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
       <h2 className="text-2xl font-semibold text-white mb-8 text-center">Rally Dashboard</h2>
@@ -13,7 +25,7 @@ export function RallyActionButtons({ canAccessRallies }: RallyActionButtonsProps
         {/* Register for Rally Button */}
         <button 
           disabled={!canAccessRallies}
-          onClick={() => canAccessRallies && (window.location.href = '/registration')}
+          onClick={handleRegistration}
           className={`group relative overflow-hidden rounded-2xl p-8 transition-all duration-300 ${
             canAccessRallies 
               ? 'bg-gradient-to-br from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 shadow-lg hover:shadow-green-500/25 hover:scale-105 cursor-pointer' 
@@ -54,13 +66,13 @@ export function RallyActionButtons({ canAccessRallies }: RallyActionButtonsProps
             <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center ${
               canAccessRallies ? 'bg-white/20' : 'bg-slate-600/30'
             }`}>
-              <span className="text-3xl">📊</span>
+              <span className="text-3xl">🏆</span>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Results & Stats</h3>
+            <h3 className="text-xl font-bold text-white mb-2">View Results</h3>
             <p className={`text-sm ${canAccessRallies ? 'text-blue-100' : 'text-slate-400'}`}>
               {canAccessRallies 
-                ? 'View championship results, rankings, and your performance history'
-                : 'Results and statistics will be available after account approval'
+                ? 'Check championship standings and your performance history'
+                : 'Complete account verification to access results'
               }
             </p>
           </div>
