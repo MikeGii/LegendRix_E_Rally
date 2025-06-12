@@ -1,199 +1,368 @@
-// src/components/game-management/GamesTab.tsx
+// src/components/game-management/GamesTab.tsx - Complete version with debug logging
+'use client'
+
 import { useState } from 'react'
-import { Game, useCreateGame, useDeleteGame, useUpdateGame } from '@/hooks/useGameManagement'
-import { CreateGameModal } from './CreateGameModal'
+import { Game } from '@/types'
+import { useCreateGame, useUpdateGame, useDeleteGame } from '@/hooks/useGameManagement'
+import { Modal } from '@/components/ui/Modal'
 
 interface GamesTabProps {
   games: Game[]
-  isLoading: boolean
-  selectedGameId: string | null
-  onSelectGame: (gameId: string) => void
-  onRefresh: () => void
+  onGameSelect: (gameId: string) => void
+  selectedGameId: string
 }
 
-export function GamesTab({ 
-  games, 
-  isLoading, 
-  selectedGameId, 
-  onSelectGame, 
-  onRefresh 
-}: GamesTabProps) {
-  const [showCreateModal, setShowCreateModal] = useState(false)
+interface GameFormData {
+  name: string
+  description?: string
+}
+
+export function GamesTab({ games, onGameSelect, selectedGameId }: GamesTabProps) {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editingGame, setEditingGame] = useState<Game | null>(null)
+  const [formData, setFormData] = useState<GameFormData>({ name: '', description: '' })
 
   const createGameMutation = useCreateGame()
-  const deleteGameMutation = useDeleteGame()
   const updateGameMutation = useUpdateGame()
+  const deleteGameMutation = useDeleteGame()
 
-  const handleCreateGame = async (gameData: Partial<Game>) => {
-    try {
-      const newGame = await createGameMutation.mutateAsync(gameData)
-      setShowCreateModal(false)
-      onSelectGame(newGame.id)
-    } catch (error) {
-      console.error('Failed to create game:', error)
-    }
-  }
+  console.log('🎮 GamesTab render:', {
+    gamesCount: games.length,
+    isCreateModalOpen,
+    editingGame,
+    formData
+  })
 
-  const handleDeleteGame = async (gameId: string) => {
-    if (!confirm('Are you sure you want to delete this game? This will also delete all related types, events, and classes.')) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log('📝 Form submit:', formData)
+    
+    if (!formData.name.trim()) {
+      console.log('❌ Form validation failed: name is empty')
       return
     }
 
     try {
-      await deleteGameMutation.mutateAsync(gameId)
-      if (selectedGameId === gameId) {
-        onSelectGame('')
+      if (editingGame) {
+        console.log('✏️ Updating game:', editingGame.id)
+        await updateGameMutation.mutateAsync({
+          id: editingGame.id,
+          name: formData.name,
+          description: formData.description
+        })
+      } else {
+        console.log('🆕 Creating new game')
+        const newGame = await createGameMutation.mutateAsync(formData)
+        console.log('✅ Game created:', newGame)
+        onGameSelect(newGame.id) // Auto-select the new game
       }
+      
+      handleCloseModal()
     } catch (error) {
-      console.error('Failed to delete game:', error)
+      console.error('❌ Error saving game:', error)
     }
   }
 
-  if (isLoading) {
+  const handleEdit = (game: Game) => {
+    console.log('✏️ Edit game clicked:', game.name)
+    setEditingGame(game)
+    setFormData({
+      name: game.name,
+      description: game.description || ''
+    })
+    setIsCreateModalOpen(true)
+  }
+
+  const handleDelete = async (game: Game) => {
+    console.log('🗑️ Delete game clicked:', game.name)
+    if (!confirm(`Are you sure you want to delete "${game.name}"? This will delete ALL related game types, events, tracks, and classes. This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      await deleteGameMutation.mutateAsync(game.id)
+      if (selectedGameId === game.id) {
+        onGameSelect('') // Clear selection if deleted game was selected
+      }
+    } catch (error) {
+      console.error('❌ Error deleting game:', error)
+    }
+  }
+
+  const handleCloseModal = () => {
+    console.log('🚪 Closing modal')
+    setIsCreateModalOpen(false)
+    setEditingGame(null)
+    setFormData({ name: '', description: '' })
+  }
+
+  const handleCreateFirstGame = () => {
+    console.log('🎮 Create First Game button clicked!')
+    console.log('📊 Current modal state:', isCreateModalOpen)
+    setIsCreateModalOpen(true)
+    console.log('📊 Modal state should now be:', true)
+  }
+
+  const handleCreateGame = () => {
+    console.log('🎮 Create Game button clicked!')
+    console.log('📊 Current modal state:', isCreateModalOpen)
+    setIsCreateModalOpen(true)
+    console.log('📊 Modal state should now be:', true)
+  }
+
+  // Debug: Log when modal state changes
+  console.log('🔍 Before render - Modal state:', isCreateModalOpen)
+
+  if (games.length === 0) {
+    console.log('📭 Rendering empty state - no games found')
     return (
-      <div className="flex justify-center py-16">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading games...</p>
+      <div className="space-y-6">
+        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-3xl">🎮</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">No Games Created</h3>
+            <p className="text-slate-400 mb-6 max-w-md mx-auto">
+              Create your first game to start building rally competitions. Games are the foundation for organizing events, tracks, and classes.
+            </p>
+            <button
+              onClick={handleCreateFirstGame}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200"
+            >
+              Create First Game
+            </button>
+          </div>
         </div>
+
+        {/* Create/Edit Modal */}
+        <Modal
+          isOpen={isCreateModalOpen}
+          onClose={() => {
+            console.log('🚪 Modal onClose called')
+            handleCloseModal()
+          }}
+          title={editingGame ? 'Edit Game' : 'Create New Game'}
+          maxWidth="md"
+        >
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Game Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => {
+                  console.log('📝 Name input changed:', e.target.value)
+                  setFormData(prev => ({ ...prev, name: e.target.value }))
+                }}
+                placeholder="Enter game name..."
+                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Description (Optional)
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => {
+                  console.log('📝 Description input changed:', e.target.value)
+                  setFormData(prev => ({ ...prev, description: e.target.value }))
+                }}
+                placeholder="Enter description..."
+                rows={3}
+                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  console.log('❌ Cancel button clicked')
+                  handleCloseModal()
+                }}
+                className="flex-1 px-4 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-all duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!formData.name.trim() || createGameMutation.isPending || updateGameMutation.isPending}
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-lg font-medium transition-all duration-200"
+                onClick={() => console.log('💾 Save button clicked')}
+              >
+                {createGameMutation.isPending || updateGameMutation.isPending 
+                  ? 'Saving...' 
+                  : editingGame ? 'Update Game' : 'Create Game'
+                }
+              </button>
+            </div>
+          </form>
+        </Modal>
       </div>
     )
   }
 
+  console.log('📋 Rendering games list with', games.length, 'games')
+  
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-white flex items-center space-x-2">
-          <span>🎮</span>
-          <span>Games ({games.length})</span>
-        </h2>
+    <div className="space-y-6">
+      
+      {/* Header with Create Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-white">Games ({games.length})</h2>
+          <p className="text-slate-400">Manage rally games and select one to configure types, events, and classes</p>
+        </div>
         <button
-          onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-green-500/25"
+          onClick={handleCreateGame}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
         >
-          <div className="flex items-center space-x-2">
-            <span>➕</span>
-            <span>Create Game</span>
-          </div>
+          + Create Game
         </button>
       </div>
 
-      {games.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-4xl text-slate-500">🎮</span>
-          </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No Games Created</h3>
-          <p className="text-slate-400 mb-6">Get started by creating your first game</p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all duration-200"
+      {/* Games Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {games.map((game) => (
+          <div 
+            key={game.id} 
+            className={`
+              bg-slate-800/50 rounded-xl border p-6 transition-all duration-200 cursor-pointer
+              ${selectedGameId === game.id 
+                ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/25' 
+                : 'border-slate-700/50 hover:border-slate-600 hover:bg-slate-800/70'
+              }
+            `}
+            onClick={() => onGameSelect(game.id)}
           >
-            Create First Game
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {games.map((game) => (
-            <div
-              key={game.id}
-              className={`bg-slate-900/50 rounded-xl border p-6 transition-all duration-200 cursor-pointer hover:bg-slate-800/50 ${
-                selectedGameId === game.id
-                  ? 'border-blue-500 bg-blue-500/10'
-                  : 'border-slate-700/30 hover:border-slate-600'
-              }`}
-              onClick={() => onSelectGame(game.id)}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    selectedGameId === game.id ? 'bg-blue-500/20' : 'bg-slate-700/50'
-                  }`}>
-                    <span className={`text-xl ${
-                      selectedGameId === game.id ? 'text-blue-300' : 'text-slate-400'
-                    }`}>🎮</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white">{game.name}</h3>
-                    <p className="text-sm text-slate-400">{game.platform}</p>
-                  </div>
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                  <span className="text-purple-300 text-xl">🎮</span>
                 </div>
-                
-                <div className="flex space-x-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setEditingGame(game)
-                    }}
-                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteGame(game.id)
-                    }}
-                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
-                  >
-                    🗑️
-                  </button>
+                <div>
+                  <h3 className="font-bold text-white text-lg">{game.name}</h3>
+                  <p className="text-sm text-slate-400">
+                    Created {new Date(game.created_at).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2 text-sm">
-                  <span className="text-slate-400">🏢</span>
-                  <span className="text-slate-300">{game.developer || 'Unknown Developer'}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm">
-                  <span className="text-slate-400">📅</span>
-                  <span className="text-slate-300">{game.release_year || 'Unknown Year'}</span>
-                </div>
-                {game.description && (
-                  <div className="flex items-start space-x-2 text-sm">
-                    <span className="text-slate-400">📝</span>
-                    <span className="text-slate-300 line-clamp-2">{game.description}</span>
-                  </div>
-                )}
+              
+              <div className="flex space-x-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleEdit(game)
+                  }}
+                  className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
+                  title="Edit Game"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDelete(game)
+                  }}
+                  className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+                  title="Delete Game"
+                >
+                  🗑️
+                </button>
               </div>
-
-              {selectedGameId === game.id && (
-                <div className="mt-4 pt-4 border-t border-blue-500/30">
-                  <p className="text-blue-300 text-sm font-medium">✅ Selected Game</p>
-                </div>
-              )}
             </div>
-          ))}
-        </div>
-      )}
 
-      {/* Create Game Modal */}
-      {showCreateModal && (
-        <CreateGameModal
-          onClose={() => setShowCreateModal(false)}
-          onSubmit={handleCreateGame}
-          isLoading={createGameMutation.isPending}
-        />
-      )}
+            {game.description && (
+              <p className="text-slate-300 text-sm mb-4">{game.description}</p>
+            )}
 
-      {/* Edit Game Modal */}
-      {editingGame && (
-        <CreateGameModal
-          game={editingGame}
-          onClose={() => setEditingGame(null)}
-          onSubmit={async (gameData) => {
-            try {
-              await updateGameMutation.mutateAsync({ id: editingGame.id, ...gameData })
-              setEditingGame(null)
-            } catch (error) {
-              console.error('Failed to update game:', error)
-            }
-          }}
-          isLoading={updateGameMutation.isPending}
-        />
-      )}
+            {selectedGameId === game.id && (
+              <div className="bg-blue-500/20 rounded-lg p-3 border border-blue-500/30">
+                <p className="text-blue-300 text-sm font-medium">
+                  ✨ Selected - Use other tabs to manage this game's content
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Create/Edit Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          console.log('🚪 Modal onClose called (games list)')
+          handleCloseModal()
+        }}
+        title={editingGame ? 'Edit Game' : 'Create New Game'}
+        maxWidth="md"
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Game Name *
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => {
+                console.log('📝 Name input changed:', e.target.value)
+                setFormData(prev => ({ ...prev, name: e.target.value }))
+              }}
+              placeholder="Enter game name..."
+              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Description (Optional)
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => {
+                console.log('📝 Description input changed:', e.target.value)
+                setFormData(prev => ({ ...prev, description: e.target.value }))
+              }}
+              placeholder="Enter description..."
+              rows={3}
+              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                console.log('❌ Cancel button clicked (games list)')
+                handleCloseModal()
+              }}
+              className="flex-1 px-4 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-all duration-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!formData.name.trim() || createGameMutation.isPending || updateGameMutation.isPending}
+              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-lg font-medium transition-all duration-200"
+              onClick={() => console.log('💾 Save button clicked (games list)')}
+            >
+              {createGameMutation.isPending || updateGameMutation.isPending 
+                ? 'Saving...' 
+                : editingGame ? 'Update Game' : 'Create Game'
+              }
+            </button>
+          </div>
+        </form>
+      </Modal>
+
     </div>
   )
 }

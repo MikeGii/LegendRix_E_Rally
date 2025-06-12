@@ -1,3 +1,4 @@
+// src/components/rally-management/CreateRallyModal.tsx
 import { useState, useEffect } from 'react'
 import { Rally, useCreateRally, useUpdateRally } from '@/hooks/useRallyManagement'
 import { useGames, useGameTypes, useGameEvents, useGameClasses, useEventTracks } from '@/hooks/useGameManagement'
@@ -11,6 +12,8 @@ interface CreateRallyModalProps {
 
 export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModalProps) {
   const [currentStep, setCurrentStep] = useState(1)
+  
+  // Simplified form data - removed entry_fee and prize_pool
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -19,8 +22,6 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
     competition_date: '',
     registration_deadline: '',
     max_participants: '',
-    entry_fee: '',
-    prize_pool: '',
     rules: '',
     is_featured: false
   })
@@ -38,7 +39,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
   const createRallyMutation = useCreateRally()
   const updateRallyMutation = useUpdateRally()
 
-  // Pre-fill form when editing
+  // Pre-fill form when editing - updated to exclude removed fields
   useEffect(() => {
     if (rally) {
       setFormData({
@@ -49,8 +50,6 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
         competition_date: rally.competition_date ? new Date(rally.competition_date).toISOString().slice(0, 16) : '',
         registration_deadline: rally.registration_deadline ? new Date(rally.registration_deadline).toISOString().slice(0, 16) : '',
         max_participants: rally.max_participants?.toString() || '',
-        entry_fee: rally.entry_fee?.toString() || '',
-        prize_pool: rally.prize_pool?.toString() || '',
         rules: rally.rules || '',
         is_featured: rally.is_featured || false
       })
@@ -106,12 +105,21 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
     
     try {
       const rallyData = {
-        ...formData,
-        max_participants: formData.max_participants ? parseInt(formData.max_participants) : undefined,
-        entry_fee: formData.entry_fee ? parseFloat(formData.entry_fee) : 0,
-        prize_pool: formData.prize_pool ? parseFloat(formData.prize_pool) : 0,
+        name: formData.name,
+        description: formData.description,
+        game_id: formData.game_id,
+        game_type_id: formData.game_type_id,
         competition_date: new Date(formData.competition_date).toISOString(),
         registration_deadline: new Date(formData.registration_deadline).toISOString(),
+        max_participants: formData.max_participants ? parseInt(formData.max_participants) : undefined,
+        rules: formData.rules,
+        is_featured: formData.is_featured,
+        // Required fields that were missing
+        status: 'upcoming' as const,
+        is_active: true,
+        // Set default values for removed fields  
+        entry_fee: 0,
+        prize_pool: 0
       }
 
       if (rally) {
@@ -129,6 +137,8 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
       onClose()
     } catch (error) {
       console.error('Failed to save rally:', error)
+      // Add user-friendly error handling
+      alert('Failed to save rally. Please check the console for details.')
     }
   }
 
@@ -148,350 +158,320 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
             <span>🏁</span>
             <span>{rally ? 'Edit Rally' : 'Create New Rally'}</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-            ✕
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            aria-label="Close"
+          >
+            <span className="text-slate-400 text-xl">×</span>
           </button>
         </div>
 
-        {/* Step Indicator */}
-        <div className="px-6 py-4 bg-slate-700/30">
-          <div className="flex items-center space-x-4">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  currentStep >= step 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-slate-600 text-slate-300'
-                }`}>
-                  {step}
-                </div>
-                <span className={`ml-2 text-sm ${
-                  currentStep >= step ? 'text-white' : 'text-slate-400'
-                }`}>
-                  {step === 1 ? 'Basic Info' : step === 2 ? 'Events & Tracks' : 'Classes'}
-                </span>
-                {step < 3 && <div className="w-8 h-px bg-slate-600 mx-4"></div>}
+        {/* Step Indicators */}
+        <div className="px-6 py-4 border-b border-slate-700">
+          <div className="flex items-center space-x-8">
+            <div className={`flex items-center space-x-2 ${currentStep >= 1 ? 'text-blue-400' : 'text-slate-500'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'
+              }`}>
+                1
               </div>
-            ))}
+              <span className="text-sm font-medium">Basic Info</span>
+            </div>
+            
+            <div className={`w-16 h-0.5 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-slate-700'}`}></div>
+            
+            <div className={`flex items-center space-x-2 ${currentStep >= 2 ? 'text-blue-400' : 'text-slate-500'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'
+              }`}>
+                2
+              </div>
+              <span className="text-sm font-medium">Events & Tracks</span>
+            </div>
+            
+            <div className={`w-16 h-0.5 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-slate-700'}`}></div>
+            
+            <div className={`flex items-center space-x-2 ${currentStep >= 3 ? 'text-blue-400' : 'text-slate-500'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'
+              }`}>
+                3
+              </div>
+              <span className="text-sm font-medium">Classes</span>
+            </div>
           </div>
         </div>
 
-        {/* Modal Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          <form onSubmit={handleSubmit}>
-            
-            {/* Step 1: Basic Information */}
-            {currentStep === 1 && (
-              <div className="space-y-6">
-                <h4 className="text-lg font-semibold text-white mb-4">Rally Basic Information</h4>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Rally Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., Estonian Championship 2025"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Game *
-                    </label>
-                    <select
-                      name="game_id"
-                      value={formData.game_id}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select a game</option>
-                      {games.map(game => (
-                        <option key={game.id} value={game.id}>{game.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Game Type *
-                    </label>
-                    <select
-                      name="game_type_id"
-                      value={formData.game_type_id}
-                      onChange={handleInputChange}
-                      required
-                      disabled={!formData.game_id}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                    >
-                      <option value="">Select game type</option>
-                      {gameTypes.map(type => (
-                        <option key={type.id} value={type.id}>{type.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Max Participants
-                    </label>
-                    <input
-                      type="number"
-                      name="max_participants"
-                      value={formData.max_participants}
-                      onChange={handleInputChange}
-                      min="1"
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Unlimited"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Competition Date *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      name="competition_date"
-                      value={formData.competition_date}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Registration Deadline *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      name="registration_deadline"
-                      value={formData.registration_deadline}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Entry Fee (€)
-                    </label>
-                    <input
-                      type="number"
-                      name="entry_fee"
-                      value={formData.entry_fee}
-                      onChange={handleInputChange}
-                      min="0"
-                      step="0.01"
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Prize Pool (€)
-                    </label>
-                    <input
-                      type="number"
-                      name="prize_pool"
-                      value={formData.prize_pool}
-                      onChange={handleInputChange}
-                      min="0"
-                      step="0.01"
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-
-                <div>
+        {/* Form Content */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+          {/* Step 1: Basic Information */}
+          {currentStep === 1 && (
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Description
+                    Rally Name *
                   </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    placeholder="Describe the rally competition..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Rules & Additional Information
-                  </label>
-                  <textarea
-                    name="rules"
-                    value={formData.rules}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    placeholder="Special rules, requirements, or additional information..."
-                  />
-                </div>
-
-                <div className="flex items-center space-x-3">
                   <input
-                    type="checkbox"
-                    id="is_featured"
-                    name="is_featured"
-                    checked={formData.is_featured}
+                    type="text"
+                    name="name"
+                    value={formData.name}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500"
+                    required
+                    placeholder="e.g., Estonian Championship Round 1"
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <label htmlFor="is_featured" className="text-sm text-slate-300">
-                    Featured Rally (will be highlighted to users)
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Game *
                   </label>
+                  <select
+                    name="game_id"
+                    value={formData.game_id}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a game</option>
+                    {games.map(game => (
+                      <option key={game.id} value={game.id}>
+                        {game.name} ({game.platform})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Game Type *
+                  </label>
+                  <select
+                    name="game_type_id"
+                    value={formData.game_type_id}
+                    onChange={handleInputChange}
+                    required
+                    disabled={!formData.game_id}
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  >
+                    <option value="">Select game type</option>
+                    {gameTypes.map(type => (
+                      <option key={type.id} value={type.id}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Competition Date *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="competition_date"
+                    value={formData.competition_date}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Registration Deadline *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="registration_deadline"
+                    value={formData.registration_deadline}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Max Participants
+                  </label>
+                  <input
+                    type="number"
+                    name="max_participants"
+                    value={formData.max_participants}
+                    onChange={handleInputChange}
+                    min="1"
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Unlimited"
+                  />
                 </div>
               </div>
-            )}
 
-            {/* Step 2: Events & Tracks */}
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <h4 className="text-lg font-semibold text-white mb-4">Select Events & Tracks</h4>
-                
-                {events.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-slate-400 mb-4">No events available for the selected game.</p>
-                    <button
-                      type="button"
-                      onClick={() => window.open('/game-management', '_blank')}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-                    >
-                      Create Events First
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {events.map(event => (
-                      <EventSelector
-                        key={event.id}
-                        event={event}
-                        isSelected={selectedEvents.includes(event.id)}
-                        selectedTracks={selectedTracks[event.id] || []}
-                        onEventToggle={() => handleEventToggle(event.id)}
-                        onTrackToggle={(trackId: string) => handleTrackToggle(event.id, trackId)}
-                      />
-                    ))}
-                  </div>
-                )}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows={4}
+                  placeholder="Rally description, special notes, conditions..."
+                  className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
               </div>
-            )}
 
-            {/* Step 3: Classes */}
-            {currentStep === 3 && (
-              <div className="space-y-6">
-                <h4 className="text-lg font-semibold text-white mb-4">Select Available Classes</h4>
-                
-                {classes.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-slate-400 mb-4">No classes available for the selected game.</p>
-                    <button
-                      type="button"
-                      onClick={() => window.open('/game-management', '_blank')}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-                    >
-                      Create Classes First
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {classes.map(gameClass => (
-                      <div
-                        key={gameClass.id}
-                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                          selectedClasses.includes(gameClass.id)
-                            ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                            : 'bg-slate-900/50 border-slate-700/50 text-slate-300 hover:bg-slate-800/50'
-                        }`}
-                        onClick={() => handleClassToggle(gameClass.id)}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-3 h-3 rounded-full ${
-                            selectedClasses.includes(gameClass.id) ? 'bg-blue-400' : 'bg-slate-600'
-                          }`}></div>
-                          <div>
-                            <h5 className="font-semibold">{gameClass.name}</h5>
-                            <p className="text-xs opacity-70">Competition Class</p>
-                          </div>
-                        </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Rules & Regulations
+                </label>
+                <textarea
+                  name="rules"
+                  value={formData.rules}
+                  onChange={handleInputChange}
+                  rows={4}
+                  placeholder="Special rules, regulations, requirements..."
+                  className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="is_featured"
+                  name="is_featured"
+                  checked={formData.is_featured}
+                  onChange={handleInputChange}
+                  className="w-5 h-5 text-blue-600 bg-slate-900 border-slate-700 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <label htmlFor="is_featured" className="text-sm font-medium text-slate-300">
+                  Feature this rally on homepage
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Events & Tracks */}
+          {currentStep === 2 && (
+            <div className="p-6">
+              <EventSelector
+                events={events}
+                selectedEvents={selectedEvents}
+                selectedTracks={selectedTracks}
+                onEventToggle={handleEventToggle}
+                onTrackToggle={handleTrackToggle}
+                gameId={formData.game_id}
+              />
+            </div>
+          )}
+
+          {/* Step 3: Classes */}
+          {currentStep === 3 && (
+            <div className="p-6">
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold text-white mb-2">Select Competition Classes</h4>
+                <p className="text-slate-400 text-sm">Choose which classes can participate in this rally.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {classes.map(cls => (
+                  <label
+                    key={cls.id}
+                    className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all ${
+                      selectedClasses.includes(cls.id)
+                        ? 'bg-blue-600/20 border-blue-500'
+                        : 'bg-slate-900/50 border-slate-700 hover:border-slate-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedClasses.includes(cls.id)}
+                      onChange={() => handleClassToggle(cls.id)}
+                      className="sr-only"
+                    />
+                    <div className="flex-1">
+                      <div className="text-white font-medium">{cls.name}</div>
+                      {cls.description && (
+                        <div className="text-slate-400 text-sm mt-1">{cls.description}</div>
+                      )}
+                      <div className="flex items-center space-x-4 mt-2 text-xs text-slate-500">
+                        {cls.skill_level && (
+                          <span>Level: {cls.skill_level}</span>
+                        )}
+                        {cls.max_participants && (
+                          <span>Max: {cls.max_participants}</span>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                      selectedClasses.includes(cls.id)
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'border-slate-600'
+                    }`}>
+                      {selectedClasses.includes(cls.id) && (
+                        <span className="text-white text-xs">✓</span>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Form Actions */}
+          <div className="border-t border-slate-700 p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(prev => prev - 1)}
+                    className="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg font-medium transition-colors"
+                  >
+                    Back
+                  </button>
                 )}
               </div>
-            )}
-          </form>
-        </div>
 
-        {/* Modal Footer */}
-        <div className="px-6 py-4 border-t border-slate-700 flex justify-between">
-          <div>
-            {currentStep > 1 && (
-              <button
-                type="button"
-                onClick={() => setCurrentStep(currentStep - 1)}
-                className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200"
-              >
-                Previous
-              </button>
-            )}
-          </div>
-          
-          <div className="flex space-x-4">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200"
-            >
-              Cancel
-            </button>
-            
-            {currentStep < 3 ? (
-              <button
-                type="button"
-                onClick={() => setCurrentStep(currentStep + 1)}
-                disabled={
-                  (currentStep === 1 && !canProceedToStep2) ||
-                  (currentStep === 2 && !canProceedToStep3)
-                }
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-xl font-medium transition-all duration-200 disabled:opacity-50"
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                type="submit"
-                onClick={handleSubmit}
-                disabled={isLoading || !canSubmit}
-                className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded-xl font-medium transition-all duration-200 disabled:opacity-50"
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>{rally ? 'Updating...' : 'Creating...'}</span>
-                  </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+
+                {currentStep < 3 ? (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(prev => prev + 1)}
+                    disabled={
+                      (currentStep === 1 && !canProceedToStep2) ||
+                      (currentStep === 2 && !canProceedToStep3)
+                    }
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                  >
+                    Next Step
+                  </button>
                 ) : (
-                  rally ? 'Update Rally' : 'Create Rally'
+                  <button
+                    type="submit"
+                    disabled={!canSubmit || isLoading}
+                    className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
+                  >
+                    {isLoading && (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    )}
+                    <span>{rally ? 'Update Rally' : 'Create Rally'}</span>
+                  </button>
                 )}
-              </button>
-            )}
+              </div>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   )

@@ -1,30 +1,30 @@
-// src/components/game-management/GameTypesTab.tsx
+// src/components/game-management/GameClassesTab.tsx
 'use client'
 
 import { useState } from 'react'
-import { Game, GameType } from '@/types'
-import { useCreateGameType, useUpdateGameType, useDeleteGameType } from '@/hooks/useGameManagement'
+import { Game, GameClass } from '@/types'
+import { useCreateGameClass, useUpdateGameClass, useDeleteGameClass } from '@/hooks/useGameManagement'
 import { FormModal } from '@/components/ui/Modal'
 
-interface GameTypesTabProps {
-  gameTypes: GameType[]
+interface GameClassesTabProps {
+  gameClasses: GameClass[]
   games: Game[]
   selectedGameId: string
   onGameChange: (gameId: string) => void
 }
 
-interface GameTypeFormData {
+interface GameClassFormData {
   name: string
 }
 
-export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }: GameTypesTabProps) {
+export function GameClassesTab({ gameClasses, games, selectedGameId, onGameChange }: GameClassesTabProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingType, setEditingType] = useState<GameType | null>(null)
-  const [formData, setFormData] = useState<GameTypeFormData>({ name: '' })
+  const [editingClass, setEditingClass] = useState<GameClass | null>(null)
+  const [formData, setFormData] = useState<GameClassFormData>({ name: '' })
 
-  const createGameTypeMutation = useCreateGameType()
-  const updateGameTypeMutation = useUpdateGameType()
-  const deleteGameTypeMutation = useDeleteGameType()
+  const createGameClassMutation = useCreateGameClass()
+  const updateGameClassMutation = useUpdateGameClass()
+  const deleteGameClassMutation = useDeleteGameClass()
 
   const selectedGame = games.find(g => g.id === selectedGameId)
 
@@ -34,14 +34,14 @@ export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }:
     if (!formData.name.trim() || !selectedGameId) return
 
     try {
-      if (editingType) {
-        await updateGameTypeMutation.mutateAsync({
-          id: editingType.id,
+      if (editingClass) {
+        await updateGameClassMutation.mutateAsync({
+          id: editingClass.id,
           game_id: selectedGameId,
           name: formData.name
         })
       } else {
-        await createGameTypeMutation.mutateAsync({
+        await createGameClassMutation.mutateAsync({
           game_id: selectedGameId,
           name: formData.name
         })
@@ -49,34 +49,34 @@ export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }:
       
       handleCloseModal()
     } catch (error) {
-      console.error('Error saving game type:', error)
+      console.error('Error saving game class:', error)
     }
   }
 
-  const handleEdit = (gameType: GameType) => {
-    setEditingType(gameType)
-    setFormData({ name: gameType.name })
+  const handleEdit = (gameClass: GameClass) => {
+    setEditingClass(gameClass)
+    setFormData({ name: gameClass.name })
     setIsCreateModalOpen(true)
   }
 
-  const handleDelete = async (gameType: GameType) => {
-    if (!confirm(`Are you sure you want to delete "${gameType.name}"?`)) {
+  const handleDelete = async (gameClass: GameClass) => {
+    if (!confirm(`Are you sure you want to delete class "${gameClass.name}"?`)) {
       return
     }
 
     try {
-      await deleteGameTypeMutation.mutateAsync({ 
-        id: gameType.id, 
+      await deleteGameClassMutation.mutateAsync({ 
+        id: gameClass.id, 
         game_id: selectedGameId 
       })
     } catch (error) {
-      console.error('Error deleting game type:', error)
+      console.error('Error deleting game class:', error)
     }
   }
 
   const handleCloseModal = () => {
     setIsCreateModalOpen(false)
-    setEditingType(null)
+    setEditingClass(null)
     setFormData({ name: '' })
   }
 
@@ -85,12 +85,12 @@ export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }:
     return (
       <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
         <div className="text-center py-12">
-          <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-3xl">🏆</span>
+          <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-3xl">🎯</span>
           </div>
           <h3 className="text-xl font-semibold text-white mb-3">No Game Selected</h3>
           <p className="text-slate-400 mb-6">
-            Select a game from the Games tab to manage its types.
+            Select a game from the Games tab to manage its classes.
           </p>
           <button
             onClick={() => onGameChange(games[0]?.id || '')}
@@ -112,10 +112,10 @@ export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }:
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-white mb-2">
-              Game Types for: <span className="text-blue-400">{selectedGame?.name}</span>
+              Classes for: <span className="text-blue-400">{selectedGame?.name}</span>
             </h2>
             <p className="text-slate-400">
-              Define competition types like Meistrivõistlused, Treening, or Kiire Mäng
+              Create registration classes for participants to compete in
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -132,67 +132,73 @@ export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }:
               onClick={() => setIsCreateModalOpen(true)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
             >
-              + Add Type
+              + Add Class
             </button>
           </div>
         </div>
       </div>
 
-      {/* Game Types List */}
-      {gameTypes.length === 0 ? (
+      {/* Game Classes List */}
+      {gameClasses.length === 0 ? (
         <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
           <div className="text-center py-8">
-            <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🏆</span>
+            <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">🎯</span>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">No Game Types</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">No Classes</h3>
             <p className="text-slate-400 mb-4">
-              Create game types to categorize different rally competitions.
+              Create classes for participants to register in rallies.
             </p>
             <button
               onClick={() => setIsCreateModalOpen(true)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
             >
-              Create First Type
+              Create First Class
             </button>
           </div>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {gameTypes.map((gameType) => (
+          {gameClasses.map((gameClass) => (
             <div 
-              key={gameType.id} 
+              key={gameClass.id} 
               className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 hover:bg-slate-800/70 transition-all duration-200"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                    <span className="text-orange-300 text-lg">🏆</span>
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <span className="text-purple-300 text-lg">🎯</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">{gameType.name}</h3>
+                    <h3 className="font-semibold text-white">{gameClass.name}</h3>
                     <p className="text-sm text-slate-400">
-                      Created {new Date(gameType.created_at).toLocaleDateString()}
+                      Created {new Date(gameClass.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => handleEdit(gameType)}
+                    onClick={() => handleEdit(gameClass)}
                     className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
-                    title="Edit Type"
+                    title="Edit Class"
                   >
                     ✏️
                   </button>
                   <button
-                    onClick={() => handleDelete(gameType)}
+                    onClick={() => handleDelete(gameClass)}
                     className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
-                    title="Delete Type"
+                    title="Delete Class"
                   >
                     🗑️
                   </button>
                 </div>
+              </div>
+
+              <div className="bg-slate-700/30 rounded-lg p-3">
+                <p className="text-slate-300 text-sm">
+                  Available for rally registration
+                </p>
               </div>
             </div>
           ))}
@@ -203,20 +209,20 @@ export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }:
       <FormModal
         isOpen={isCreateModalOpen}
         onClose={handleCloseModal}
-        title={editingType ? 'Edit Game Type' : 'Create New Game Type'}
-        maxWidth="md"
+        title={editingClass ? 'Edit Rally Class' : 'Create New Rally Class'}
+        maxWidth="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Type Name *
+              Class Name *
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ name: e.target.value })}
-              placeholder="Enter game type name..."
+              placeholder="Enter class name..."
               className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
               required
             />
@@ -232,12 +238,12 @@ export function GameTypesTab({ gameTypes, games, selectedGameId, onGameChange }:
             </button>
             <button
               type="submit"
-              disabled={!formData.name.trim() || createGameTypeMutation.isPending || updateGameTypeMutation.isPending}
+              disabled={!formData.name.trim() || createGameClassMutation.isPending || updateGameClassMutation.isPending}
               className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-lg font-medium transition-all duration-200"
             >
-              {createGameTypeMutation.isPending || updateGameTypeMutation.isPending 
+              {createGameClassMutation.isPending || updateGameClassMutation.isPending 
                 ? 'Saving...' 
-                : editingType ? 'Update Type' : 'Create Type'
+                : editingClass ? 'Update Class' : 'Create Class'
               }
             </button>
           </div>

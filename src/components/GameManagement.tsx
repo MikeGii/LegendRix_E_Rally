@@ -2,103 +2,176 @@
 'use client'
 
 import { useState } from 'react'
-import { useGames, useGameTypes, useGameEvents, useGameClasses } from '@/hooks/useGameManagement'
-import { GameManagementHeader } from '@/components/game-management/GameManagementHeader'
-import { GameManagementTabs } from '@/components/game-management/GameManagementTabs'
-import { GamesTab } from '@/components/game-management/GamesTab'
-import { GameTypesTab } from '@/components/game-management/GameTypesTab'
-import { EventsTab } from '@/components/game-management/EventsTab'
-import { ClassesTab } from '@/components/game-management/ClassesTab'
-
-type TabType = 'games' | 'types' | 'events' | 'classes'
+import { useGames, useGameTypes, useGameEvents, useGameClasses, useEventTracks } from '@/hooks/useGameManagement'
+import { Tab } from '@/types'
+import { GamesTab } from './game-management/GamesTab'
+import { GameTypesTab } from './game-management/GameTypesTab'
+import { GameEventsTab } from './game-management/GameEventsTab'
+import { EventTracksTab } from './game-management/EventTracksTab'
+import { GameClassesTab } from './game-management/GameClassesTab'
 
 export function GameManagement() {
-  const [activeTab, setActiveTab] = useState<TabType>('games')
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState('games')
+  const [selectedGameId, setSelectedGameId] = useState<string>('')
+  const [selectedEventId, setSelectedEventId] = useState<string>('')
 
   // Data hooks
-  const { data: games = [], isLoading: isLoadingGames, refetch: refetchGames } = useGames()
-  const { data: gameTypes = [], isLoading: isLoadingTypes, refetch: refetchTypes } = useGameTypes(selectedGameId)
-  const { data: events = [], isLoading: isLoadingEvents, refetch: refetchEvents } = useGameEvents(selectedGameId)
-  const { data: classes = [], isLoading: isLoadingClasses, refetch: refetchClasses } = useGameClasses(selectedGameId)
+  const { data: games = [] } = useGames()
+  const { data: gameTypes = [] } = useGameTypes(selectedGameId)
+  const { data: gameEvents = [] } = useGameEvents(selectedGameId)
+  const { data: gameClasses = [] } = useGameClasses(selectedGameId)
+  const { data: eventTracks = [] } = useEventTracks(selectedEventId)
 
-  const selectedGame = games.find(game => game.id === selectedGameId)
+  const tabs: Tab[] = [
+    { 
+      id: 'games', 
+      label: 'Games', 
+      icon: '🎮', 
+      count: games.length 
+    },
+    { 
+      id: 'types', 
+      label: 'Game Types', 
+      icon: '🏆', 
+      count: gameTypes.length 
+    },
+    { 
+      id: 'events', 
+      label: 'Game Events', 
+      icon: '🏁', 
+      count: gameEvents.length 
+    },
+    { 
+      id: 'tracks', 
+      label: 'Event Tracks', 
+      icon: '🛣️', 
+      count: eventTracks.length 
+    },
+    { 
+      id: 'classes', 
+      label: 'Game Classes', 
+      icon: '🎯', 
+      count: gameClasses.length 
+    }
+  ]
 
-  const handleRefreshAll = () => {
-    refetchGames()
-    if (selectedGameId) {
-      refetchTypes()
-      refetchEvents()
-      refetchClasses()
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'games':
+        return (
+          <GamesTab 
+            games={games}
+            onGameSelect={setSelectedGameId}
+            selectedGameId={selectedGameId}
+          />
+        )
+      case 'types':
+        return (
+          <GameTypesTab 
+            gameTypes={gameTypes}
+            games={games}
+            selectedGameId={selectedGameId}
+            onGameChange={setSelectedGameId}
+          />
+        )
+      case 'events':
+        return (
+          <GameEventsTab 
+            gameEvents={gameEvents}
+            games={games}
+            selectedGameId={selectedGameId}
+            onGameChange={setSelectedGameId}
+            onEventSelect={setSelectedEventId}
+          />
+        )
+      case 'tracks':
+        return (
+          <EventTracksTab 
+            eventTracks={eventTracks}
+            games={games}
+            gameEvents={gameEvents}
+            selectedGameId={selectedGameId}
+            selectedEventId={selectedEventId}
+            onGameChange={setSelectedGameId}
+            onEventChange={setSelectedEventId}
+          />
+        )
+      case 'classes':
+        return (
+          <GameClassesTab 
+            gameClasses={gameClasses}
+            games={games}
+            selectedGameId={selectedGameId}
+            onGameChange={setSelectedGameId}
+          />
+        )
+      default:
+        return null
     }
   }
 
-  const tabs = [
-    { id: 'games', label: 'Games', icon: '🎮', count: games.length },
-    { id: 'types', label: 'Game Types', icon: '🏆', count: gameTypes.length },
-    { id: 'events', label: 'Events', icon: '🌍', count: events.length },
-    { id: 'classes', label: 'Classes', icon: '🏅', count: classes.length }
-  ]
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="max-w-7xl mx-auto p-6">
         
         {/* Header */}
-        <GameManagementHeader 
-          totalGames={games.length}
-          selectedGame={selectedGame}
-          onRefresh={handleRefreshAll}
-          isLoading={isLoadingGames}
-        />
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Game Management</h1>
+              <p className="text-slate-300">
+                Manage games, types, events, tracks, and classes for rally competitions
+              </p>
+            </div>
+            <button
+              onClick={() => window.location.href = '/admin-dashboard'}
+              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all duration-200"
+            >
+              ← Back to Dashboard
+            </button>
+          </div>
+        </div>
 
         {/* Tab Navigation */}
-        <GameManagementTabs
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={(tabId) => setActiveTab(tabId as TabType)}
-          disabled={!selectedGameId && activeTab !== 'games'}
-        />
-
-        {/* Content Area */}
-        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-          {activeTab === 'games' && (
-            <GamesTab
-              games={games}
-              isLoading={isLoadingGames}
-              selectedGameId={selectedGameId}
-              onSelectGame={setSelectedGameId}
-              onRefresh={refetchGames}
-            />
-          )}
-
-          {activeTab === 'types' && (
-            <GameTypesTab
-              gameTypes={gameTypes}
-              selectedGame={selectedGame}
-              isLoading={isLoadingTypes}
-              onRefresh={refetchTypes}
-            />
-          )}
-
-          {activeTab === 'events' && (
-            <EventsTab
-              events={events}
-              selectedGame={selectedGame}
-              isLoading={isLoadingEvents}
-              onRefresh={refetchEvents}
-            />
-          )}
-
-          {activeTab === 'classes' && (
-            <ClassesTab
-              classes={classes}
-              selectedGame={selectedGame}
-              isLoading={isLoadingClasses}
-              onRefresh={refetchClasses}
-            />
-          )}
+        <div className="mb-8">
+          <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl border border-slate-700/50 p-2">
+            <div className="flex space-x-1 overflow-x-auto">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 whitespace-nowrap
+                    ${activeTab === tab.id 
+                      ? 'bg-blue-600 text-white shadow-lg' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                    }
+                  `}
+                >
+                  <span className="text-lg">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  {tab.count !== undefined && (
+                    <span className={`
+                      px-2 py-1 rounded-full text-xs font-bold
+                      ${activeTab === tab.id 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-slate-600 text-slate-300'
+                      }
+                    `}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
+
+        {/* Active Tab Content */}
+        <div className="space-y-6">
+          {renderActiveTab()}
+        </div>
+
       </div>
     </div>
   )

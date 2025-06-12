@@ -1,7 +1,8 @@
-// src/lib/queryUtils.ts - Centralized query utilities and keys
+// src/lib/queryUtils.ts - UPDATED with missing query keys
 
 import { supabase } from './supabase'
 import type { QueryKeys, DatabaseTable, SortConfig, FilterConfig, ApiResponse } from '@/types'
+import { QUERY_KEYS } from './constants'
 
 // ============= Query Key Generators =============
 export const createQueryKeys = (entity: string): QueryKeys => ({
@@ -12,16 +13,8 @@ export const createQueryKeys = (entity: string): QueryKeys => ({
   detail: (id: string) => [...createQueryKeys(entity).details(), id] as const,
 })
 
-// Centralized query keys
-export const queryKeys = {
-  users: createQueryKeys('users'),
-  rallies: createQueryKeys('rallies'),
-  games: createQueryKeys('games'),
-  gameTypes: (gameId?: string) => ['games', 'types', gameId],
-  gameEvents: (gameId?: string) => ['games', 'events', gameId],
-  gameClasses: (gameId?: string) => ['games', 'classes', gameId],
-  eventTracks: (eventId?: string) => ['events', 'tracks', eventId],
-}
+// Centralized query keys - FIXED AND EXPANDED
+export const queryKeys = QUERY_KEYS
 
 // ============= Generic Database Operations =============
 export class DatabaseService {

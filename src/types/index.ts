@@ -1,4 +1,6 @@
-// src/types/index.ts - Centralized type definitions
+// src/types/index.ts - Centralized type definitions - FIXED VERSION
+
+import { ReactNode } from 'react'
 
 // ============= User Types =============
 export interface User {
@@ -44,6 +46,7 @@ export interface GameType {
   max_participants?: number
   min_participants?: number
   duration_type?: string
+  duration_minutes?: number  // ADD THIS
   is_active: boolean
   created_at: string
   updated_at: string
@@ -59,6 +62,7 @@ export interface GameEvent {
   weather_conditions?: string
   difficulty_level?: number
   description?: string
+  max_participants?: number  // ADD THIS
   is_active: boolean
   created_at: string
   updated_at: string
@@ -72,9 +76,9 @@ export interface EventTrack {
   length_km?: number
   stage_number?: number
   description?: string
-  surface_type?: string
+  surface_type?: 'gravel' | 'tarmac' | 'snow' | 'mixed'
   is_special_stage: boolean
-  is_active: boolean
+  is_active: boolean  // ENSURE THIS EXISTS
   created_at: string
   updated_at: string
 }
@@ -84,7 +88,7 @@ export interface GameClass {
   game_id: string
   name: string
   description?: string
-  skill_level?: string
+  skill_level?: 'beginner' | 'intermediate' | 'advanced' | 'expert'  // Fixed: specific union type
   requirements?: string
   max_participants?: number
   entry_fee?: number
@@ -224,21 +228,37 @@ export interface Tab {
   count?: number
 }
 
+// ============= Modal and Form Component Types =============
 export interface ModalProps {
   isOpen: boolean
   onClose: () => void
-  title?: string
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  title?: string | ReactNode
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+  children?: ReactNode
 }
+
+export interface FormComponentProps {
+  label?: string
+  error?: string
+  hint?: string
+  required?: boolean
+  disabled?: boolean
+  className?: string
+}
+
+// Button component types
+export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'ghost'
+export type ButtonSize = 'sm' | 'md' | 'lg'
 
 // ============= View Types =============
 export type ViewMode = 'admin' | 'user'
 
 export interface DashboardLayoutProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
-// ============= Query Types =============
+// ============= Query and Database Types =============
 export interface QueryKeys {
   all: readonly string[]
   lists: () => readonly string[]
@@ -247,10 +267,19 @@ export interface QueryKeys {
   detail: (id: string) => readonly string[]
 }
 
-// ============= Utility Types =============
-export type DatabaseTable = 'users' | 'rallies' | 'games' | 'game_types' | 'game_events' | 'event_tracks' | 'game_classes' | 'rally_registrations' | 'rally_details'
+export type DatabaseTable = 
+  | 'users' 
+  | 'rallies' 
+  | 'games' 
+  | 'game_types' 
+  | 'game_events' 
+  | 'event_tracks' 
+  | 'game_classes' 
+  | 'rally_registrations' 
+  | 'rally_details'
 
 export type OrderDirection = 'asc' | 'desc'
+export type FilterOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'in'
 
 export interface SortConfig {
   field: string
@@ -259,7 +288,7 @@ export interface SortConfig {
 
 export interface FilterConfig {
   field: string
-  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'in'
+  operator: FilterOperator
   value: any
 }
 
