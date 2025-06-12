@@ -53,6 +53,7 @@ export interface UserRallyRegistration {
   status: 'registered' | 'confirmed' | 'cancelled' | 'disqualified' | 'completed'
   car_number?: number
   team_name?: string
+  notes?: string  // Added missing notes field
   entry_fee_paid: number
   payment_status: 'pending' | 'paid' | 'refunded' | 'waived'
   class_name?: string
