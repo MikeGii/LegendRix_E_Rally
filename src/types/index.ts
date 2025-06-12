@@ -86,7 +86,7 @@ export interface GameClass {
   game_id: string
   name: string
   description?: string
-  skill_level?: string
+  skill_level?: 'beginner' | 'intermediate' | 'advanced' | 'expert'  // Fixed: specific union type
   requirements?: string
   max_participants?: number
   entry_fee?: number

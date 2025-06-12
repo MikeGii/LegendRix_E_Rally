@@ -1,10 +1,13 @@
 // src/components/game-management/EventsTab.tsx - Optimized version
 import { useState } from 'react'
-import { useGameEventMutations, useEventTracks } from '@/hooks/useGameManagement'
+import { useEventTracks, useGameEventMutations } from '@/hooks/useGameManagement'
 import { EmptyState, SelectionRequired, LoadingState } from '@/components/shared/States'
 import { ConfirmModal, FormModal } from '@/components/shared/Modal'
-import { Input, Textarea, Select, FormGrid, FormActions, Button } from '@/components/shared/FormComponents'
-import type { Game, GameClass, GameEvent, GameType, EventTrack } from '@/types'
+import { Input, FormActions, Button, FormGrid, Select, Textarea } from '@/components/shared/FormComponents'
+import { formatDateTime } from '@/lib/statusUtils'
+import type { Game, GameEvent } from '@/types'
+import type { GameEventFormData } from '@/types/game'
+import { EventTracksModal } from './EventTracksModal'
 
 interface EventsTabProps {
   events: GameEvent[]  // Changed from gameEvents to events
@@ -24,7 +27,18 @@ export function EventsTab({ events, selectedGame, onRefresh }: EventsTabProps) {
     if (!selectedGame) return
     
     try {
-      await createGameEvent.mutateAsync({ ...eventData, game_id: selectedGame.id })
+      // Convert GameEvent to GameEventFormData
+      const formData: GameEventFormData = {
+        game_id: selectedGame.id,
+        name: eventData.name || '',
+        location: eventData.country || '', // Map country to location
+        event_date: new Date().toISOString(), // Add default date
+        registration_deadline: new Date().toISOString(), // Add default deadline
+        description: eventData.description,
+        max_participants: eventData.max_participants
+      }
+      
+      await createGameEvent.mutateAsync(formData)
       setShowCreateModal(false)
       onRefresh()
     } catch (error) {
@@ -163,6 +177,10 @@ interface EventCardProps {
 function EventCard({ event, onEdit, onDelete, onViewTracks }: EventCardProps) {
   const { data: tracks = [] } = useEventTracks(event.id)
 
+  function setViewingTracks(event: GameEvent): void {
+    throw new Error('Function not implemented.')
+  }
+
   return (
     <div className="bg-slate-900/50 rounded-xl border border-slate-700/30 p-6 group hover:border-slate-600 transition-all duration-200">
       <div className="flex items-start justify-between mb-4">
@@ -178,11 +196,11 @@ function EventCard({ event, onEdit, onDelete, onViewTracks }: EventCardProps) {
         
         <div className="flex items-center space-x-2">
           <Button
-            onClick={onViewTracks}
-            variant="ghost"
+            variant="secondary"  // Changed from "ghost"
+            onClick={() => setViewingTracks(event)}
             size="sm"
           >
-            {tracks.length} Tracks
+            View Tracks ({event.tracks?.length || 0})
           </Button>
           
           <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

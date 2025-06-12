@@ -55,6 +55,7 @@ interface ConfirmModalProps {
   cancelText?: string
   confirmColor?: 'red' | 'blue' | 'green'
   isLoading?: boolean
+  icon?: string  // Add missing icon prop
 }
 
 export function ConfirmModal({
@@ -66,7 +67,8 @@ export function ConfirmModal({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   confirmColor = 'red',
-  isLoading = false
+  isLoading = false,
+  icon = '⚠️'  // Default icon
 }: ConfirmModalProps) {
   if (!isOpen) return null
 
@@ -87,7 +89,7 @@ export function ConfirmModal({
         <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-slate-800 shadow-xl rounded-2xl border border-slate-700">
           <div className="flex items-start space-x-4">
             <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-              <span className="text-2xl">⚠️</span>
+              <span className="text-2xl">{icon}</span>
             </div>
             
             <div className="flex-1 space-y-3">

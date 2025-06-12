@@ -1,8 +1,9 @@
 // src/components/game-management/CreateGameModal.tsx - Optimized with form validation
-import { useState, useEffect } from 'react'
 import { FormModal } from '@/components/shared/Modal'
 import { Input, Textarea, Select, FormGrid, FormSection, FormActions, Button } from '@/components/shared/FormComponents'
 import type { Game } from '@/types'
+import type { GameFormData } from '@/types/game'
+import { useState, useEffect } from 'react'
 
 interface CreateGameModalProps {
   game?: Game | null
@@ -24,6 +25,7 @@ interface FormErrors {
   developer?: string
   platform?: string
   release_year?: string
+  description?: string  // Add missing description field
 }
 
 const PLATFORM_OPTIONS = [
@@ -94,7 +96,7 @@ export function CreateGameModal({ game, onClose, onSubmit, isLoading }: CreateGa
     setFormData(prev => ({ ...prev, [field]: value }))
     
     // Clear error when user starts typing
-    if (errors[field]) {
+    if (errors[field as keyof FormErrors]) {  // Type assertion fix
       setErrors(prev => ({ ...prev, [field]: undefined }))
     }
   }
@@ -175,7 +177,6 @@ export function CreateGameModal({ game, onClose, onSubmit, isLoading }: CreateGa
               label="Platform"
               value={formData.platform}
               onChange={(e) => handleInputChange('platform', e.target.value)}
-              onBlur={() => handleBlur('platform')}
               error={touched.platform ? errors.platform : undefined}
               options={PLATFORM_OPTIONS}
               required

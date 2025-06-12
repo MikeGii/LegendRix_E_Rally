@@ -9,6 +9,7 @@ import { ConfirmModal, FormModal } from '@/components/shared/Modal'
 import { Input, Textarea, Select, FormGrid, FormActions, Button } from '@/components/shared/FormComponents'
 import { formatDateTime } from '@/lib/statusUtils'
 import type { Game, GameType } from '@/types'
+import type { GameTypeFormData } from '@/types/game'
 
 interface GameTypesTabProps {
   gameTypes: GameType[]
@@ -27,7 +28,17 @@ export function GameTypesTab({ gameTypes, selectedGame, onRefresh }: GameTypesTa
     if (!selectedGame) return
     
     try {
-      await createGameType.mutateAsync({ ...typeData, game_id: selectedGame.id })
+      // Convert to proper form data type
+      const formData: GameTypeFormData = {
+        game_id: selectedGame.id,
+        name: typeData.name || '',
+        description: typeData.description,
+        max_participants: typeData.max_participants,
+        min_participants: typeData.min_participants || 1,
+        duration_minutes: typeData.duration_minutes
+      }
+      
+      await createGameType.mutateAsync(formData)
       setShowCreateModal(false)
       onRefresh()
     } catch (error) {

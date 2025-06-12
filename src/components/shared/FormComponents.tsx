@@ -97,6 +97,8 @@ interface SelectProps {
   placeholder?: string
   value?: string
   onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void
+  onBlur?: () => void  // Add missing onBlur prop
+  name?: string        // Add missing name prop
   required?: boolean
   disabled?: boolean
 }
@@ -192,6 +194,8 @@ interface ButtonProps {
   children: ReactNode
   onClick?: () => void
   icon?: string
+  size?: 'sm' | 'md' | 'lg'    // Add missing size prop
+  className?: string          // Add missing className prop
 }
 
 export function Button({ 
@@ -201,7 +205,9 @@ export function Button({
   disabled = false,
   children,
   onClick,
-  icon
+  icon,
+  size = 'md',      // Default size
+  className = ''    // Default className
 }: ButtonProps) {
   const variantClasses = {
     primary: 'bg-blue-600 hover:bg-blue-700 text-white',
@@ -210,16 +216,24 @@ export function Button({
     danger: 'bg-red-600 hover:bg-red-700 text-white'
   }
 
+  const sizeClasses = {
+    sm: 'px-3 py-2 text-sm',
+    md: 'px-6 py-3 text-sm',
+    lg: 'px-8 py-4 text-base'
+  }
+
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
       className={`
-        px-6 py-3 rounded-xl font-medium transition-all duration-200
+        rounded-xl font-medium transition-all duration-200
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800
         disabled:opacity-50 disabled:cursor-not-allowed
         ${variantClasses[variant]}
+        ${sizeClasses[size]}
+        ${className}
       `}
     >
       {loading ? (
@@ -234,5 +248,29 @@ export function Button({
         </div>
       )}
     </button>
+  )
+}
+
+interface FormSectionProps {
+  title?: string
+  description?: string
+  children: ReactNode
+}
+
+export function FormSection({ title, description, children }: FormSectionProps) {
+  return (
+    <div className="space-y-4">
+      {(title || description) && (
+        <div className="space-y-1">
+          {title && (
+            <h4 className="text-lg font-medium text-white">{title}</h4>
+          )}
+          {description && (
+            <p className="text-slate-400 text-sm">{description}</p>
+          )}
+        </div>
+      )}
+      {children}
+    </div>
   )
 }

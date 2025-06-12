@@ -6,6 +6,7 @@ import { ConfirmModal } from '@/components/shared/Modal'
 import { EmptyState, LoadingState } from '@/components/shared/States'
 import { GameCard } from './GameCard'
 import type { Game } from '@/types'
+import type { GameFormData } from '@/types/game'
 
 interface GamesTabProps {
   games: Game[]
@@ -26,7 +27,7 @@ export function GamesTab({
 
   const { createGame, updateGame, deleteGame } = useGameMutations()
 
-  const handleCreateGame = async (gameData: Partial<Game>) => {
+  const handleCreateGame = async (gameData: GameFormData) => {  // Use GameFormData type
     try {
       const newGame = await createGame.mutateAsync(gameData)
       setShowCreateModal(false)
@@ -188,7 +189,6 @@ export function GamesTab({
           confirmText="Delete Game"
           confirmColor="red"
           isLoading={deleteGame.isPending}
-          icon="🗑️"
         />
       )}
     </div>
