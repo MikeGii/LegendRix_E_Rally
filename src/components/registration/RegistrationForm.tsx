@@ -1,9 +1,10 @@
-// src/components/registration/RegistrationForm.tsx
+
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useUpcomingRallies } from '@/hooks/useOptimizedRallies'
+import { useRallyAvailableClasses, useCreateRegistration } from '@/hooks/useRallyRegistrations'
 import { TransformedRally } from '@/hooks/useOptimizedRallies'
 
 interface RegistrationFormProps {
@@ -29,7 +30,15 @@ export function RegistrationForm({
   const [selectedGameId, setSelectedGameId] = useState<string>('')
   const [selectedRallyId, setSelectedRallyId] = useState<string>(preselectedRallyId || '')
   const [availableRallies, setAvailableRallies] = useState<TransformedRally[]>([])
+  const [showClassSelection, setShowClassSelection] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Simplified class selection state - ONLY class_id needed
+  const [selectedClassId, setSelectedClassId] = useState('')
+
+  // Get available classes for selected rally
+  const { data: availableClasses = [], isLoading: isLoadingClasses } = useRallyAvailableClasses(selectedRallyId)
+  const createRegistrationMutation = useCreateRegistration()
 
   // Extract unique games from rallies
   const availableGames: Game[] = allRallies.reduce((games: Game[], rally) => {
@@ -69,9 +78,10 @@ export function RegistrationForm({
         setSelectedGameId(preselectedRally.rally_game_id || '')
         setSelectedRallyId(preselectedRallyId)
         onRallySelect(preselectedRally)
+        setShowClassSelection(true)
       }
     }
-  }, [preselectedRallyId, allRallies]) // Removed onRallySelect from dependencies
+  }, [preselectedRallyId, allRallies])
 
   // Handle rally selection
   useEffect(() => {
@@ -81,7 +91,14 @@ export function RegistrationForm({
         onRallySelect(selectedRally)
       }
     }
-  }, [selectedRallyId, availableRallies]) // Removed onRallySelect from dependencies
+  }, [selectedRallyId, availableRallies])
+
+  const handleRallySelect = (rallyId: string) => {
+    setSelectedRallyId(rallyId)
+    setShowClassSelection(true)
+    // Reset class selection when changing rally
+    setSelectedClassId('')
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,18 +108,19 @@ export function RegistrationForm({
       return
     }
 
+    if (!selectedClassId) {
+      alert('Palun valige klass')
+      return
+    }
+
     setIsSubmitting(true)
     
     try {
-      // TODO: Implement actual registration API call
-      console.log('Registering user for rally:', {
-        userId: user?.id,
-        rallyId: selectedRallyId,
-        gameId: selectedGameId
+      await createRegistrationMutation.mutateAsync({
+        rally_id: selectedRallyId,
+        class_id: selectedClassId
+        // Removed: car_number, team_name, notes
       })
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
       
       alert('Registreerimine õnnestus!')
       onRegistrationComplete()
@@ -183,7 +201,7 @@ export function RegistrationForm({
                     <button
                       key={rally.id}
                       type="button"
-                      onClick={() => setSelectedRallyId(rally.id)}
+                      onClick={() => handleRallySelect(rally.id)}
                       className={`w-full p-6 rounded-xl border transition-all duration-200 text-left ${
                         selectedRallyId === rally.id
                           ? 'bg-green-600/20 border-green-500'
@@ -237,10 +255,10 @@ export function RegistrationForm({
                         <div className="ml-4">
                           {selectedRallyId === rally.id ? (
                             <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs">✓</span>
+                              <span className="text-white text-sm">✓</span>
                             </div>
                           ) : (
-                            <div className="w-6 h-6 border-2 border-slate-500 rounded-full"></div>
+                            <div className="w-6 h-6 border border-slate-500 rounded-full"></div>
                           )}
                         </div>
                       </div>
@@ -252,22 +270,81 @@ export function RegistrationForm({
           </div>
         )}
 
-        {/* Submit Button */}
-        {selectedRallyId && (
-          <div className="pt-6 border-t border-slate-700">
+        {/* Step 3: Class Selection - FINAL STEP */}
+        {showClassSelection && selectedRallyId && (
+          <div>
+            <label className="block text-lg font-semibold text-white mb-4">
+              3. Vali klass *
+            </label>
+            
+            {isLoadingClasses ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
+                <span className="ml-3 text-slate-400">Laen klasse...</span>
+              </div>
+            ) : availableClasses.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl text-red-400">⚠️</span>
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Klasse pole saadaval</h3>
+                <p className="text-slate-400">Sellel mängul puuduvad registreerimiseks saadaolevad klassid.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {availableClasses.map((cls: any) => (
+                  <label
+                    key={cls.id}
+                    className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all ${
+                      selectedClassId === cls.id
+                        ? 'bg-purple-600/20 border-purple-500 text-white'
+                        : 'bg-slate-700/30 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="class_id"
+                      value={cls.id}
+                      checked={selectedClassId === cls.id}
+                      onChange={(e) => setSelectedClassId(e.target.value)}
+                      className="sr-only"
+                    />
+                    <div className="flex items-center space-x-3 flex-1">
+                      <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                        <span className="text-purple-400 text-lg">🎯</span>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg">{cls.name}</h3>
+                        <p className="text-sm text-slate-400 mt-1">
+                          Loodud: {new Date(cls.created_at).toLocaleDateString('et-EE')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      {selectedClassId === cls.id ? (
+                        <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm">✓</span>
+                        </div>
+                      ) : (
+                        <div className="w-6 h-6 border border-slate-500 rounded-full"></div>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Submit Button - REMOVED STEP 4, DIRECTLY SHOW SUBMIT */}
+        {selectedClassId && (
+          <div className="border-t border-slate-600 pt-6">
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 disabled:from-slate-600 disabled:to-slate-700 text-white rounded-xl font-bold text-lg transition-all duration-300 shadow-xl hover:shadow-green-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmitting || !selectedClassId}
+              className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-all duration-200"
             >
-              {isSubmitting ? (
-                <div className="flex items-center justify-center space-x-3">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Registreerin...</span>
-                </div>
-              ) : (
-                'Lõpeta registreerimine'
-              )}
+              {isSubmitting ? 'Registreerin...' : 'Registreeri rallile'}
             </button>
           </div>
         )}

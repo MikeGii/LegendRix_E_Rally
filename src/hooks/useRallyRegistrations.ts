@@ -1,4 +1,4 @@
-// ===== 1. REGISTRATION HOOKS (src/hooks/useRallyRegistrations.ts) =====
+// src/hooks/useRallyRegistrations.ts - FIXED for actual database structure
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -71,7 +71,7 @@ export function useRallyRegistrations(rallyId: string) {
   })
 }
 
-// Get available classes for a rally
+// FIXED: Get available classes for a rally - matching actual database structure
 export function useRallyAvailableClasses(rallyId: string) {
   return useQuery({
     queryKey: ['rally_classes', rallyId],
@@ -80,29 +80,44 @@ export function useRallyAvailableClasses(rallyId: string) {
       
       console.log('🔄 Loading available classes for rally:', rallyId)
       
-      const { data: rallyClasses, error } = await supabase
-        .from('rally_classes')
+      // First, get the rally to find its game_id
+      const { data: rally, error: rallyError } = await supabase
+        .from('rallies')
+        .select('game_id')
+        .eq('id', rallyId)
+        .single()
+
+      if (rallyError) {
+        console.error('Error loading rally:', rallyError)
+        throw rallyError
+      }
+
+      if (!rally?.game_id) {
+        console.log('No game_id found for rally')
+        return []
+      }
+
+      // Get available classes for this game (simplified structure)
+      const { data: gameClasses, error } = await supabase
+        .from('game_classes')
         .select(`
-          *,
-          class:game_classes(
-            id,
-            name,
-            description,
-            skill_level,
-            max_participants,
-            entry_fee
-          )
+          id,
+          name,
+          game_id,
+          is_active,
+          created_at,
+          updated_at
         `)
-        .eq('rally_id', rallyId)
+        .eq('game_id', rally.game_id)
         .eq('is_active', true)
 
       if (error) {
-        console.error('Error loading rally classes:', error)
+        console.error('Error loading game classes:', error)
         throw error
       }
 
-      console.log(`✅ Rally classes loaded: ${rallyClasses?.length || 0}`)
-      return rallyClasses?.map(rc => rc.class).filter(Boolean) || []
+      console.log(`✅ Game classes loaded: ${gameClasses?.length || 0}`)
+      return gameClasses || []
     },
     enabled: !!rallyId,
     staleTime: 5 * 60 * 1000,
@@ -117,9 +132,7 @@ export function useCreateRegistration() {
     mutationFn: async (params: {
       rally_id: string
       class_id: string
-      car_number?: number
-      team_name?: string
-      notes?: string
+      // Removed: car_number, team_name, notes
     }) => {
       console.log('🔄 Creating rally registration...')
       
@@ -132,9 +145,10 @@ export function useCreateRegistration() {
           rally_id: params.rally_id,
           user_id: user.id,
           class_id: params.class_id,
-          car_number: params.car_number || null,
-          team_name: params.team_name || null,
-          notes: params.notes || null,
+          // Removed optional fields - set to null/default
+          car_number: null,
+          team_name: null,
+          notes: null,
           status: 'registered',
           entry_fee_paid: 0,
           payment_status: 'pending'

@@ -20,10 +20,7 @@ export function RegistrationFormWithClasses({
   const createRegistrationMutation = useCreateRegistration()
 
   const [formData, setFormData] = useState({
-    class_id: '',
-    car_number: '',
-    team_name: '',
-    notes: ''
+    class_id: ''
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,10 +34,7 @@ export function RegistrationFormWithClasses({
     try {
       await createRegistrationMutation.mutateAsync({
         rally_id: rallyId,
-        class_id: formData.class_id,
-        car_number: formData.car_number ? parseInt(formData.car_number) : undefined,
-        team_name: formData.team_name || undefined,
-        notes: formData.notes || undefined
+        class_id: formData.class_id        
       })
       
       onSuccess()
@@ -136,51 +130,6 @@ export function RegistrationFormWithClasses({
             ))}
           </div>
         </div>
-
-        {/* Optional Fields */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Car Number (Optional)
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="999"
-              value={formData.car_number}
-              onChange={(e) => setFormData(prev => ({ ...prev, car_number: e.target.value }))}
-              placeholder="e.g. 42"
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Team Name (Optional)
-            </label>
-            <input
-              type="text"
-              value={formData.team_name}
-              onChange={(e) => setFormData(prev => ({ ...prev, team_name: e.target.value }))}
-              placeholder="e.g. Speed Demons"
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Notes (Optional)
-          </label>
-          <textarea
-            rows={3}
-            value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            placeholder="Any additional information..."
-            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 resize-none"
-          />
-        </div>
-
         {/* Action Buttons */}
         <div className="flex space-x-4 pt-4">
           <button

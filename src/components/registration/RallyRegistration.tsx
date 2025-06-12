@@ -1,8 +1,9 @@
-// src/components/registration/RallyRegistration.tsx
+// ===== 2. UPDATED RallyRegistration.tsx - WITH BACK BUTTON =====
+
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { RegistrationForm } from './RegistrationForm'
 import { RallyDetails } from './RallyDetails'
@@ -10,6 +11,7 @@ import { TransformedRally } from '@/hooks/useOptimizedRallies'
 
 export function RallyRegistration() {
   const { user } = useAuth()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedRally, setSelectedRally] = useState<TransformedRally | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -45,7 +47,12 @@ export function RallyRegistration() {
   const handleRegistrationComplete = () => {
     // Handle successful registration
     console.log('Registration completed!')
-    // Redirect back to dashboard or show success message
+    // Redirect back to dashboard
+    router.push('/user-dashboard')
+  }
+
+  const handleBackToDashboard = () => {
+    router.push('/user-dashboard')
   }
 
   if (!user) return null
@@ -54,21 +61,32 @@ export function RallyRegistration() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         
-        {/* Header */}
+        {/* Header with Back Button */}
         <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-              <span className="text-green-400 text-xl">📝</span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <span className="text-green-400 text-xl">📝</span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">Rally Registration</h1>
+                <p className="text-slate-400">
+                  {preselectedRallyId 
+                    ? 'Complete your rally registration below' 
+                    : 'Select a game and rally to register for competition'
+                  }
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Rally Registration</h1>
-              <p className="text-slate-400">
-                {preselectedRallyId 
-                  ? 'Complete your rally registration below' 
-                  : 'Select a game and rally to register for competition'
-                }
-              </p>
-            </div>
+            
+            {/* NEW: Back to Dashboard Button */}
+            <button
+              onClick={handleBackToDashboard}
+              className="flex items-center space-x-2 px-6 py-3 bg-slate-700/50 hover:bg-slate-600/70 text-slate-300 hover:text-white rounded-xl transition-all duration-200"
+            >
+              <span>←</span>
+              <span>Tagasi töölauale</span>
+            </button>
           </div>
         </div>
 

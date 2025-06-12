@@ -1,5 +1,3 @@
-// ===== 2. REGISTRATION TABLE COMPONENT (src/components/rally/RallyRegistrationsTable.tsx) =====
-
 import React from 'react'
 import { useRallyRegistrations } from '@/hooks/useRallyRegistrations'
 
@@ -56,16 +54,6 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
     }
   }
 
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'text-green-400'
-      case 'pending': return 'text-yellow-400'
-      case 'refunded': return 'text-orange-400'
-      case 'waived': return 'text-blue-400'
-      default: return 'text-slate-400'
-    }
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -93,16 +81,7 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
                     Participant
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Car #
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Team
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Payment
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Registered
@@ -130,23 +109,8 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-slate-300">
-                        {registration.car_number ? `#${registration.car_number}` : '-'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-slate-300">
-                        {registration.team_name || 'Individual'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(registration.status)}`}>
                         {registration.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm font-medium ${getPaymentStatusColor(registration.payment_status)}`}>
-                        {registration.payment_status}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
