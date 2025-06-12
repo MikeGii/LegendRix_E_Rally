@@ -1,3 +1,4 @@
+// src/components/UserDashboard.tsx
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
@@ -45,8 +46,10 @@ export function UserDashboard() {
           isAdminAsUser={isAdminAsUser}
         />
 
-        {/* Status Banner */}
-        <UserStatusBanner status={status} />
+        {/* Status Banner - only show if there's an issue to address */}
+        {status && (
+          <UserStatusBanner status={status} />
+        )}
 
         {/* User's Rally Registrations */}
         {canAccessRallies && userRegistrations.length > 0 && (
@@ -92,8 +95,8 @@ export function UserDashboard() {
 }
 
 // Helper Functions
-function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage {
-  // Admins viewing as users are always "approved"
+function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage | null {
+  // Admins viewing as users show admin status
   if (isAdminAsUser) {
     return {
       type: 'success',
@@ -103,6 +106,7 @@ function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage {
     }
   }
 
+  // Only show status messages for users who need to take action
   if (!user.email_verified) {
     return {
       type: 'warning',
@@ -121,10 +125,6 @@ function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage {
     }
   }
   
-  return {
-    type: 'success',
-    message: 'Account verified - ready to compete!',
-    icon: '✅',
-    color: 'green'
-  }
+  // Return null for approved users - no status banner needed
+  return null
 }
