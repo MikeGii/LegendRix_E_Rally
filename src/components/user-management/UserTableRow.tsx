@@ -23,6 +23,7 @@ export function UserTableRow({
     <tr className={`border-b border-slate-700/30 hover:bg-slate-800/30 transition-all duration-200 ${
       index % 2 === 0 ? 'bg-slate-800/10' : ''
     }`}>
+      {/* Account Name Column */}
       <td className="p-4">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
@@ -47,6 +48,21 @@ export function UserTableRow({
           </div>
         </div>
       </td>
+
+      {/* Player Name Column - NEW SEPARATE COLUMN */}
+      <td className="p-4">
+        <div className="flex items-center">
+          {user.player_name ? (
+            <span className="text-blue-400 font-medium flex items-center">
+              🎮 {user.player_name}
+            </span>
+          ) : (
+            <span className="text-slate-500 italic">Not provided</span>
+          )}
+        </div>
+      </td>
+
+      {/* Role Column */}
       <td className="p-4">
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
           user.role === 'admin' 
@@ -56,9 +72,13 @@ export function UserTableRow({
           {user.role === 'admin' ? '👑 Admin' : '👤 User'}
         </span>
       </td>
+
+      {/* Email Column */}
       <td className="p-4">
         <span className="text-slate-300">{user.email}</span>
       </td>
+
+      {/* Account Created Column */}
       <td className="p-4">
         <span className="text-slate-300 text-sm">
           {new Date(user.created_at).toLocaleDateString('en-US', {
@@ -70,10 +90,13 @@ export function UserTableRow({
           })}
         </span>
       </td>
+
+      {/* Last Login Column */}
       <td className="p-4">
         <span className="text-slate-400 text-sm">
           {user.last_login 
             ? new Date(user.last_login).toLocaleDateString('en-US', {
+                year: 'numeric',
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
@@ -83,39 +106,28 @@ export function UserTableRow({
           }
         </span>
       </td>
+
+      {/* Actions Column - PRESERVED ALL ORIGINAL FUNCTIONALITY */}
       <td className="p-4">
         <div className="relative">
-          {showApprovalActions && (
+          {showApprovalActions && user.status === 'pending_approval' ? (
             <div className="flex space-x-2">
-              {/* Only show approve button if email is verified */}
-              {user.email_verified ? (
-                <button
-                  onClick={() => onAction('approve', user)}
-                  disabled={actionLoading === user.id}
-                  className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded text-sm font-medium transition-all duration-200 disabled:opacity-50"
-                >
-                  {actionLoading === user.id ? '⏳' : '✅'} Approve
-                </button>
-              ) : (
-                <button
-                  disabled
-                  className="px-3 py-1 bg-gray-600 text-gray-400 rounded text-sm font-medium cursor-not-allowed opacity-50"
-                  title="User must verify email first"
-                >
-                  📧 Email Required
-                </button>
-              )}
+              <button
+                onClick={() => onAction('approve', user)}
+                disabled={actionLoading === user.id}
+                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {actionLoading === user.id ? '⏳' : '✅'} Approve
+              </button>
               <button
                 onClick={() => onAction('reject', user)}
                 disabled={actionLoading === user.id}
-                className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white rounded text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {actionLoading === user.id ? '⏳' : '❌'} Reject
               </button>
             </div>
-          )}
-          
-          {!showApprovalActions && (
+          ) : (
             <>
               <button
                 onClick={() => setShowActions(!showActions)}

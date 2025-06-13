@@ -1,4 +1,4 @@
-// src/components/rally/RallyRegistrationsTable.tsx
+// src/components/rally/RallyRegistrationsTable.tsx - Fixed version
 import React from 'react'
 import { useRallyRegistrations } from '@/hooks/useRallyRegistrations'
 
@@ -34,7 +34,7 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
     )
   }
 
-  // Group registrations by class
+  // Group registrations by class - Fix the type issue
   const registrationsByClass = registrations.reduce((acc, reg) => {
     const className = reg.class_name || 'Unknown Class'
     if (!acc[className]) {
@@ -42,7 +42,7 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
     }
     acc[className].push(reg)
     return acc
-  }, {} as Record<string, typeof registrations>)
+  }, {} as Record<string, Array<typeof registrations[0]>>)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -64,13 +64,17 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
         </h3>
       </div>
       
-      {Object.entries(registrationsByClass).map(([className, classRegistrations]) => (
+      {Object.entries(registrationsByClass).map(([className, classRegistrations]) => {
+        // Type assertion to fix TypeScript error
+        const typedRegistrations = classRegistrations as Array<typeof registrations[0]>
+        
+        return (
         <div key={className} className="bg-slate-700/30 rounded-xl overflow-hidden">
           <div className="bg-slate-600/40 px-6 py-3 border-b border-slate-600/50">
             <h4 className="text-lg font-semibold text-white flex items-center space-x-2">
               <span>🎯</span>
               <span>{className}</span>
-              <span className="text-sm font-normal text-slate-400">({classRegistrations.length} participants)</span>
+              <span className="text-sm font-normal text-slate-400">({typedRegistrations.length} participants)</span>
             </h4>
           </div>
           
@@ -79,7 +83,7 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
               <thead className="bg-slate-600/20">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Participant
+                    Player Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Status
@@ -87,36 +91,50 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Registered
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Car Number
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Team
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-600/30">
-                {classRegistrations.map((registration, index) => (
+                {typedRegistrations.map((registration) => (
                   <tr key={registration.id} className="hover:bg-slate-600/20 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center mr-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
                           <span className="text-blue-400 text-sm font-medium">
-                            {registration.user_name?.charAt(0).toUpperCase()}
+                            {(registration.user_player_name || registration.user_name || 'Unknown').charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div>
+                          {/* Show only player name (no real name displayed) */}
                           <div className="text-sm font-medium text-white">
-                            {registration.user_name}
+                            🎮 {registration.user_player_name || registration.user_name || 'Player name not set'}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(registration.status)}`}>
-                        {registration.status}
+                        {registration.status.charAt(0).toUpperCase() + registration.status.slice(1)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                       {new Date(registration.registration_date).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
-                        year: 'numeric'
+                        hour: '2-digit',
+                        minute: '2-digit'
                       })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                      {registration.car_number ? `#${registration.car_number}` : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                      {registration.team_name || '-'}
                     </td>
                   </tr>
                 ))}
@@ -124,7 +142,8 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
             </table>
           </div>
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

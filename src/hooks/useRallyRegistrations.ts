@@ -35,20 +35,26 @@ export const registrationKeys = {
 export function useRallyRegistrations(rallyId: string) {
   return useQuery({
     queryKey: registrationKeys.rally(rallyId),
-    queryFn: async (): Promise<RallyRegistration[]> => {
-      if (!rallyId) return []
-      
+    queryFn: async () => {
       console.log('🔄 Loading registrations for rally:', rallyId)
       
       const { data: registrations, error } = await supabase
         .from('rally_registrations')
         .select(`
           *,
-          user:users(name, email),
-          class:game_classes(name),
-          rally:rallies(name)
+          users!inner(
+            id,
+            name,
+            email,
+            player_name
+          ),
+          game_classes!inner(
+            id,
+            name
+          )
         `)
         .eq('rally_id', rallyId)
+        .eq('users.admin_approved', true)
         .order('registration_date', { ascending: true })
 
       if (error) {
@@ -56,18 +62,18 @@ export function useRallyRegistrations(rallyId: string) {
         throw error
       }
 
-      const transformedRegistrations: RallyRegistration[] = registrations?.map(reg => ({
+      // Transform the data to include user info
+      const transformedRegistrations = registrations?.map(reg => ({
         ...reg,
-        user_name: reg.user?.name,
-        user_email: reg.user?.email,
-        class_name: reg.class?.name,
-        rally_name: reg.rally?.name,
+        user_name: reg.users?.name,
+        user_email: reg.users?.email,
+        user_player_name: reg.users?.player_name,  // Add player_name
+        class_name: reg.game_classes?.name
       })) || []
 
       console.log(`✅ Rally registrations loaded: ${transformedRegistrations.length}`)
       return transformedRegistrations
     },
-    enabled: !!rallyId,
     staleTime: 2 * 60 * 1000,
   })
 }
