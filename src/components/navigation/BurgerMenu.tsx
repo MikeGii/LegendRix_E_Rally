@@ -124,10 +124,7 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
         </div>
       </button>
 
-      {/* Menu Overlay */}
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" />
-      )}
+      {/* Menu Overlay - REMOVED: Now header stays normal and clickable */}
 
       {/* Menu Panel */}
       <div className={`

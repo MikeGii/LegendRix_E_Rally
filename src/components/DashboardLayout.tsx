@@ -56,17 +56,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }
 
-  // FIXED: Determine current view based on current URL
+  // FIXED: Determine current view based on current URL with proper defaults
   const getCurrentView = () => {
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname
       if (pathname.includes('/admin-dashboard')) {
         return 'admin'
-      } else if (pathname.includes('/user-dashboard')) {
+      } else {
+        // Default to 'user' for user-dashboard and other pages
         return 'user'
       }
     }
-    return currentView
+    return 'user' // Default to user view
   }
 
   const actualCurrentView = getCurrentView()
@@ -77,7 +78,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
       {/* Enhanced Navigation Header */}
       <nav className="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/30 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="flex justify-between items-center h-16">
             {/* Left Section: Logo */}
             <div className="flex items-center space-x-3">
@@ -92,7 +93,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </div>
             
-            {/* Right Section: View Switcher + User Info + Burger Menu */}
+            {/* Right Section: View Switcher + Burger Menu */}
             <div className="flex items-center space-x-4">
               {/* View Switcher for Admins */}
               {canSwitchView && (
@@ -138,25 +139,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
               )}
 
-              {/* User Avatar and Info */}
-              <div className="hidden md:flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center border border-blue-400/20">
-                  <span className="text-blue-400 font-medium text-sm">
-                    {user.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-white">{user.name}</p>
-                  <p className="text-xs text-slate-400">
-                    {user.player_name ? `🎮 ${user.player_name}` : 
-                     user.role === 'admin' && actualCurrentView === 'admin' ? 'Administrator' : 
-                     user.role === 'admin' && actualCurrentView === 'user' ? 'Admin as Driver' : 
-                     'Driver'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Burger Menu - MOVED TO TOP RIGHT */}
+              {/* Burger Menu */}
               <BurgerMenu user={user} onLogout={handleLogout} />
             </div>
           </div>

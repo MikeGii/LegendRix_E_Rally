@@ -1,4 +1,4 @@
-// src/components/UserDashboard.tsx
+// src/components/UserDashboard.tsx - Cleaned version with redundant components removed
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
@@ -9,9 +9,9 @@ import { UserStatusBanner } from '@/components/user/UserStatusBanner'
 import { UpcomingRalliesSection } from '@/components/user/UpcomingRalliesSection'
 import { FeaturedRalliesSection } from '@/components/user/FeaturedRalliesSection'
 import { UserRegistrationsSection } from '@/components/user/UserRegistrationsSection'
-import { RallyActionButtons } from '@/components/user/RallyActionButtons'
 import { UserActionPrompt } from '@/components/user/UserActionPrompt'
-import { AdminSwitchPanel } from '@/components/user/AdminSwitchPanel'
+// REMOVED: RallyActionButtons - functionality moved to burger menu
+// REMOVED: AdminSwitchPanel - functionality moved to header view switcher
 
 interface StatusMessage {
   type: 'success' | 'warning' | 'info'
@@ -37,7 +37,7 @@ export function UserDashboard() {
   const canAccessRallies = isAdminAsUser || (user.email_verified && user.admin_approved)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
       <div className="max-w-6xl mx-auto p-6 space-y-8">
         
         {/* Welcome Header */}
@@ -75,8 +75,8 @@ export function UserDashboard() {
           canAccessRallies={canAccessRallies}
         />
 
-        {/* Main Action Buttons */}
-        <RallyActionButtons canAccessRallies={canAccessRallies} />
+        {/* REMOVED: Main Action Buttons (RallyActionButtons) */}
+        {/* Functions now available through burger menu */}
 
         {/* Action needed for non-approved users */}
         <UserActionPrompt 
@@ -84,11 +84,8 @@ export function UserDashboard() {
           emailVerified={user.email_verified}
         />
 
-        {/* Quick Admin Switch (only for admins in user mode) */}
-        <AdminSwitchPanel 
-          canSwitchView={canSwitchView}
-          currentView={currentView}
-        />
+        {/* REMOVED: Quick Admin Switch (AdminSwitchPanel) */}
+        {/* Admin switching now handled by header view switcher */}
       </div>
     </div>
   )
