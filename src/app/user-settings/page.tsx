@@ -1,4 +1,3 @@
-// src/app/user-settings/page.tsx
 'use client'
 
 import { ProtectedRoute } from '@/components/ProtectedRoute'
