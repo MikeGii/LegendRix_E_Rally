@@ -1,3 +1,4 @@
+// src/components/rally/RallyRegistrationsTable.tsx
 import React from 'react'
 import { useRallyRegistrations } from '@/hooks/useRallyRegistrations'
 
@@ -101,9 +102,6 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
                         <div>
                           <div className="text-sm font-medium text-white">
                             {registration.user_name}
-                          </div>
-                          <div className="text-sm text-slate-400">
-                            {registration.user_email}
                           </div>
                         </div>
                       </div>
