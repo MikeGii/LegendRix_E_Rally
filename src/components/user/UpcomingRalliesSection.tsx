@@ -1,9 +1,10 @@
-// src/components/user/UpcomingRalliesSection.tsx
+// src/components/user/UpcomingRalliesSection.tsx - FIXED: Keep original row layout + add unregister
 'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { TransformedRally } from '@/hooks/useOptimizedRallies'
+import { TransformedRally, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
+import { useDeleteRegistration } from '@/hooks/useRallyRegistrations'
 import { RallyDetailModal } from '@/components/rally/RallyDetailModal'
 
 interface UpcomingRalliesSectionProps {
@@ -15,6 +16,10 @@ interface UpcomingRalliesSectionProps {
 export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }: UpcomingRalliesSectionProps) {
   const [selectedRally, setSelectedRally] = useState<TransformedRally | null>(null)
   const router = useRouter()
+  
+  // Get user's registrations to check for existing registrations
+  const { data: userRegistrations = [] } = useUserRallyRegistrations()
+  const deleteRegistrationMutation = useDeleteRegistration()
 
   if (!canAccessRallies) return null
 
@@ -39,9 +44,30 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
            (rally.status === 'upcoming' && deadline > now)
   }
 
+  // Check if user is already registered for a specific rally
+  const getUserRegistration = (rallyId: string) => {
+    return userRegistrations.find(
+      reg => reg.rally_id === rallyId && 
+             (reg.status === 'registered' || reg.status === 'confirmed')
+    )
+  }
+
   const handleRegister = (rally: TransformedRally) => {
-    // Navigate to registration page with prefilled rally
     router.push(`/registration?rallyId=${rally.id}`)
+  }
+
+  const handleUnregister = async (rally: TransformedRally) => {
+    const registration = getUserRegistration(rally.id)
+    if (!registration) return
+
+    if (confirm(`Are you sure you want to unregister from "${rally.name}"?`)) {
+      try {
+        await deleteRegistrationMutation.mutateAsync(registration.id)
+        alert('Successfully unregistered from rally!')
+      } catch (error) {
+        alert('Failed to unregister. Please try again.')
+      }
+    }
   }
 
   const handleShowMore = (rally: TransformedRally) => {
@@ -77,109 +103,127 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
               <span className="text-4xl text-slate-500">🏁</span>
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">No Upcoming Rallies</h3>
-            <p className="text-slate-400">
-              Check back soon for new rally announcements!
-            </p>
+            <p className="text-slate-400">Check back soon for new rally announcements!</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {sortedRallies.map((rally) => (
-              <div
-                key={rally.id}
-                className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6 hover:bg-slate-800/40 transition-all duration-200"
-              >
-                <div className="flex items-center justify-between">
-                  {/* Rally Info Row */}
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-                    {/* Rally Name & Status */}
-                    <div className="md:col-span-1">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                          <span className="text-blue-400 text-lg">🏁</span>
+            {sortedRallies.map((rally) => {
+              const userRegistration = getUserRegistration(rally.id)
+              const isRegistered = !!userRegistration
+              
+              return (
+                <div
+                  key={rally.id}
+                  className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6 hover:bg-slate-800/40 transition-all duration-200"
+                >
+                  <div className="flex items-center justify-between">
+                    {/* Rally Info Row */}
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                      {/* Rally Name & Status */}
+                      <div className="md:col-span-1">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                            <span className="text-blue-400 text-lg">🏁</span>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-white text-sm">{rally.name}</h3>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                              isRegistered 
+                                ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                                : getStatusColor(rally.status)
+                            }`}>
+                              {isRegistered ? '✓ Registered' : rally.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-white text-sm">{rally.name}</h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(rally.status)}`}>
-                            {rally.status.replace('_', ' ').toUpperCase()}
-                          </span>
+                      </div>
+
+                      {/* Game Name */}
+                      <div className="md:col-span-1">
+                        <div className="text-center md:text-left">
+                          <p className="text-sm text-slate-400">Game</p>
+                          <p className="text-sm font-medium text-slate-300">{rally.game_name}</p>
+                        </div>
+                      </div>
+
+                      {/* Game Type */}
+                      <div className="md:col-span-1">
+                        <div className="text-center md:text-left">
+                          <p className="text-sm text-slate-400">Type</p>
+                          <p className="text-sm font-medium text-slate-300">{rally.game_type_name}</p>
+                        </div>
+                      </div>
+
+                      {/* Competition Date */}
+                      <div className="md:col-span-1">
+                        <div className="text-center md:text-left">
+                          <p className="text-sm text-slate-400">Competition Date</p>
+                          <p className="text-sm font-medium text-slate-300">
+                            {new Date(rally.competition_date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Registration Deadline */}
+                      <div className="md:col-span-1">
+                        <div className="text-center md:text-left">
+                          <p className="text-sm text-slate-400">Registration Deadline</p>
+                          <p className="text-sm font-medium text-slate-300">
+                            {new Date(rally.registration_deadline).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Game Name */}
-                    <div className="md:col-span-1">
-                      <div className="text-center md:text-left">
-                        <p className="text-sm text-slate-400">Game</p>
-                        <p className="text-sm font-medium text-slate-300">{rally.game_name}</p>
-                      </div>
-                    </div>
-
-                    {/* Game Type */}
-                    <div className="md:col-span-1">
-                      <div className="text-center md:text-left">
-                        <p className="text-sm text-slate-400">Type</p>
-                        <p className="text-sm font-medium text-slate-300">{rally.game_type_name}</p>
-                      </div>
-                    </div>
-
-                    {/* Competition Date */}
-                    <div className="md:col-span-1">
-                      <div className="text-center md:text-left">
-                        <p className="text-sm text-slate-400">Competition Date</p>
-                        <p className="text-sm font-medium text-slate-300">
-                          {new Date(rally.competition_date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Registration Deadline */}
-                    <div className="md:col-span-1">
-                      <div className="text-center md:text-left">
-                        <p className="text-sm text-slate-400">Registration Deadline</p>
-                        <p className="text-sm font-medium text-slate-300">
-                          {new Date(rally.registration_deadline).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex space-x-3 ml-6">
-                    {isRegistrationOpen(rally) ? (
+                    {/* Action Buttons */}
+                    <div className="flex space-x-3 ml-6">
+                      {isRegistered ? (
+                        // Show unregister button if user is registered
+                        <button 
+                          onClick={() => handleUnregister(rally)}
+                          disabled={deleteRegistrationMutation.isPending}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                        >
+                          {deleteRegistrationMutation.isPending ? 'Unregistering...' : 'Unregister'}
+                        </button>
+                      ) : isRegistrationOpen(rally) ? (
+                        // Show register button if registration is open and user not registered
+                        <button 
+                          onClick={() => handleRegister(rally)}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-all duration-200"
+                        >
+                          Registreeri
+                        </button>
+                      ) : (
+                        // Show disabled button if registration is closed
+                        <button 
+                          disabled
+                          className="px-4 py-2 bg-slate-600 text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed"
+                        >
+                          Registreerimine suletud
+                        </button>
+                      )}
+                      
                       <button 
-                        onClick={() => handleRegister(rally)}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-all duration-200"
+                        onClick={() => handleShowMore(rally)}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all duration-200"
                       >
-                        Registreeri
+                        Näita rohkem
                       </button>
-                    ) : (
-                      <button 
-                        disabled
-                        className="px-4 py-2 bg-slate-600 text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed"
-                      >
-                        Registreerimine suletud
-                      </button>
-                    )}
-                    
-                    <button 
-                      onClick={() => handleShowMore(rally)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all duration-200"
-                    >
-                      Näita rohkem
-                    </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

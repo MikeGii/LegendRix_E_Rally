@@ -1,6 +1,15 @@
-import React, { useState, useEffect } from 'react'
-import { useRallyAvailableClasses, useCreateRegistration } from '@/hooks/useRallyRegistrations'
+// src/components/registration/RegistrationFormWithClasses.tsx - CORRECTED with real properties + management
+'use client'
+
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
+import { useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
+import { 
+  useRallyAvailableClasses, 
+  useCreateRegistration, 
+  useUpdateRegistration, 
+  useDeleteRegistration 
+} from '@/hooks/useRallyRegistrations'
 
 interface RegistrationFormWithClassesProps {
   rallyId: string
@@ -16,138 +25,237 @@ export function RegistrationFormWithClasses({
   onCancel 
 }: RegistrationFormWithClassesProps) {
   const { user } = useAuth()
+  const [selectedClassId, setSelectedClassId] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Get user's registrations to check if already registered
+  const { data: userRegistrations = [] } = useUserRallyRegistrations()
   const { data: availableClasses = [], isLoading: isLoadingClasses } = useRallyAvailableClasses(rallyId)
+  
+  // Mutations
   const createRegistrationMutation = useCreateRegistration()
+  const updateRegistrationMutation = useUpdateRegistration()
+  const deleteRegistrationMutation = useDeleteRegistration()
 
-  const [formData, setFormData] = useState({
-    class_id: ''
-  })
+  // Check if user is already registered for this rally
+  const existingRegistration = userRegistrations.find(
+    reg => reg.rally_id === rallyId && 
+           (reg.status === 'registered' || reg.status === 'confirmed')
+  )
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!formData.class_id) {
-      alert('Please select a class')
+  const isAlreadyRegistered = !!existingRegistration
+
+  // Set initial class if user is already registered
+  useEffect(() => {
+    if (existingRegistration && availableClasses.length > 0) {
+      setSelectedClassId(existingRegistration.class_id)
+    }
+  }, [existingRegistration, availableClasses])
+
+  const handleRegister = async () => {
+    if (!selectedClassId) {
+      alert('Please select a class first')
       return
     }
 
+    setIsSubmitting(true)
     try {
       await createRegistrationMutation.mutateAsync({
         rally_id: rallyId,
-        class_id: formData.class_id        
+        class_id: selectedClassId
       })
       
+      alert('Registration successful!')
       onSuccess()
-    } catch (error) {
-      console.error('Registration failed:', error)
-      alert('Registration failed. Please try again.')
+    } catch (error: any) {
+      console.error('Registration error:', error)
+      alert('Registration failed: ' + (error.message || 'Unknown error'))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  if (isLoadingClasses) {
-    return (
-      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-        <div className="flex items-center justify-center py-8">
-          <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
-          <span className="ml-3 text-slate-400">Loading classes...</span>
-        </div>
-      </div>
-    )
+  const handleChangeClass = async () => {
+    if (!selectedClassId || !existingRegistration) {
+      alert('Please select a class first')
+      return
+    }
+
+    if (selectedClassId === existingRegistration.class_id) {
+      alert('You are already registered in this class')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await updateRegistrationMutation.mutateAsync({
+        registrationId: existingRegistration.id,
+        class_id: selectedClassId
+      })
+      
+      alert('Class changed successfully!')
+      onSuccess()
+    } catch (error: any) {
+      console.error('Update error:', error)
+      alert('Failed to change class: ' + (error.message || 'Unknown error'))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  if (availableClasses.length === 0) {
+  const handleUnregister = async () => {
+    if (!existingRegistration) return
+
+    if (!confirm(`Are you sure you want to unregister from "${rallyName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await deleteRegistrationMutation.mutateAsync(existingRegistration.id)
+      
+      alert('Successfully unregistered from rally!')
+      onSuccess()
+    } catch (error: any) {
+      console.error('Unregister error:', error)
+      alert('Failed to unregister: ' + (error.message || 'Unknown error'))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (!user) {
     return (
-      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-        <div className="text-center py-8">
-          <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl text-red-400">⚠️</span>
-          </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No Classes Available</h3>
-          <p className="text-slate-400 mb-4">This rally has no available classes for registration.</p>
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
-          >
-            Close
-          </button>
-        </div>
+      <div className="text-center py-8">
+        <p className="text-slate-400">You must be logged in to register for rallies.</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white mb-2">Register for Rally</h2>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-white mb-2">
+          {isAlreadyRegistered ? 'Manage Registration' : 'Register for Rally'}
+        </h2>
         <p className="text-slate-400">
-          Registering <span className="text-blue-400 font-medium">{user?.name}</span> for{' '}
-          <span className="text-blue-400 font-medium">{rallyName}</span>
+          Rally: <span className="text-white font-medium">{rallyName}</span>
         </p>
+        {isAlreadyRegistered && (
+          <p className="text-blue-400 mt-2">
+            ✓ You are currently registered in: <span className="font-medium">{existingRegistration?.class_name}</span>
+          </p>
+        )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Class Selection */}
+      <div className="bg-slate-700/30 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">
+          {isAlreadyRegistered ? 'Change Class' : 'Select Class'}
+        </h3>
         
-        {/* Class Selection */}
-        <div>
-          <label className="block text-lg font-semibold text-white mb-4">
-            Select Competition Class *
-          </label>
-          <div className="grid gap-3">
-            {availableClasses.map((cls: any) => (
+        {isLoadingClasses ? (
+          <div className="text-center py-8">
+            <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-400">Loading available classes...</p>
+          </div>
+        ) : availableClasses.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-slate-400">No classes available for this rally.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {availableClasses.map((gameClass) => (
               <label
-                key={cls.id}
-                className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all ${
-                  formData.class_id === cls.id
-                    ? 'bg-blue-600/20 border-blue-500 text-white'
-                    : 'bg-slate-700/30 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500'
-                }`}
+                key={gameClass.id}
+                className={`
+                  block p-4 rounded-lg border cursor-pointer transition-all duration-200
+                  ${selectedClassId === gameClass.id 
+                    ? 'bg-blue-500/20 border-blue-500 text-blue-400' 
+                    : 'bg-slate-600/30 border-slate-600 text-slate-300 hover:border-slate-500'
+                  }
+                `}
               >
                 <input
                   type="radio"
-                  name="class_id"
-                  value={cls.id}
-                  checked={formData.class_id === cls.id}
-                  onChange={(e) => setFormData(prev => ({ ...prev, class_id: e.target.value }))}
+                  name="class"
+                  value={gameClass.id}
+                  checked={selectedClassId === gameClass.id}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
                   className="sr-only"
                 />
-                <div className="flex items-center space-x-3 flex-1">
-                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <span className="text-purple-400 text-lg">🎯</span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{cls.name}</h3>
-                    {cls.description && (
-                      <p className="text-sm text-slate-400 mt-1">{cls.description}</p>
-                    )}
-                    <div className="flex items-center space-x-4 mt-2 text-xs text-slate-400">
-                      {cls.skill_level && <span>Level: {cls.skill_level}</span>}
-                      {cls.max_participants && <span>Max: {cls.max_participants}</span>}
-                      {cls.entry_fee && cls.entry_fee > 0 && <span>Fee: €{cls.entry_fee}</span>}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <span className="text-purple-400 text-lg">🎯</span>
+                    </div>
+                    <div>
+                      <h4 className="font-medium">{gameClass.name}</h4>
+                      <p className="text-sm opacity-75">Class ID: {gameClass.id.slice(0, 8)}...</p>
                     </div>
                   </div>
+                  {selectedClassId === gameClass.id && (
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                  )}
                 </div>
               </label>
             ))}
           </div>
-        </div>
-        {/* Action Buttons */}
-        <div className="flex space-x-4 pt-4">
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex space-x-4">
+        {isAlreadyRegistered ? (
+          // User is already registered - show management options
+          <>
+            <button
+              onClick={handleChangeClass}
+              disabled={isSubmitting || !selectedClassId || selectedClassId === existingRegistration?.class_id}
+              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:text-slate-400 text-white rounded-xl font-medium transition-all duration-200 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Changing Class...' : 'Change Class'}
+            </button>
+            
+            <button
+              onClick={handleUnregister}
+              disabled={isSubmitting}
+              className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Unregistering...' : 'Unregister'}
+            </button>
+          </>
+        ) : (
+          // User is not registered - show register button
           <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors"
+            onClick={handleRegister}
+            disabled={isSubmitting || !selectedClassId}
+            className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:text-slate-400 text-white rounded-xl font-medium transition-all duration-200 disabled:cursor-not-allowed"
           >
-            Cancel
+            {isSubmitting ? 'Registering...' : 'Register Now'}
           </button>
-          <button
-            type="submit"
-            disabled={!formData.class_id || createRegistrationMutation.isPending}
-            className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
-          >
-            {createRegistrationMutation.isPending ? 'Registering...' : 'Register Now'}
-          </button>
-        </div>
-      </form>
+        )}
+        
+        <button
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="px-6 py-3 bg-slate-600 hover:bg-slate-700 disabled:bg-slate-700 text-slate-300 rounded-xl font-medium transition-all duration-200 disabled:cursor-not-allowed"
+        >
+          Cancel
+        </button>
+      </div>
+
+      {/* Help Text */}
+      <div className="text-center text-sm text-slate-400">
+        {isAlreadyRegistered ? (
+          <p>You can change your class or unregister from this rally above.</p>
+        ) : (
+          <p>Select a class and click register to join this rally.</p>
+        )}
+      </div>
     </div>
   )
 }
