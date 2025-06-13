@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { rallyKeys } from './useOptimizedRallies'
 
 export interface RallyRegistration {
   id: string
@@ -166,6 +167,118 @@ export function useCreateRegistration() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: registrationKeys.rally(variables.rally_id) })
+      queryClient.invalidateQueries({ queryKey: ['user_rallies'] })
+    }
+  })
+}
+
+// Delete registration mutation (for unregistering)
+export function useDeleteRegistration() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (registrationId: string) => {
+      console.log('🔄 Deleting rally registration...', registrationId)
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+
+      // First get the registration to find the rally_id for cache invalidation
+      const { data: registration, error: fetchError } = await supabase
+        .from('rally_registrations')
+        .select('rally_id, user_id')
+        .eq('id', registrationId)
+        .single()
+
+      if (fetchError) {
+        console.error('Error fetching registration:', fetchError)
+        throw fetchError
+      }
+
+      // Verify user owns this registration
+      if (registration.user_id !== user.id) {
+        throw new Error('Unauthorized: Cannot delete another user\'s registration')
+      }
+
+      // Delete the registration
+      const { error } = await supabase
+        .from('rally_registrations')
+        .delete()
+        .eq('id', registrationId)
+        .eq('user_id', user.id) // Extra security check
+
+      if (error) {
+        console.error('Error deleting registration:', error)
+        throw error
+      }
+
+      console.log('✅ Registration deleted successfully')
+      return { registrationId, rallyId: registration.rally_id }
+    },
+    onSuccess: (data) => {
+      // Invalidate relevant queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: registrationKeys.rally(data.rallyId) })
+      queryClient.invalidateQueries({ queryKey: ['rally_registrations'] })
+      queryClient.invalidateQueries({ queryKey: ['user_rallies'] })
+    }
+  })
+}
+
+// Update registration mutation (for changing class)
+export function useUpdateRegistration() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (params: {
+      registrationId: string
+      class_id: string
+    }) => {
+      console.log('🔄 Updating rally registration...', params)
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+
+      // First get the registration to verify ownership and get rally_id
+      const { data: registration, error: fetchError } = await supabase
+        .from('rally_registrations')
+        .select('rally_id, user_id')
+        .eq('id', params.registrationId)
+        .single()
+
+      if (fetchError) {
+        console.error('Error fetching registration:', fetchError)
+        throw fetchError
+      }
+
+      // Verify user owns this registration
+      if (registration.user_id !== user.id) {
+        throw new Error('Unauthorized: Cannot update another user\'s registration')
+      }
+
+      // Update the registration
+      const { data, error } = await supabase
+        .from('rally_registrations')
+        .update({ 
+          class_id: params.class_id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', params.registrationId)
+        .eq('user_id', user.id) // Extra security check
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating registration:', error)
+        throw error
+      }
+
+      console.log('✅ Registration updated successfully')
+      return { ...data, rallyId: registration.rally_id }
+    },
+    onSuccess: (data) => {
+      // Invalidate relevant queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: registrationKeys.rally(data.rallyId) })
+      queryClient.invalidateQueries({ queryKey: ['rally_registrations'] })
       queryClient.invalidateQueries({ queryKey: ['user_rallies'] })
     }
   })
