@@ -1,12 +1,16 @@
-// src/hooks/useAuth.ts - Vercel-optimized version with player_name support
+// src/hooks/useAuth.ts - Clean hook only (no provider)
+
+'use client'
+
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import type { User, Session } from '@supabase/supabase-js'
 
 interface UserProfile {
   id: string
   name: string
   email: string
-  player_name?: string | null  // Add this line
+  player_name?: string | null  // Add player_name field
   role: 'user' | 'admin'
   email_verified: boolean
   admin_approved: boolean
@@ -16,44 +20,33 @@ interface UserProfile {
 
 export function useAuth() {
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const [session, setSession] = useState<any>(null)
   
-  // Prevent multiple initializations and profile loads
-  const initialized = useRef(false)
-  const subscriptionRef = useRef<any>(null)
-  const loadingProfileRef = useRef(false)
+  // Refs for managing state in Vercel
   const currentUserIdRef = useRef<string | null>(null)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const loadingProfileRef = useRef<boolean>(false)
+  const subscriptionRef = useRef<any>(null)
+  const initialized = useRef(false)
 
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
     
-    console.log('🔄 Starting auth initialization...')
-
-    // Set a maximum timeout for the entire auth process
-    timeoutRef.current = setTimeout(() => {
-      if (loading) {
-        console.log('⏰ Auth initialization timeout reached, setting loading to false')
-        setLoading(false)
-        loadingProfileRef.current = false
-      }
-    }, 10000) // 10 second timeout
-
-    const initAuth = async () => {
+    console.log('🚀 Initializing auth system...')
+    
+    const initializeAuth = async () => {
+      let timeoutId: NodeJS.Timeout | null = null
+      
       try {
-        // For Vercel: Add timeout to session check
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 5000)
-        )
+        // Set timeout for Vercel serverless functions
+        timeoutId = setTimeout(() => {
+          console.log('⏰ Auth initialization timeout, continuing...')
+          setLoading(false)
+        }, 10000)
 
-        const { data: { session }, error } = await Promise.race([
-          sessionPromise, 
-          timeoutPromise
-        ]) as any
-
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
         if (error) {
           console.error('❌ Session error:', error)
           setLoading(false)
@@ -65,13 +58,12 @@ export function useAuth() {
           setSession(session)
           currentUserIdRef.current = session.user.id
           
-          // For Vercel: Don't check session expiry, just load profile
           console.log('✅ Loading user profile...')
           await loadUserProfile(
             session.user.id, 
             session.user.email!, 
             session.user.user_metadata?.name,
-            session.user.user_metadata?.player_name  // Pass player_name from metadata
+            session.user.user_metadata?.player_name  // FIXED: Pass player_name from metadata
           )
         } else {
           console.log('ℹ️ No session found')
@@ -81,14 +73,13 @@ export function useAuth() {
         console.error('❌ Auth initialization error:', error)
         setLoading(false)
       } finally {
-        // Clear the timeout
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current)
+        if (timeoutId) {
+          clearTimeout(timeoutId)
         }
       }
     }
 
-    // Setup auth state listener with debouncing for Vercel
+    // Setup auth state listener with proper player_name handling
     let authEventTimeout: NodeJS.Timeout | null = null
     
     subscriptionRef.current = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -99,55 +90,52 @@ export function useAuth() {
         clearTimeout(authEventTimeout)
       }
       
-      // Debounce auth events to prevent rapid-fire processing in Vercel
+      // Debounce auth events to prevent rapid-fire processing
       authEventTimeout = setTimeout(async () => {
         // Prevent duplicate processing for the same user
         if (session?.user?.id === currentUserIdRef.current && event !== 'SIGNED_OUT') {
           console.log('⚠️ Ignoring duplicate auth event for same user')
           return
         }
-        
-        if (event === 'SIGNED_IN' && session) {
-          console.log('🔄 Auth state: SIGNED_IN detected for:', session.user.email)
-          
-          // Prevent loading profile if already loading
-          if (loadingProfileRef.current) {
-            console.log('⚠️ Profile already loading, skipping...')
-            return
-          }
-          
-          setSession(session)
-          currentUserIdRef.current = session.user.id
-          await loadUserProfile(
-            session.user.id, 
-            session.user.email!, 
-            session.user.user_metadata?.name,
-            session.user.user_metadata?.player_name  // Pass player_name from metadata
-          )
-        } else if (event === 'SIGNED_OUT') {
-          console.log('🚪 Auth state: SIGNED_OUT detected')
+
+        setSession(session)
+
+        if (event === 'SIGNED_OUT' || !session?.user) {
+          console.log('🚪 User signed out or no session')
           setUser(null)
           setSession(null)
-          setLoading(false)
           currentUserIdRef.current = null
           loadingProfileRef.current = false
-        } else if (event === 'TOKEN_REFRESHED' && session) {
-          console.log('🔄 Token refreshed silently')
-          setSession(session)
-          currentUserIdRef.current = session.user.id
-          // Don't reload profile, just update session
+          setLoading(false)
+          return
         }
-      }, 100) // 100ms debounce
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log(`✅ User ${event.toLowerCase()}:`, session.user.email)
+          currentUserIdRef.current = session.user.id
+          
+          // FIXED: Always pass player_name from user metadata
+          const userMetadata = session.user.user_metadata || {}
+          console.log('📋 User metadata:', userMetadata)
+          
+          await loadUserProfile(
+            session.user.id,
+            session.user.email!,
+            userMetadata.name,
+            userMetadata.player_name  // CRITICAL FIX: Use metadata player_name
+          )
+        }
+      }, 500) // 500ms debounce
     })
 
-    initAuth()
+    // Initialize auth
+    initializeAuth()
 
+    // Cleanup
     return () => {
+      console.log('🧹 Cleaning up auth subscription...')
       if (subscriptionRef.current) {
-        subscriptionRef.current.data.subscription.unsubscribe()
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
+        subscriptionRef.current.unsubscribe()
       }
       if (authEventTimeout) {
         clearTimeout(authEventTimeout)
@@ -163,10 +151,9 @@ export function useAuth() {
     }
     
     loadingProfileRef.current = true
-    console.log('📋 Loading profile for:', email, '| Attempt:', retryCount + 1)
+    console.log('📋 Loading profile for:', email, '| Player Name:', playerName, '| Attempt:', retryCount + 1)
     
     try {
-      // For Vercel: Add timeout to database queries
       const queryPromise = supabase
         .from('users')
         .select('*')
@@ -185,7 +172,6 @@ export function useAuth() {
       if (fetchError) {
         console.error('❌ Database query error:', fetchError)
         
-        // More aggressive retry for Vercel
         if (retryCount < 3) {
           console.log('🔄 Retrying database query in 1 second... (attempt', retryCount + 2, ')')
           setTimeout(() => {
@@ -202,9 +188,30 @@ export function useAuth() {
       }
 
       if (!existingUser) {
-        console.log('📝 User not found, creating new record')
+        console.log('📝 User not found, creating new record with player_name:', playerName)
         await createUserRecord(userId, email, name, playerName)
         return
+      }
+
+      // FIXED: Update existing user record if player_name is missing but available in metadata
+      if (!existingUser.player_name && playerName) {
+        console.log('🔄 Updating existing user with missing player_name:', playerName)
+        const { data: updatedUser, error: updateError } = await supabase
+          .from('users')
+          .update({ player_name: playerName })
+          .eq('id', userId)
+          .select()
+          .single()
+
+        if (updateError) {
+          console.error('❌ Failed to update player_name:', updateError)
+        } else {
+          console.log('✅ Player name updated successfully')
+          setUser(updatedUser)
+          setLoading(false)
+          loadingProfileRef.current = false
+          return
+        }
       }
 
       console.log('✅ User profile loaded:', {
@@ -221,7 +228,6 @@ export function useAuth() {
     } catch (error: any) {
       console.error('❌ Profile loading exception:', error.message)
       
-      // For Vercel: More forgiving retry logic
       if (retryCount < 3) {
         console.log('⏰ Retrying due to error... (attempt', retryCount + 2, ')')
         setTimeout(() => {
@@ -238,21 +244,22 @@ export function useAuth() {
   }
 
   const createUserRecord = async (userId: string, email: string, name?: string, playerName?: string) => {
-    console.log('📝 Creating new user record for:', email)
+    console.log('📝 Creating new user record for:', email, '| Player Name:', playerName)
     
     try {
       const newUserData = {
         id: userId,
         email: email,
         name: name || email,
-        player_name: playerName || null,  // Add player_name field
+        player_name: playerName || null,  // CRITICAL: Include player_name
         role: email === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
         email_verified: true,
         admin_approved: email === 'ewrc.admin@ideemoto.ee',
         status: email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval'
       }
 
-      // For Vercel: Add timeout to create operation
+      console.log('📝 User data being inserted:', newUserData)
+
       const createPromise = supabase
         .from('users')
         .insert([newUserData])
@@ -275,7 +282,12 @@ export function useAuth() {
         return
       }
 
-      console.log('✅ User created successfully:', newUser.email, '| Role:', newUser.role, '| Player:', newUser.player_name)
+      console.log('✅ User created successfully:', {
+        email: newUser.email,
+        role: newUser.role,
+        player_name: newUser.player_name
+      })
+      
       setUser(newUser)
       setLoading(false)
       loadingProfileRef.current = false
@@ -292,7 +304,6 @@ export function useAuth() {
     setLoading(true)
 
     try {
-      // For Vercel: Clear any existing state first
       setUser(null)
       setSession(null)
       currentUserIdRef.current = null
@@ -328,7 +339,7 @@ export function useAuth() {
   }
 
   const register = async (email: string, password: string, name: string, playerName?: string) => {
-    console.log('📝 Starting registration for:', email)
+    console.log('📝 Starting registration for:', email, '| Player Name:', playerName)
     
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -337,7 +348,7 @@ export function useAuth() {
         options: {
           data: { 
             name: name.trim(),
-            player_name: playerName?.trim()  // Include player_name in user metadata
+            player_name: playerName?.trim()  // CRITICAL: Store in user metadata
           }
         }
       })
@@ -349,6 +360,7 @@ export function useAuth() {
 
       if (data.user && !data.session) {
         console.log('✅ Registration successful, email confirmation required')
+        console.log('📧 User metadata stored:', data.user.user_metadata)
         return { 
           success: true, 
           message: 'Registreerimine õnnestus! Palun kontrolli oma e-posti, et kinnitada kasutaja (PS! palun vaata ka rämpsposti)!',
@@ -357,8 +369,8 @@ export function useAuth() {
       }
 
       if (data.user && data.session) {
-        console.log('✅ Registration successful, user logged in')
-        // The auth state listener will handle profile creation
+        console.log('✅ Registration successful, user logged in immediately')
+        console.log('📧 User metadata stored:', data.user.user_metadata)
         return { 
           success: true, 
           message: 'Registration successful!',
@@ -378,38 +390,31 @@ export function useAuth() {
     console.log('🚪 Starting comprehensive logout process...')
     
     try {
-      // Clear React state immediately
       setUser(null)
       setSession(null)
       setLoading(false)
       currentUserIdRef.current = null
       loadingProfileRef.current = false
       
-      // Sign out from Supabase
       const { error } = await supabase.auth.signOut({ scope: 'global' })
       
       if (error) {
         console.error('❌ Supabase signOut error:', error)
       }
       
-      // Clear all possible storage locations
       if (typeof window !== 'undefined') {
         try {
-          // Clear localStorage
           window.localStorage.removeItem('supabase.auth.token')
           window.localStorage.removeItem('sb-localhost-auth-token')
           window.localStorage.removeItem('sb-' + window.location.hostname + '-auth-token')
           
-          // Clear any other Supabase keys
           Object.keys(window.localStorage).forEach(key => {
             if (key.startsWith('supabase') || key.startsWith('sb-')) {
               window.localStorage.removeItem(key)
             }
           })
           
-          // Clear sessionStorage
           window.sessionStorage.clear()
-          
           console.log('✅ All storage cleared')
         } catch (storageError) {
           console.error('❌ Storage clearing error:', storageError)
@@ -421,7 +426,6 @@ export function useAuth() {
     } catch (error) {
       console.error('❌ Logout process failed:', error)
       
-      // Force clear state even if logout fails
       setUser(null)
       setSession(null)
       setLoading(false)
