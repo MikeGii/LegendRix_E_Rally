@@ -1,4 +1,4 @@
-// src/components/user-management/UserTable.tsx
+// src/components/user-management/UserTable.tsx - Updated with Player Name column
 import { ExtendedUser } from '@/hooks/useExtendedUsers'
 import { UserTableRow } from './UserTableRow'
 
@@ -16,7 +16,8 @@ export function UserTable({ users, onAction, actionLoading, showApprovalActions 
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-700/50">
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Name</th>
+              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Account Name</th>
+              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Player Name</th>
               <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Role</th>
               <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Email</th>
               <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Account Created</th>

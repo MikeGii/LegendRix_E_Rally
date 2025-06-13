@@ -6,6 +6,7 @@ export interface ExtendedUser {
   id: string
   name: string
   email: string
+  player_name?: string | null  // Make it optional and nullable
   role: 'user' | 'admin'
   created_at: string
   last_login?: string
@@ -35,7 +36,7 @@ export function useAllUsers() {
       
       const { data: users, error } = await supabase
         .from('users')
-        .select('id, name, email, role, created_at, last_login, email_verified, admin_approved, status')
+        .select('id, name, email, player_name, role, created_at, last_login, email_verified, admin_approved, status')  // Include player_name
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -49,6 +50,7 @@ export function useAllUsers() {
         id: user.id,
         name: user.name,
         email: user.email,
+        player_name: user.player_name || null,  // Handle null values properly
         role: user.role,
         created_at: user.created_at,
         last_login: user.last_login,
@@ -93,19 +95,15 @@ export function useUserAction() {
         body: JSON.stringify({ userId, action, reason })
       }).catch(error => {
         console.warn('Email notification failed:', error)
+        // Don't fail the operation if email fails
       })
 
       return { userId, action, newStatus }
     },
     onSuccess: (data) => {
       console.log(`✅ User ${data.action} completed successfully`)
-      // Force immediate refetch of user data
+      // Invalidate and refetch users data
       queryClient.invalidateQueries({ queryKey: extendedUserKeys.all })
-      queryClient.refetchQueries({ queryKey: extendedUserKeys.all })
-      
-      // Also invalidate the regular users query from the admin dashboard
-      queryClient.invalidateQueries({ queryKey: ['users'] })
-      queryClient.refetchQueries({ queryKey: ['users'] })
     },
     onError: (error) => {
       console.error('❌ User action error:', error)

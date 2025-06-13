@@ -1,15 +1,14 @@
-import './globals.css'
+// src/app/layout.tsx - Fixed layout with ViewProvider restored
+'use client'
+
 import { Inter } from 'next/font/google'
+import './globals.css'
 import { AuthProvider } from '@/components/AuthProvider'
 import { ViewProvider } from '@/components/ViewProvider'
 import { QueryProvider } from '@/components/QueryProvider'
+import { ProfileCompletionWrapper } from '@/components/auth/ProfileCompletionWrapper'
 
 const inter = Inter({ subsets: ['latin'] })
-
-export const metadata = {
-  title: 'LegendRix E-Rally',
-  description: 'E-Sports Rally Championship Registration System',
-}
 
 export default function RootLayout({
   children,
@@ -22,7 +21,9 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>
             <ViewProvider>
-              {children}
+              <ProfileCompletionWrapper>
+                {children}
+              </ProfileCompletionWrapper>
             </ViewProvider>
           </AuthProvider>
         </QueryProvider>

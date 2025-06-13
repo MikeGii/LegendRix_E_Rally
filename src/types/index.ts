@@ -7,12 +7,14 @@ export interface User {
   id: string
   name: string
   email: string
+  player_name?: string  // Add this new field
   role: 'user' | 'admin'
   email_verified: boolean
   admin_approved: boolean
   status: 'pending_email' | 'pending_approval' | 'approved' | 'rejected'
+  verification_token?: string
   created_at: string
-  updated_at?: string
+  updated_at: string
   last_login?: string
 }
 
@@ -142,6 +144,7 @@ export interface RallyRegistration {
   // Joined fields
   user_name?: string
   user_email?: string
+  user_player_name?: string  // Add this field
   class_name?: string
   rally_name?: string
 }
@@ -204,6 +207,7 @@ export interface RegisterFormData {
   email: string
   password: string
   confirmPassword: string
+  playerName: string  // Add this field
   agreeToRules: boolean
 }
 

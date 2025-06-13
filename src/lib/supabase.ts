@@ -44,6 +44,7 @@ export interface User {
   id: string
   name: string
   email: string
+  player_name?: string  // Add this field here too
   role: 'user' | 'admin'
   email_verified: boolean
   admin_approved: boolean

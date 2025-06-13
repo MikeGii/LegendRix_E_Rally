@@ -1,4 +1,4 @@
-// src/hooks/useAuth.ts - Vercel-optimized version
+// src/hooks/useAuth.ts - Vercel-optimized version with player_name support
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -6,6 +6,7 @@ interface UserProfile {
   id: string
   name: string
   email: string
+  player_name?: string | null  // Add this line
   role: 'user' | 'admin'
   email_verified: boolean
   admin_approved: boolean
@@ -66,7 +67,12 @@ export function useAuth() {
           
           // For Vercel: Don't check session expiry, just load profile
           console.log('✅ Loading user profile...')
-          await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
+          await loadUserProfile(
+            session.user.id, 
+            session.user.email!, 
+            session.user.user_metadata?.name,
+            session.user.user_metadata?.player_name  // Pass player_name from metadata
+          )
         } else {
           console.log('ℹ️ No session found')
           setLoading(false)
@@ -112,7 +118,12 @@ export function useAuth() {
           
           setSession(session)
           currentUserIdRef.current = session.user.id
-          await loadUserProfile(session.user.id, session.user.email!, session.user.user_metadata?.name)
+          await loadUserProfile(
+            session.user.id, 
+            session.user.email!, 
+            session.user.user_metadata?.name,
+            session.user.user_metadata?.player_name  // Pass player_name from metadata
+          )
         } else if (event === 'SIGNED_OUT') {
           console.log('🚪 Auth state: SIGNED_OUT detected')
           setUser(null)
@@ -144,7 +155,7 @@ export function useAuth() {
     }
   }, [])
 
-  const loadUserProfile = async (userId: string, email: string, name?: string, retryCount = 0) => {
+  const loadUserProfile = async (userId: string, email: string, name?: string, playerName?: string, retryCount = 0) => {
     // Prevent concurrent profile loads
     if (loadingProfileRef.current) {
       console.log('⚠️ Profile load already in progress, skipping...')
@@ -179,7 +190,7 @@ export function useAuth() {
           console.log('🔄 Retrying database query in 1 second... (attempt', retryCount + 2, ')')
           setTimeout(() => {
             loadingProfileRef.current = false
-            loadUserProfile(userId, email, name, retryCount + 1)
+            loadUserProfile(userId, email, name, playerName, retryCount + 1)
           }, 1000)
           return
         }
@@ -192,14 +203,15 @@ export function useAuth() {
 
       if (!existingUser) {
         console.log('📝 User not found, creating new record')
-        await createUserRecord(userId, email, name)
+        await createUserRecord(userId, email, name, playerName)
         return
       }
 
       console.log('✅ User profile loaded:', {
         email: existingUser.email,
         role: existingUser.role,
-        status: existingUser.status
+        status: existingUser.status,
+        player_name: existingUser.player_name
       })
       
       setUser(existingUser)
@@ -214,7 +226,7 @@ export function useAuth() {
         console.log('⏰ Retrying due to error... (attempt', retryCount + 2, ')')
         setTimeout(() => {
           loadingProfileRef.current = false
-          loadUserProfile(userId, email, name, retryCount + 1)
+          loadUserProfile(userId, email, name, playerName, retryCount + 1)
         }, 1000)
         return
       }
@@ -225,7 +237,7 @@ export function useAuth() {
     }
   }
 
-  const createUserRecord = async (userId: string, email: string, name?: string) => {
+  const createUserRecord = async (userId: string, email: string, name?: string, playerName?: string) => {
     console.log('📝 Creating new user record for:', email)
     
     try {
@@ -233,6 +245,7 @@ export function useAuth() {
         id: userId,
         email: email,
         name: name || email,
+        player_name: playerName || null,  // Add player_name field
         role: email === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
         email_verified: true,
         admin_approved: email === 'ewrc.admin@ideemoto.ee',
@@ -262,7 +275,7 @@ export function useAuth() {
         return
       }
 
-      console.log('✅ User created successfully:', newUser.email, '| Role:', newUser.role)
+      console.log('✅ User created successfully:', newUser.email, '| Role:', newUser.role, '| Player:', newUser.player_name)
       setUser(newUser)
       setLoading(false)
       loadingProfileRef.current = false
@@ -314,7 +327,7 @@ export function useAuth() {
     }
   }
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string, playerName?: string) => {
     console.log('📝 Starting registration for:', email)
     
     try {
@@ -322,7 +335,10 @@ export function useAuth() {
         email: email.trim(),
         password: password,
         options: {
-          data: { name: name.trim() }
+          data: { 
+            name: name.trim(),
+            player_name: playerName?.trim()  // Include player_name in user metadata
+          }
         }
       })
 
@@ -335,73 +351,84 @@ export function useAuth() {
         console.log('✅ Registration successful, email confirmation required')
         return { 
           success: true, 
-          message: 'Registration successful! Please check your email to verify your account.' 
+          message: 'Registreerimine õnnestus! Palun kontrolli oma e-posti, et kinnitada kasutaja (PS! palun vaata ka rämpsposti)!',
+          user: data.user
         }
       }
 
-      console.log('✅ Registration successful with immediate login')
-      return { success: true }
+      if (data.user && data.session) {
+        console.log('✅ Registration successful, user logged in')
+        // The auth state listener will handle profile creation
+        return { 
+          success: true, 
+          message: 'Registration successful!',
+          user: data.user 
+        }
+      }
+
+      return { success: false, error: 'Registration failed - no user created' }
+      
     } catch (error: any) {
       console.error('❌ Registration exception:', error)
       return { success: false, error: error.message || 'Registration failed' }
     }
   }
 
-    const logout = async () => {
+  const logout = async () => {
     console.log('🚪 Starting comprehensive logout process...')
     
     try {
-        // Clear React state immediately
-        setUser(null)
-        setSession(null)
-        setLoading(false)
-        currentUserIdRef.current = null
-        loadingProfileRef.current = false
-        
-        // Sign out from Supabase
-        const { error } = await supabase.auth.signOut({ scope: 'global' })
-        
-        if (error) {
+      // Clear React state immediately
+      setUser(null)
+      setSession(null)
+      setLoading(false)
+      currentUserIdRef.current = null
+      loadingProfileRef.current = false
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut({ scope: 'global' })
+      
+      if (error) {
         console.error('❌ Supabase signOut error:', error)
-        }
-        
-        // Clear all possible storage locations
-        if (typeof window !== 'undefined') {
+      }
+      
+      // Clear all possible storage locations
+      if (typeof window !== 'undefined') {
         try {
-            // Clear localStorage
-            window.localStorage.removeItem('supabase.auth.token')
-            window.localStorage.removeItem('sb-localhost-auth-token')
-            window.localStorage.removeItem('sb-' + window.location.hostname + '-auth-token')
-            
-            // Clear any other Supabase keys
-            Object.keys(window.localStorage).forEach(key => {
+          // Clear localStorage
+          window.localStorage.removeItem('supabase.auth.token')
+          window.localStorage.removeItem('sb-localhost-auth-token')
+          window.localStorage.removeItem('sb-' + window.location.hostname + '-auth-token')
+          
+          // Clear any other Supabase keys
+          Object.keys(window.localStorage).forEach(key => {
             if (key.startsWith('supabase') || key.startsWith('sb-')) {
-                window.localStorage.removeItem(key)
+              window.localStorage.removeItem(key)
             }
-            })
-            
-            // Clear sessionStorage
-            window.sessionStorage.clear()
-            
-            console.log('✅ All storage cleared')
+          })
+          
+          // Clear sessionStorage
+          window.sessionStorage.clear()
+          
+          console.log('✅ All storage cleared')
         } catch (storageError) {
-            console.error('❌ Storage clearing error:', storageError)
+          console.error('❌ Storage clearing error:', storageError)
         }
-        }
-        
-        console.log('✅ Logout process completed successfully')
-        
+      }
+      
+      console.log('✅ Logout process completed successfully')
+      
     } catch (error) {
-        console.error('❌ Logout process failed:', error)
-        
-        // Force clear state even if logout fails
-        setUser(null)
-        setSession(null)
-        setLoading(false)
-        currentUserIdRef.current = null
-        loadingProfileRef.current = false
+      console.error('❌ Logout process failed:', error)
+      
+      // Force clear state even if logout fails
+      setUser(null)
+      setSession(null)
+      setLoading(false)
+      currentUserIdRef.current = null
+      loadingProfileRef.current = false
     }
-    }
+  }
 
   return {
     user,

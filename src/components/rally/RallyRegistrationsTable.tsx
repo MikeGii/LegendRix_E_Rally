@@ -1,4 +1,4 @@
-// src/components/rally/RallyRegistrationsTable.tsx
+// src/components/rally/RallyRegistrationsTable.tsx - Updated to show player names
 import React from 'react'
 import { useRallyRegistrations } from '@/hooks/useRallyRegistrations'
 
@@ -79,7 +79,7 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
               <thead className="bg-slate-600/20">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Participant
+                    Player Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Status
@@ -87,36 +87,60 @@ export function RallyRegistrationsTable({ rallyId }: RallyRegistrationsTableProp
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Registered
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Car Number
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Team
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-600/30">
                 {classRegistrations.map((registration, index) => (
                   <tr key={registration.id} className="hover:bg-slate-600/20 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center mr-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
                           <span className="text-blue-400 text-sm font-medium">
-                            {registration.user_name?.charAt(0).toUpperCase()}
+                            {(registration.user_player_name || registration.user_name || 'Unknown').charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-white">
-                            {registration.user_name}
+                          {/* Show player name first (primary), real name as secondary */}
+                          <div className="text-sm font-medium text-white flex items-center">
+                            🎮 {registration.user_player_name || 'Player name not set'}
                           </div>
+                          {registration.user_player_name && registration.user_name && (
+                            <div className="text-xs text-slate-400">
+                              ({registration.user_name})
+                            </div>
+                          )}
+                          {!registration.user_player_name && registration.user_name && (
+                            <div className="text-xs text-slate-400">
+                              Real name: {registration.user_name}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(registration.status)}`}>
-                        {registration.status}
+                        {registration.status.charAt(0).toUpperCase() + registration.status.slice(1)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                       {new Date(registration.registration_date).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
-                        year: 'numeric'
+                        hour: '2-digit',
+                        minute: '2-digit'
                       })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                      {registration.car_number ? `#${registration.car_number}` : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                      {registration.team_name || '-'}
                     </td>
                   </tr>
                 ))}

@@ -9,6 +9,7 @@ interface RegisterFormData {
   email: string
   password: string
   confirmPassword: string
+  playerName: string  // New field
   agreeToRules: boolean
 }
 
@@ -53,11 +54,12 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         name: data.name,
         email: data.email,
         password: '***hidden***',
+        playerName: data.playerName,
         agreeToRules: data.agreeToRules
       })
 
-      // Pass parameters in correct order: email, password, name
-      const result = await registerUser(data.email, data.password, data.name)
+      // Pass parameters in correct order: email, password, name, playerName
+      const result = await registerUser(data.email, data.password, data.name, data.playerName)
       
       if (result.success) {
         setMessage({
@@ -134,6 +136,38 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         )}
       </div>
 
+      {/* New Player Name Field */}
+      <div>
+        <input
+          type="text"
+          placeholder="Mängija nimi - *Steam, Xbox, PS"
+          disabled={isLoading}
+          autoComplete="username"
+          {...register('playerName', {
+            required: 'Player name is required',
+            minLength: {
+              value: 3,
+              message: 'Player name must be at least 3 characters'
+            },
+            maxLength: {
+              value: 100,
+              message: 'Player name must be less than 100 characters'
+            },
+            pattern: {
+              value: /^[a-zA-Z0-9_\-\.]+$/,
+              message: 'Player name can only contain letters, numbers, underscores, hyphens, and dots'
+            }
+          })}
+          className="w-full px-4 py-3 bg-gray-900/80 border border-gray-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 focus:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+        {errors.playerName && (
+          <p className="mt-2 text-sm text-red-400">{errors.playerName.message}</p>
+        )}
+        <p className="mt-1 text-xs text-gray-400">
+          Enter your gaming platform username (Steam, Xbox, PlayStation, etc.)
+        </p>
+      </div>
+
       <div>
         <input
           type="password"
@@ -195,57 +229,56 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           
           <div className="flex items-start space-x-3">
             <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">4.</span>
-            <p>Võistlustel osaledes olen viisakas ja järgin vastava mängu reegleid. Mistahes viisil mängu enda reeglite rikkumisel võidakse minu konto jäädavalt blokeerida.</p>
+            <p>Võistlustel osaledes olen viisakas ja järgin vastava mängu reegleid.</p>
+          </div>
+          
+          <div className="flex items-start space-x-3">
+            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">5.</span>
+            <p>Võistlustel peab kasutama sama mängija nime, mis on registreerimise juures märgitud.</p>
+          </div>
+          
+          <div className="flex items-start space-x-3">
+            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">6.</span>
+            <p>EWRC korraldajatel on õigus tühistada registreerimine või kõrvaldada võistleja mis tahes põhjusel.</p>
           </div>
         </div>
 
-        {/* Agreement Checkbox */}
-        <div className="flex items-start space-x-3 pt-3 border-t border-slate-700/50">
+        <div className="flex items-start space-x-3 pt-3">
           <input
             type="checkbox"
             id="agreeToRules"
             disabled={isLoading}
             {...register('agreeToRules', {
-              required: 'Peate nõustuma reeglitega kontot luua saamiseks'
+              required: 'You must agree to the rules to register'
             })}
-            className="mt-1 w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0"
+            className="mt-1 w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 disabled:opacity-50"
           />
-          <label htmlFor="agreeToRules" className="text-sm text-slate-300 cursor-pointer select-none">
-            Kinnitan, et olen reeglitega tutvunud
+          <label htmlFor="agreeToRules" className="text-sm text-slate-300 cursor-pointer">
+            Olen tutvunud ja nõustun eelnimetatud reeglitega
           </label>
         </div>
-        
         {errors.agreeToRules && (
-          <p className="text-sm text-red-400 mt-2">{errors.agreeToRules.message}</p>
+          <p className="mt-2 text-sm text-red-400">{errors.agreeToRules.message}</p>
         )}
       </div>
 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+        className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
       >
-        {isLoading ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-            Creating account...
-          </div>
-        ) : (
-          'Create Account'
-        )}
+        {isLoading ? 'Creating account...' : 'Create account'}
       </button>
 
-      {/* Switch to Login */}
       <div className="text-center">
-        <p className="text-gray-500 text-sm">
+        <p className="text-slate-400 text-sm">
           Already have an account?{' '}
-          <button
+          <button 
             type="button"
             onClick={onSwitchToLogin}
-            disabled={isLoading}
-            className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
           >
-            Sign in here
+            Sign in
           </button>
         </p>
       </div>
