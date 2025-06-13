@@ -8,7 +8,8 @@ export default function UserDashboardPage() {
   console.log('🔧 UserDashboardPage - Component loaded')
   
   return (
-    <ProtectedRoute requiredRole="user">
+    <ProtectedRoute>
+      {/* REMOVED requiredRole - Now both admin and user can access */}
       <DashboardLayout>
         <UserDashboard />
       </DashboardLayout>
