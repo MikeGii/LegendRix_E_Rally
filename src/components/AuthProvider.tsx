@@ -1,13 +1,14 @@
-// src/components/AuthProvider.tsx
+// src/components/AuthProvider.tsx - Clean provider that uses the hook
 'use client'
 
 import { createContext, useContext, ReactNode } from 'react'
-import { useAuth as useSupabaseAuth } from '@/hooks/useAuth'
+import { useAuth as useAuthHook } from '@/hooks/useAuth'
 
 interface User {
   id: string
   name: string
   email: string
+  player_name?: string | null  // Add player_name field
   role: 'user' | 'admin'
   email_verified: boolean
   admin_approved: boolean
@@ -17,24 +18,25 @@ interface User {
 
 interface AuthContextType {
   user: User | null
+  session: any | null
+  loading: boolean
   login: (email: string, password: string) => Promise<{ 
     success: boolean
     error?: string
-    user?: any // Allow any user type to handle Supabase User vs our User interface
+    user?: any
   }>
-  register: (email: string, password: string, name: string) => Promise<{ 
+  register: (email: string, password: string, name: string, playerName?: string) => Promise<{ 
     success: boolean
     error?: string
     message?: string 
   }>
   logout: () => Promise<void>
-  loading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const auth = useSupabaseAuth()
+  const auth = useAuthHook()
   
   return (
     <AuthContext.Provider value={auth}>
