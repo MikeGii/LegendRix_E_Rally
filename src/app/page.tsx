@@ -50,10 +50,11 @@ function HomeContent() {
     window.location.reload()
   }
 
-  const handleDashboard = () => {
+const handleDashboard = () => {
     if (user) {
-      const dashboardUrl = user.role === 'admin' ? '/admin-dashboard' : '/user-dashboard'
-      router.push(dashboardUrl)
+      // UPDATED: Both admin and user now go to user-dashboard by default
+      // Admins can use the view switcher in the header to access admin features
+      router.push('/user-dashboard')
     }
   }
 

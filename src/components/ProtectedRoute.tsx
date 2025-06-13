@@ -1,4 +1,4 @@
-// src/components/ProtectedRoute.tsx - Vercel-optimized
+// src/components/ProtectedRoute.tsx - Updated with user-dashboard as default
 'use client'
 
 import { useAuth } from './AuthProvider'
@@ -67,7 +67,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
     if (requiredRole && user.role !== requiredRole) {
       console.log('❌ Role mismatch, redirecting based on user role')
-      const redirectUrl = user.role === 'admin' ? '/admin-dashboard' : '/user-dashboard'
+      // UPDATED: Default redirect is now user-dashboard for both admin and user
+      const redirectUrl = '/user-dashboard'
       console.log('🔄 Redirecting to:', redirectUrl)
       redirectedRef.current = true
       router.replace(redirectUrl)
