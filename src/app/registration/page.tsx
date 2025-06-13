@@ -1,4 +1,3 @@
-// src/app/registration/page.tsx
 'use client'
 
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -9,7 +8,8 @@ export default function RegistrationPage() {
   console.log('🔧 RegistrationPage - Component loaded')
   
   return (
-    <ProtectedRoute requiredRole="user">
+    <ProtectedRoute>
+      {/* REMOVED requiredRole="user" - Now both admin and user can access */}
       <DashboardLayout>
         <RallyRegistration />
       </DashboardLayout>
