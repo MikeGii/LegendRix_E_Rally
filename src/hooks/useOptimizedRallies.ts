@@ -27,6 +27,8 @@ export interface TransformedRally {
   // Added missing game properties that components expect
   game_name?: string
   game_type_name?: string
+  // Added missing events property that CompetitionsModal expects
+  events?: RallyEvent[]
 }
 
 export interface RealRally {
@@ -145,14 +147,77 @@ export function useUpcomingRallies(limit = 10) {
         throw error
       }
 
-      // Transform data to include game names
-      const transformedRallies = (rallies || []).map(rally => ({
+      if (!rallies || rallies.length === 0) {
+        console.log('No upcoming rallies found')
+        return []
+      }
+
+      // Get rally events for all upcoming rallies
+      const rallyIds = rallies.map(rally => rally.id)
+      
+      const { data: rallyEvents, error: eventsError } = await supabase
+        .from('rally_events')
+        .select(`
+          *,
+          event:game_events(*),
+          rally_event_tracks(
+            *,
+            track:event_tracks(*)
+          )
+        `)
+        .in('rally_id', rallyIds)
+        .eq('is_active', true)
+        .order('event_order', { ascending: true })
+
+      if (eventsError) {
+        console.error('Error loading rally events:', eventsError)
+        // Don't throw error, just continue without events data
+      }
+
+      // Group events by rally ID
+      const eventsByRally: Record<string, RallyEvent[]> = {}
+      rallyIds.forEach(rallyId => {
+        eventsByRally[rallyId] = []
+      })
+
+      if (rallyEvents) {
+        rallyEvents.forEach((rallyEvent: any) => {
+          // Handle both array and object responses from Supabase
+          const gameEvent = Array.isArray(rallyEvent.event) ? 
+            rallyEvent.event[0] : rallyEvent.event
+          
+          if (gameEvent && gameEvent.id && gameEvent.name) {
+            // Process tracks for this event
+            const eventTracks = rallyEvent.rally_event_tracks || []
+            const tracks = eventTracks
+              .filter((ret: any) => ret.track && ret.track.id) // Only include tracks that exist
+              .map((ret: any) => ({
+                id: ret.track.id,
+                name: ret.track.name,
+                surface_type: ret.track.surface_type,
+                length_km: ret.track.length_km,
+                track_order: ret.track_order
+              }))
+
+            eventsByRally[rallyEvent.rally_id].push({
+              event_id: gameEvent.id,
+              event_name: gameEvent.name,
+              event_order: rallyEvent.event_order,
+              tracks: tracks
+            })
+          }
+        })
+      }
+
+      // Transform data to include game names and events
+      const transformedRallies = rallies.map(rally => ({
         ...rally,
         game_name: rally.game?.name || 'Unknown Game',
-        game_type_name: rally.game_type?.name || 'Unknown Type'
+        game_type_name: rally.game_type?.name || 'Unknown Type',
+        events: eventsByRally[rally.id] || []
       }))
 
-      console.log(`✅ Upcoming rallies loaded: ${transformedRallies.length}`)
+      console.log(`✅ Upcoming rallies loaded: ${transformedRallies.length} with events`)
       return transformedRallies
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
