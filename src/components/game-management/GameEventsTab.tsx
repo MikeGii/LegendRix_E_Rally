@@ -208,12 +208,6 @@ export function GameEventsTab({
                   </button>
                 </div>
               </div>
-
-              <div className="bg-slate-700/30 rounded-lg p-3">
-                <p className="text-slate-300 text-sm">
-                  Click to manage tracks for this event
-                </p>
-              </div>
             </div>
           ))}
         </div>
