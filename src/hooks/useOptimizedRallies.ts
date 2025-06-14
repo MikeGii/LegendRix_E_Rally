@@ -116,8 +116,9 @@ export function useAllRallies(limit = 20) {
   return useQuery({
     queryKey: [...rallyKeys.all, 'all-rallies', limit],
     queryFn: async (): Promise<TransformedRally[]> => {
-      console.log('🔄 Loading ALL rallies (including past ones)...')
+      console.log('🔄 Loading ALL rallies (including past ones) with participant counts...')
       
+      // First, get the basic rally data
       const { data: rallies, error } = await supabase
         .from('rallies')
         .select(`
@@ -126,7 +127,6 @@ export function useAllRallies(limit = 20) {
           game_type:game_types(name)
         `)
         .eq('is_active', true)
-        // *** NO STATUS FILTER *** - This gets ALL rallies including completed ones
         .order('competition_date', { ascending: false })
         .limit(limit)
 
@@ -140,9 +140,9 @@ export function useAllRallies(limit = 20) {
         return []
       }
 
-      // Get rally events (same logic as useUpcomingRallies)
       const rallyIds = rallies.map(rally => rally.id)
-      
+
+      // Get rally events (same logic as useUpcomingRallies)
       const { data: rallyEvents, error: eventsError } = await supabase
         .from('rally_events')
         .select(`
@@ -161,6 +161,29 @@ export function useAllRallies(limit = 20) {
         console.error('Error loading rally events:', eventsError)
       }
 
+      // FIXED: Get actual participant counts from rally_registrations
+      const { data: registrationCounts, error: registrationsError } = await supabase
+        .from('rally_registrations')
+        .select('rally_id')
+        .in('rally_id', rallyIds)
+        .in('status', ['registered', 'confirmed']) // Only count active registrations
+
+      if (registrationsError) {
+        console.error('Error loading registration counts:', registrationsError)
+      }
+
+      // Count participants per rally
+      const participantCounts: Record<string, number> = {}
+      rallyIds.forEach(rallyId => {
+        participantCounts[rallyId] = 0
+      })
+
+      if (registrationCounts) {
+        registrationCounts.forEach(reg => {
+          participantCounts[reg.rally_id] = (participantCounts[reg.rally_id] || 0) + 1
+        })
+      }
+
       // Group events by rally ID (same logic as useUpcomingRallies)
       const eventsByRally: Record<string, RallyEvent[]> = {}
       rallyIds.forEach(rallyId => {
@@ -169,7 +192,7 @@ export function useAllRallies(limit = 20) {
 
       if (rallyEvents) {
         rallyEvents.forEach((rallyEvent: any) => {
-          const gameEvent = Array.isArray(rallyEvent.event) ?
+          const gameEvent = Array.isArray(rallyEvent.event) ? 
             rallyEvent.event[0] : rallyEvent.event
           
           if (gameEvent && gameEvent.id && gameEvent.name) {
@@ -194,7 +217,7 @@ export function useAllRallies(limit = 20) {
         })
       }
 
-      // Transform data (same logic as useUpcomingRallies)
+      // FIXED: Transform data with real participant counts
       const transformedRallies = rallies.map(rally => {
         const rallyEvents = eventsByRally[rally.id] || []
         const totalTracks = rallyEvents.reduce((sum, event) => sum + (event.tracks?.length || 0), 0)
@@ -206,14 +229,14 @@ export function useAllRallies(limit = 20) {
           events: rallyEvents,
           total_events: rallyEvents.length,
           total_tracks: totalTracks,
-          registered_participants: 0
+          registered_participants: participantCounts[rally.id] || 0 // FIXED: Real count!
         }
       })
 
-      console.log(`✅ ALL rallies loaded: ${transformedRallies.length} (including past ones)`)
+      console.log(`✅ ALL rallies loaded: ${transformedRallies.length} with real participant counts`)
       return transformedRallies
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   })
 }
 
@@ -225,8 +248,9 @@ export function useUpcomingRallies(limit = 10) {
   return useQuery({
     queryKey: rallyKeys.upcoming(limit),
     queryFn: async (): Promise<TransformedRally[]> => {
-      console.log('🔄 Loading upcoming rallies...')
+      console.log('🔄 Loading upcoming rallies with participant counts...')
       
+      // First, get the basic rally data
       const { data: rallies, error } = await supabase
         .from('rallies')
         .select(`
@@ -249,9 +273,9 @@ export function useUpcomingRallies(limit = 10) {
         return []
       }
 
-      // Get rally events for all upcoming rallies
       const rallyIds = rallies.map(rally => rally.id)
-      
+
+      // Get rally events and tracks (existing logic)
       const { data: rallyEvents, error: eventsError } = await supabase
         .from('rally_events')
         .select(`
@@ -268,10 +292,32 @@ export function useUpcomingRallies(limit = 10) {
 
       if (eventsError) {
         console.error('Error loading rally events:', eventsError)
-        // Don't throw error, just continue without events data
       }
 
-      // Group events by rally ID
+      // FIXED: Get actual participant counts from rally_registrations
+      const { data: registrationCounts, error: registrationsError } = await supabase
+        .from('rally_registrations')
+        .select('rally_id')
+        .in('rally_id', rallyIds)
+        .in('status', ['registered', 'confirmed']) // Only count active registrations
+
+      if (registrationsError) {
+        console.error('Error loading registration counts:', registrationsError)
+      }
+
+      // Count participants per rally
+      const participantCounts: Record<string, number> = {}
+      rallyIds.forEach(rallyId => {
+        participantCounts[rallyId] = 0
+      })
+
+      if (registrationCounts) {
+        registrationCounts.forEach(reg => {
+          participantCounts[reg.rally_id] = (participantCounts[reg.rally_id] || 0) + 1
+        })
+      }
+
+      // Group events by rally ID (existing logic)
       const eventsByRally: Record<string, RallyEvent[]> = {}
       rallyIds.forEach(rallyId => {
         eventsByRally[rallyId] = []
@@ -279,7 +325,7 @@ export function useUpcomingRallies(limit = 10) {
 
       if (rallyEvents) {
         rallyEvents.forEach((rallyEvent: any) => {
-          const gameEvent = Array.isArray(rallyEvent.event) ?
+          const gameEvent = Array.isArray(rallyEvent.event) ? 
             rallyEvent.event[0] : rallyEvent.event
           
           if (gameEvent && gameEvent.id && gameEvent.name) {
@@ -304,8 +350,8 @@ export function useUpcomingRallies(limit = 10) {
         })
       }
 
-      // Transform data
-      const transformedRallies = rallies.map(rally => {
+      // FIXED: Transform data with real participant counts
+      const transformedRallies: TransformedRally[] = rallies.map(rally => {
         const rallyEvents = eventsByRally[rally.id] || []
         const totalTracks = rallyEvents.reduce((sum, event) => sum + (event.tracks?.length || 0), 0)
         
@@ -316,14 +362,18 @@ export function useUpcomingRallies(limit = 10) {
           events: rallyEvents,
           total_events: rallyEvents.length,
           total_tracks: totalTracks,
-          registered_participants: 0
+          registered_participants: participantCounts[rally.id] || 0 // FIXED: Real count!
         }
       })
 
-      console.log(`✅ Upcoming rallies loaded: ${transformedRallies.length} with events`)
+      console.log(`✅ Upcoming rallies loaded: ${transformedRallies.length} with real participant counts`)
+      transformedRallies.forEach(rally => {
+        console.log(`   📊 ${rally.name}: ${rally.registered_participants} participants`)
+      })
+      
       return transformedRallies
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes (shorter since participant counts change more frequently)
   })
 }
 
