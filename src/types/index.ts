@@ -1,4 +1,4 @@
-// src/types/index.ts - Centralized type definitions - FIXED VERSION
+// src/types/index.ts - CLEANED VERSION - Remove all unwanted properties
 
 import { ReactNode } from 'react'
 
@@ -7,7 +7,7 @@ export interface User {
   id: string
   name: string
   email: string
-  player_name?: string  // Add this new field
+  player_name?: string
   role: 'user' | 'admin'
   email_verified: boolean
   admin_approved: boolean
@@ -26,16 +26,11 @@ export interface UserStats {
   rejected: number
 }
 
-// ============= Game Management Types =============
+// ============= Game Management Types - CLEANED =============
 export interface Game {
   id: string
   name: string
-  description?: string
-  developer?: string
-  platform?: string
-  release_year?: number
   is_active: boolean
-  created_by?: string
   created_at: string
   updated_at: string
 }
@@ -44,11 +39,6 @@ export interface GameType {
   id: string
   game_id: string
   name: string
-  description?: string
-  max_participants?: number
-  min_participants?: number
-  duration_type?: string
-  duration_minutes?: number  // ADD THIS
   is_active: boolean
   created_at: string
   updated_at: string
@@ -58,17 +48,9 @@ export interface GameEvent {
   id: string
   game_id: string
   name: string
-  country?: string
-  region?: string
-  surface_type?: string
-  weather_conditions?: string
-  difficulty_level?: number
-  description?: string
-  max_participants?: number  // ADD THIS
   is_active: boolean
   created_at: string
   updated_at: string
-  tracks?: EventTrack[]
 }
 
 export interface EventTrack {
@@ -76,11 +58,8 @@ export interface EventTrack {
   event_id: string
   name: string
   length_km?: number
-  stage_number?: number
-  description?: string
-  surface_type?: 'gravel' | 'tarmac' | 'snow' | 'mixed'
-  is_special_stage: boolean
-  is_active: boolean  // ENSURE THIS EXISTS
+  surface_type?: string
+  is_active: boolean
   created_at: string
   updated_at: string
 }
@@ -89,17 +68,12 @@ export interface GameClass {
   id: string
   game_id: string
   name: string
-  description?: string
-  skill_level?: 'beginner' | 'intermediate' | 'advanced' | 'expert'  // Fixed: specific union type
-  requirements?: string
-  max_participants?: number
-  entry_fee?: number
   is_active: boolean
   created_at: string
   updated_at: string
 }
 
-// ============= Rally Types =============
+// ============= Rally Types - CLEANED =============
 export interface Rally {
   id: string
   name: string
@@ -110,8 +84,6 @@ export interface Rally {
   registration_deadline: string
   max_participants?: number
   status: 'upcoming' | 'registration_open' | 'registration_closed' | 'active' | 'completed' | 'cancelled'
-  prize_pool?: number
-  entry_fee?: number
   rules?: string
   is_featured: boolean
   is_active: boolean
@@ -120,7 +92,6 @@ export interface Rally {
   updated_at: string
   // Computed/joined fields
   game_name?: string
-  game_platform?: string
   game_type_name?: string
   registered_participants?: number
   total_events?: number
@@ -134,17 +105,12 @@ export interface RallyRegistration {
   class_id: string
   registration_date: string
   status: 'registered' | 'confirmed' | 'cancelled' | 'disqualified' | 'completed'
-  car_number?: number
-  team_name?: string
-  notes?: string
-  entry_fee_paid: number
-  payment_status: 'pending' | 'paid' | 'refunded' | 'waived'
   created_at: string
   updated_at: string
   // Joined fields
   user_name?: string
   user_email?: string
-  user_player_name?: string  // Add this field
+  user_player_name?: string
   class_name?: string
   rally_name?: string
 }
@@ -154,8 +120,6 @@ export interface RallyEventDetail {
   event_id: string
   event_name: string
   event_order: number
-  country?: string
-  surface_type?: string
   tracks: RallyTrackDetail[]
 }
 
@@ -165,9 +129,7 @@ export interface RallyTrackDetail {
   track_name: string
   track_order: number
   length_km?: number
-  stage_number?: number
   surface_type?: string
-  is_special_stage: boolean
 }
 
 export interface RallyClassDetail {
@@ -175,7 +137,6 @@ export interface RallyClassDetail {
   class_id: string
   class_name: string
   max_participants?: number
-  entry_fee_modifier: number
   registered_count?: number
 }
 
@@ -207,7 +168,7 @@ export interface RegisterFormData {
   email: string
   password: string
   confirmPassword: string
-  playerName: string  // Add this field
+  playerName: string
   agreeToRules: boolean
 }
 
@@ -232,7 +193,6 @@ export interface Tab {
   count?: number
 }
 
-// ============= Modal and Form Component Types =============
 export interface ModalProps {
   isOpen: boolean
   onClose: () => void
@@ -251,7 +211,6 @@ export interface FormComponentProps {
   className?: string
 }
 
-// Button component types
 export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'ghost'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
@@ -279,8 +238,7 @@ export type DatabaseTable =
   | 'game_events' 
   | 'event_tracks' 
   | 'game_classes' 
-  | 'rally_registrations' 
-  | 'rally_details'
+  | 'rally_registrations'
 
 export type OrderDirection = 'asc' | 'desc'
 export type FilterOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'in'
@@ -296,7 +254,7 @@ export interface FilterConfig {
   value: any
 }
 
-// ============= Constants =============
+// ============= Constants - CLEANED =============
 export const ROUTES = {
   HOME: '/',
   ADMIN_DASHBOARD: '/admin-dashboard',
@@ -326,4 +284,12 @@ export const RALLY_STATUSES = {
   ACTIVE: 'active',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled'
+} as const
+
+export const REGISTRATION_STATUSES = {
+  REGISTERED: 'registered',
+  CONFIRMED: 'confirmed',
+  CANCELLED: 'cancelled',
+  DISQUALIFIED: 'disqualified',
+  COMPLETED: 'completed'
 } as const

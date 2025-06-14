@@ -1,7 +1,7 @@
-// src/hooks/useRallyRegistrations.ts - Fixed with Proper Cache Invalidation
+// src/hooks/useRallyRegistrations.ts - CLEANED VERSION
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { rallyKeys } from './useOptimizedRallies' // Import rally query keys
+import { rallyKeys } from './useOptimizedRallies'
 
 export interface RallyRegistration {
   id: string
@@ -10,16 +10,12 @@ export interface RallyRegistration {
   class_id: string
   registration_date: string
   status: 'registered' | 'confirmed' | 'cancelled' | 'disqualified' | 'completed'
-  car_number?: number
-  team_name?: string
-  notes?: string
-  entry_fee_paid: number
-  payment_status: 'pending' | 'paid' | 'refunded' | 'waived'
   created_at: string
   updated_at: string
   // Joined data
   user_name?: string
   user_email?: string
+  user_player_name?: string
   class_name?: string
   rally_name?: string
 }
@@ -30,7 +26,10 @@ export const registrationKeys = {
   user: (userId: string) => [...registrationKeys.all, 'user', userId] as const,
 }
 
-// Create registration mutation with comprehensive cache invalidation
+// ============================================================================
+// CREATE REGISTRATION MUTATION - CLEANED
+// ============================================================================
+
 export function useCreateRegistration() {
   const queryClient = useQueryClient()
   
@@ -50,12 +49,7 @@ export function useCreateRegistration() {
           rally_id: params.rally_id,
           user_id: user.id,
           class_id: params.class_id,
-          car_number: null,
-          team_name: null,
-          notes: null,
-          status: 'registered',
-          entry_fee_paid: 0,
-          payment_status: 'pending'
+          status: 'registered'
         }])
         .select()
         .single()
@@ -71,19 +65,12 @@ export function useCreateRegistration() {
     onSuccess: (data, variables) => {
       console.log('🔄 Invalidating caches after registration creation...')
       
-      // Invalidate specific rally registration queries
       queryClient.invalidateQueries({ queryKey: registrationKeys.rally(variables.rally_id) })
       queryClient.invalidateQueries({ queryKey: registrationKeys.all })
-      
-      // Invalidate user rally registrations (this is KEY for updating the dashboard)
       queryClient.invalidateQueries({ queryKey: rallyKeys.registrations() })
-      
-      // Invalidate rally lists that show registration status
       queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
-      
-      // Force refetch of user registrations for immediate UI update
       queryClient.refetchQueries({ queryKey: rallyKeys.registrations() })
       
       console.log('✅ Cache invalidation completed')
@@ -94,7 +81,10 @@ export function useCreateRegistration() {
   })
 }
 
-// Delete registration mutation with comprehensive cache invalidation
+// ============================================================================
+// DELETE REGISTRATION MUTATION - CLEANED
+// ============================================================================
+
 export function useDeleteRegistration() {
   const queryClient = useQueryClient()
   
@@ -105,7 +95,6 @@ export function useDeleteRegistration() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      // First get the registration to find the rally_id for cache invalidation
       const { data: registration, error: fetchError } = await supabase
         .from('rally_registrations')
         .select('rally_id, user_id')
@@ -117,17 +106,15 @@ export function useDeleteRegistration() {
         throw fetchError
       }
 
-      // Verify user owns this registration
       if (registration.user_id !== user.id) {
         throw new Error('Unauthorized: Cannot delete another user\'s registration')
       }
 
-      // Delete the registration
       const { error } = await supabase
         .from('rally_registrations')
         .delete()
         .eq('id', registrationId)
-        .eq('user_id', user.id) // Extra security check
+        .eq('user_id', user.id)
 
       if (error) {
         console.error('Error deleting registration:', error)
@@ -140,19 +127,12 @@ export function useDeleteRegistration() {
     onSuccess: (data) => {
       console.log('🔄 Invalidating caches after registration deletion...')
       
-      // Invalidate specific rally registration queries
       queryClient.invalidateQueries({ queryKey: registrationKeys.rally(data.rallyId) })
       queryClient.invalidateQueries({ queryKey: registrationKeys.all })
-      
-      // Invalidate user rally registrations (KEY for dashboard updates)
       queryClient.invalidateQueries({ queryKey: rallyKeys.registrations() })
-      
-      // Invalidate rally lists that show registration status
       queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
-      
-      // Force immediate refetch for UI update
       queryClient.refetchQueries({ queryKey: rallyKeys.registrations() })
       
       console.log('✅ Cache invalidation completed')
@@ -163,7 +143,10 @@ export function useDeleteRegistration() {
   })
 }
 
-// Update registration mutation with comprehensive cache invalidation
+// ============================================================================
+// UPDATE REGISTRATION MUTATION - CLEANED
+// ============================================================================
+
 export function useUpdateRegistration() {
   const queryClient = useQueryClient()
   
@@ -177,7 +160,6 @@ export function useUpdateRegistration() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      // First get the registration to verify ownership and get rally_id
       const { data: registration, error: fetchError } = await supabase
         .from('rally_registrations')
         .select('rally_id, user_id')
@@ -189,12 +171,10 @@ export function useUpdateRegistration() {
         throw fetchError
       }
 
-      // Verify user owns this registration
       if (registration.user_id !== user.id) {
         throw new Error('Unauthorized: Cannot update another user\'s registration')
       }
 
-      // Update the registration
       const { data, error } = await supabase
         .from('rally_registrations')
         .update({ 
@@ -202,7 +182,7 @@ export function useUpdateRegistration() {
           updated_at: new Date().toISOString()
         })
         .eq('id', params.registrationId)
-        .eq('user_id', user.id) // Extra security check
+        .eq('user_id', user.id)
         .select()
         .single()
 
@@ -217,19 +197,12 @@ export function useUpdateRegistration() {
     onSuccess: (data) => {
       console.log('🔄 Invalidating caches after registration update...')
       
-      // Invalidate specific rally registration queries
       queryClient.invalidateQueries({ queryKey: registrationKeys.rally(data.rallyId) })
       queryClient.invalidateQueries({ queryKey: registrationKeys.all })
-      
-      // Invalidate user rally registrations (KEY for dashboard updates)
       queryClient.invalidateQueries({ queryKey: rallyKeys.registrations() })
-      
-      // Invalidate rally lists that show registration status
       queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
-      
-      // Force immediate refetch for UI update
       queryClient.refetchQueries({ queryKey: rallyKeys.registrations() })
       
       console.log('✅ Cache invalidation completed')
@@ -240,7 +213,10 @@ export function useUpdateRegistration() {
   })
 }
 
-// Get registrations for a specific rally
+// ============================================================================
+// GET RALLY REGISTRATIONS - CLEANED
+// ============================================================================
+
 export function useRallyRegistrations(rallyId: string) {
   return useQuery({
     queryKey: registrationKeys.rally(rallyId),
@@ -271,7 +247,6 @@ export function useRallyRegistrations(rallyId: string) {
         throw error
       }
 
-      // Transform the data to include user info
       const transformedRegistrations = registrations?.map(reg => ({
         ...reg,
         user_name: reg.users?.name,
@@ -287,7 +262,10 @@ export function useRallyRegistrations(rallyId: string) {
   })
 }
 
-// Get available classes for a rally
+// ============================================================================
+// GET AVAILABLE CLASSES FOR RALLY - CLEANED
+// ============================================================================
+
 export function useRallyAvailableClasses(rallyId: string) {
   return useQuery({
     queryKey: ['rally_classes', rallyId],
@@ -296,7 +274,6 @@ export function useRallyAvailableClasses(rallyId: string) {
       
       console.log('🔄 Loading available classes for rally:', rallyId)
       
-      // First, get the rally to find its game_id
       const { data: rally, error: rallyError } = await supabase
         .from('rallies')
         .select('game_id')
@@ -313,7 +290,6 @@ export function useRallyAvailableClasses(rallyId: string) {
         return []
       }
 
-      // Get available classes for this game
       const { data: gameClasses, error } = await supabase
         .from('game_classes')
         .select(`

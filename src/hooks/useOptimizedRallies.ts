@@ -1,9 +1,9 @@
-// src/hooks/useOptimizedRallies.ts - Complete Optimized Rallies Hook
+// src/hooks/useOptimizedRallies.ts - CLEANED VERSION
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
 // ============================================================================
-// INTERFACES
+// CLEANED INTERFACES
 // ============================================================================
 
 export interface TransformedRally {
@@ -16,22 +16,18 @@ export interface TransformedRally {
   registration_deadline: string
   max_participants: number
   status: 'upcoming' | 'registration_open' | 'registration_closed' | 'active' | 'completed' | 'cancelled'
-  prize_pool: number
-  entry_fee: number
   rules: string
   is_featured: boolean
   is_active: boolean
   created_by: string
   created_at: string
   updated_at: string
-  // Added missing game properties that components expect
+  // Computed properties
   game_name?: string
   game_type_name?: string
-  // Added missing computed properties that CompetitionsModal expects
   registered_participants?: number
   total_events?: number
   total_tracks?: number
-  // Added missing events property that CompetitionsModal expects
   events?: RallyEvent[]
 }
 
@@ -45,15 +41,12 @@ export interface RealRally {
   registration_deadline: string
   max_participants: number
   status: string
-  prize_pool: number
-  entry_fee: number
   rules: string
   is_featured: boolean
   is_active: boolean
   created_by: string
   created_at: string
   updated_at: string
-  // Additional computed fields
   rally_id: string
   rally_game_id: string
   rally_type_id: string
@@ -62,10 +55,12 @@ export interface RealRally {
   optional_notes: string
   type_name: string
   creator_name: string
+  game_name?: string
+  game_type_name?: string
   events: RallyEvent[]
-  // ADD THESE MISSING PROPERTIES THAT YOUR COMPONENTS EXPECT:
-  game_name?: string        // <- This is what's missing!
-  game_type_name?: string   // <- This might also be missing
+  registered_participants?: number  // Add this
+  total_events?: number            // Add this  
+  total_tracks?: number            // Add this
 }
 
 export interface RallyEvent {
@@ -90,11 +85,6 @@ export interface UserRallyRegistration {
   class_id: string
   registration_date: string
   status: 'registered' | 'confirmed' | 'cancelled' | 'disqualified' | 'completed'
-  car_number?: number
-  team_name?: string
-  notes?: string
-  entry_fee_paid: number
-  payment_status: 'pending' | 'paid' | 'refunded' | 'waived'
   created_at: string
   updated_at: string
   // Joined data
@@ -104,13 +94,6 @@ export interface UserRallyRegistration {
   rally_status?: string
 }
 
-export interface UserStats {
-  totalUsers: number
-  pendingEmail: number
-  pendingApproval: number
-  approved: number
-}
-
 // ============================================================================
 // QUERY KEYS
 // ============================================================================
@@ -118,9 +101,7 @@ export interface UserStats {
 export const rallyKeys = {
   all: ['rallies'] as const,
   lists: () => [...rallyKeys.all, 'list'] as const,
-  list: (filters: string) => [...rallyKeys.lists(), { filters }] as const,
-  details: () => [...rallyKeys.all, 'detail'] as const,
-  detail: (id: string) => [...rallyKeys.details(), id] as const,
+  list: (filters?: any) => [...rallyKeys.lists(), { filters }] as const,
   upcoming: (limit?: number) => [...rallyKeys.all, 'upcoming', limit] as const,
   featured: (limit?: number) => [...rallyKeys.all, 'featured', limit] as const,
   registrations: () => [...rallyKeys.all, 'registrations'] as const,
@@ -128,7 +109,7 @@ export const rallyKeys = {
 }
 
 // ============================================================================
-// UPCOMING RALLIES HOOK
+// UPCOMING RALLIES HOOK - CLEANED
 // ============================================================================
 
 export function useUpcomingRallies(limit = 10) {
@@ -137,7 +118,6 @@ export function useUpcomingRallies(limit = 10) {
     queryFn: async (): Promise<TransformedRally[]> => {
       console.log('🔄 Loading upcoming rallies...')
       
-      // FIXED: Remove 'platform' from games selection
       const { data: rallies, error } = await supabase
         .from('rallies')
         .select(`
@@ -160,7 +140,7 @@ export function useUpcomingRallies(limit = 10) {
         return []
       }
 
-      // Rest of the transformation logic...
+      // Get rally events for all upcoming rallies
       const rallyIds = rallies.map(rally => rally.id)
       
       const { data: rallyEvents, error: eventsError } = await supabase
@@ -182,21 +162,56 @@ export function useUpcomingRallies(limit = 10) {
         // Don't throw error, just continue without events data
       }
 
+      // Group events by rally ID
+      const eventsByRally: Record<string, RallyEvent[]> = {}
+      rallyIds.forEach(rallyId => {
+        eventsByRally[rallyId] = []
+      })
+
+      if (rallyEvents) {
+        rallyEvents.forEach((rallyEvent: any) => {
+          const gameEvent = Array.isArray(rallyEvent.event) ? 
+            rallyEvent.event[0] : rallyEvent.event
+          
+          if (gameEvent && gameEvent.id && gameEvent.name) {
+            const eventTracks = rallyEvent.rally_event_tracks || []
+            const tracks = eventTracks
+              .filter((ret: any) => ret.track && ret.track.id)
+              .map((ret: any) => ({
+                id: ret.track.id,
+                name: ret.track.name,
+                surface_type: ret.track.surface_type,
+                length_km: ret.track.length_km,
+                track_order: ret.track_order
+              }))
+
+            eventsByRally[rallyEvent.rally_id].push({
+              event_id: gameEvent.id,
+              event_name: gameEvent.name,
+              event_order: rallyEvent.event_order,
+              tracks: tracks
+            })
+          }
+        })
+      }
+
       // Transform data
       const transformedRallies = rallies.map(rally => {
+        const rallyEvents = eventsByRally[rally.id] || []
+        const totalTracks = rallyEvents.reduce((sum, event) => sum + (event.tracks?.length || 0), 0)
+        
         return {
           ...rally,
           game_name: rally.game?.name || 'Unknown Game',
           game_type_name: rally.game_type?.name || 'Unknown Type',
-          // Remove game_platform since it doesn't exist in your DB
-          // game_platform: rally.game?.platform || undefined,
-          total_events: 0, // Calculate if needed
-          total_tracks: 0, // Calculate if needed
-          registered_participants: 0 // Calculate if needed
+          events: rallyEvents,
+          total_events: rallyEvents.length,
+          total_tracks: totalTracks,
+          registered_participants: 0
         }
       })
 
-      console.log(`✅ Upcoming rallies loaded: ${transformedRallies.length}`)
+      console.log(`✅ Upcoming rallies loaded: ${transformedRallies.length} with events`)
       return transformedRallies
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -204,7 +219,7 @@ export function useUpcomingRallies(limit = 10) {
 }
 
 // ============================================================================
-// FEATURED RALLIES HOOK
+// FEATURED RALLIES HOOK - CLEANED
 // ============================================================================
 
 export function useFeaturedRallies(limit = 5) {
@@ -213,7 +228,6 @@ export function useFeaturedRallies(limit = 5) {
     queryFn: async (): Promise<RealRally[]> => {
       console.log('🔄 Loading featured rallies with events and tracks...')
       
-      // FIXED: Remove 'platform' from games selection
       const { data: rallies, error: ralliesError } = await supabase
         .from('rallies')
         .select(`
@@ -231,7 +245,66 @@ export function useFeaturedRallies(limit = 5) {
         throw ralliesError
       }
 
-      // Rest of the transformation logic remains the same...
+      if (!rallies || rallies.length === 0) {
+        console.log('No featured rallies found')
+        return []
+      }
+
+      // Get rally events and tracks for all featured rallies
+      const rallyIds = rallies.map(rally => rally.id)
+      
+      const { data: rallyEvents, error: eventsError } = await supabase
+        .from('rally_events')
+        .select(`
+          *,
+          event:game_events(*),
+          rally_event_tracks(
+            *,
+            track:event_tracks(*)
+          )
+        `)
+        .in('rally_id', rallyIds)
+        .eq('is_active', true)
+        .order('event_order', { ascending: true })
+
+      if (eventsError) {
+        console.error('Error loading rally events:', eventsError)
+        throw eventsError
+      }
+
+      // Group events by rally ID
+      const eventsByRally: Record<string, RallyEvent[]> = {}
+      rallyIds.forEach(rallyId => {
+        eventsByRally[rallyId] = []
+      })
+
+      if (rallyEvents) {
+        rallyEvents.forEach((rallyEvent: any) => {
+          const gameEvent = Array.isArray(rallyEvent.event) ? 
+            rallyEvent.event[0] : rallyEvent.event
+          
+          if (gameEvent && gameEvent.id && gameEvent.name) {
+            const eventTracks = rallyEvent.rally_event_tracks || []
+            const tracks = eventTracks
+              .filter((ret: any) => ret.track && ret.track.id)
+              .map((ret: any) => ({
+                id: ret.track.id,
+                name: ret.track.name,
+                surface_type: ret.track.surface_type,
+                length_km: ret.track.length_km,
+                track_order: ret.track_order
+              }))
+
+            eventsByRally[rallyEvent.rally_id].push({
+              event_id: gameEvent.id,
+              event_name: gameEvent.name,
+              event_order: rallyEvent.event_order,
+              tracks: tracks
+            })
+          }
+        })
+      }
+
       const transformedRallies: RealRally[] = rallies.map(rally => ({
         ...rally,
         rally_id: rally.id,
@@ -242,14 +315,12 @@ export function useFeaturedRallies(limit = 5) {
         optional_notes: rally.description || '',
         type_name: rally.game_type?.name || 'Competition',
         creator_name: 'Rally Admin',
-        events: [], // Populate if needed
-        // ADD THE MISSING PROPERTIES:
         game_name: rally.game?.name || 'Unknown Game',
         game_type_name: rally.game_type?.name || 'Unknown Type',
-        // Don't include game_platform since it doesn't exist
+        events: eventsByRally[rally.id] || []
       }))
 
-      console.log(`✅ Featured rallies loaded: ${transformedRallies.length}`)
+      console.log(`✅ Featured rallies loaded: ${transformedRallies.length} with events and tracks`)
       return transformedRallies
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -257,7 +328,7 @@ export function useFeaturedRallies(limit = 5) {
 }
 
 // ============================================================================
-// USER RALLY REGISTRATIONS HOOK (Enhanced - Returns ALL registrations)
+// USER RALLY REGISTRATIONS HOOK - CLEANED
 // ============================================================================
 
 export function useUserRallyRegistrations() {
@@ -272,7 +343,6 @@ export function useUserRallyRegistrations() {
         return []
       }
 
-      // Enhanced query to include rally information - NO FILTERING HERE
       const { data: registrations, error } = await supabase
         .from('rally_registrations')
         .select(`
@@ -293,7 +363,6 @@ export function useUserRallyRegistrations() {
         throw error
       }
 
-      // Transform but don't filter - let the component decide what to show
       const transformedRegistrations: UserRallyRegistration[] = (registrations || []).map(reg => ({
         ...reg,
         rally_name: reg.rally?.name || 'Unknown Rally',
@@ -304,135 +373,6 @@ export function useUserRallyRegistrations() {
 
       console.log(`✅ ALL user registrations loaded: ${transformedRegistrations.length}`)
       return transformedRegistrations
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  })
-}
-
-// ============================================================================
-// USER STATS HOOK
-// ============================================================================
-
-export function useUserStats() {
-  return useQuery({
-    queryKey: ['user_stats'],
-    queryFn: async (): Promise<UserStats> => {
-      console.log('🔄 Loading user statistics...')
-      
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('email_verified, admin_approved, status')
-
-      if (error) {
-        console.error('Error loading user stats:', error)
-        throw error
-      }
-
-      const stats = {
-        totalUsers: users?.length || 0,
-        pendingEmail: users?.filter(user => !user.email_verified).length || 0,
-        pendingApproval: users?.filter(user => user.email_verified && !user.admin_approved).length || 0,
-        approved: users?.filter(user => user.email_verified && user.admin_approved).length || 0
-      }
-
-      console.log('✅ User stats loaded:', stats)
-      return stats
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  })
-}
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-// Helper function to check if a registration should be hidden
-export function shouldHideRegistration(registration: UserRallyRegistration): boolean {
-  if (!registration.rally_competition_date) return false
-  
-  const now = new Date()
-  const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000))
-  const competitionDate = new Date(registration.rally_competition_date)
-  
-  // Hide if competition date is more than 1 day in the past
-  return competitionDate < oneDayAgo
-}
-
-// Hook to get active registrations only (public utility)
-export function useActiveUserRegistrations() {
-  const { data: allRegistrations = [], ...rest } = useUserRallyRegistrations()
-  
-  // Additional client-side filtering if needed
-  const activeRegistrations = allRegistrations.filter(registration => 
-    !shouldHideRegistration(registration)
-  )
-  
-  return {
-    data: activeRegistrations,
-    ...rest
-  }
-}
-
-// Hook to get rally by ID
-export function useRally(rallyId: string) {
-  return useQuery({
-    queryKey: rallyKeys.detail(rallyId),
-    queryFn: async (): Promise<TransformedRally | null> => {
-      if (!rallyId) return null
-      
-      console.log('🔄 Loading rally details:', rallyId)
-      
-      const { data: rally, error } = await supabase
-        .from('rallies')
-        .select('*')
-        .eq('id', rallyId)
-        .single()
-
-      if (error) {
-        console.error('Error loading rally:', error)
-        throw error
-      }
-
-      console.log('✅ Rally loaded:', rally?.name)
-      return rally
-    },
-    enabled: !!rallyId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  })
-}
-
-// Hook to get all rallies with optional filtering
-export function useAllRallies(filters?: { status?: string; featured?: boolean }) {
-  const queryKey = rallyKeys.list(JSON.stringify(filters))
-  
-  return useQuery({
-    queryKey,
-    queryFn: async (): Promise<TransformedRally[]> => {
-      console.log('🔄 Loading all rallies with filters:', filters)
-      
-      let query = supabase
-        .from('rallies')
-        .select('*')
-        .eq('is_active', true)
-        .order('competition_date', { ascending: true })
-
-      if (filters?.status) {
-        query = query.eq('status', filters.status)
-      }
-
-      if (filters?.featured !== undefined) {
-        query = query.eq('is_featured', filters.featured)
-      }
-
-      const { data: rallies, error } = await query
-
-      if (error) {
-        console.error('Error loading rallies:', error)
-        throw error
-      }
-
-      console.log(`✅ All rallies loaded: ${rallies?.length || 0}`)
-      return rallies || []
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   })

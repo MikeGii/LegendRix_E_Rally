@@ -1,8 +1,9 @@
-// src/components/user/UserRegistrationsSection.tsx - Complete Enhanced Version with Past Rallies
+// src/components/user/UserRegistrationsSection.tsx - FIXED VERSION (mutation properties)
 'use client'
 
-import { useState } from 'react'
 import { UserRallyRegistration } from '@/hooks/useOptimizedRallies'
+import { useDeleteRegistration, useUpdateRegistration } from '@/hooks/useRallyRegistrations'
+import { useState } from 'react'
 
 interface UserRegistrationsSectionProps {
   registrations: UserRallyRegistration[]
@@ -10,25 +11,38 @@ interface UserRegistrationsSectionProps {
 }
 
 export function UserRegistrationsSection({ registrations, isLoading }: UserRegistrationsSectionProps) {
-  const [showPastRallies, setShowPastRallies] = useState(false)
+  const [selectedRegistration, setSelectedRegistration] = useState<string | null>(null)
+  const deleteRegistrationMutation = useDeleteRegistration()
+  const updateRegistrationMutation = useUpdateRegistration()
 
-  if (registrations.length === 0) return null
+  if (isLoading) {
+    return (
+      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-400">Loading your registrations...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-  // Separate current/upcoming and past rallies
-  const now = new Date()
-  const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000))
-  
-  const currentRegistrations = registrations.filter(registration => {
-    if (!registration.rally_competition_date) return true
-    const competitionDate = new Date(registration.rally_competition_date)
-    return competitionDate >= oneDayAgo
-  })
-
-  const pastRegistrations = registrations.filter(registration => {
-    if (!registration.rally_competition_date) return false
-    const competitionDate = new Date(registration.rally_competition_date)
-    return competitionDate < oneDayAgo
-  })
+  if (registrations.length === 0) {
+    return (
+      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl text-slate-500">📝</span>
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">No Rally Registrations</h3>
+          <p className="text-slate-400">
+            You haven't registered for any rallies yet. Check out the featured rallies to get started!
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -36,196 +50,147 @@ export function UserRegistrationsSection({ registrations, isLoading }: UserRegis
       case 'confirmed': return 'bg-green-500/20 text-green-400 border-green-500/30'
       case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30'
       case 'completed': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-      case 'disqualified': return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
       default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
     }
   }
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'registered': return 'Registreeritud'
-      case 'confirmed': return 'Kinnitatud'
-      case 'cancelled': return 'Tühistatud'
-      case 'completed': return 'Lõpetatud'
-      case 'disqualified': return 'Diskvalifitseeritud'
-      default: return status.toUpperCase()
+  const handleCancelRegistration = async (registrationId: string) => {
+    try {
+      await deleteRegistrationMutation.mutateAsync(registrationId)
+      console.log('Registration cancelled successfully')
+    } catch (error) {
+      console.error('Failed to cancel registration:', error)
     }
   }
 
-  const getPaymentColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'text-green-400'
-      case 'pending': return 'text-yellow-400'
-      case 'refunded': return 'text-red-400'
-      case 'waived': return 'text-blue-400'
-      default: return 'text-slate-400'
-    }
+  const canCancelRegistration = (registration: UserRallyRegistration) => {
+    if (!registration.rally_competition_date) return false
+    
+    const competitionDate = new Date(registration.rally_competition_date)
+    const now = new Date()
+    
+    // Allow cancellation if competition is more than 24 hours away
+    return competitionDate.getTime() - now.getTime() > 24 * 60 * 60 * 1000 && 
+           registration.status === 'registered'
   }
-
-  const getPaymentText = (status: string) => {
-    switch (status) {
-      case 'paid': return 'Makstud'
-      case 'pending': return 'Ootel'
-      case 'refunded': return 'Tagastatud'
-      case 'waived': return 'Loobatud'
-      default: return status
-    }
-  }
-
-  const formatEstonianDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('et-EE', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
-
-  const formatEstonianDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('et-EE', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  // Registration Card Component
-  const RegistrationCard = ({ registration, isPast = false }: { registration: UserRallyRegistration, isPast?: boolean }) => (
-    <div className={`bg-slate-900/50 rounded-xl border border-slate-700/30 p-6 hover:border-slate-600/50 transition-all duration-200 ${isPast ? 'opacity-75' : ''}`}>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-semibold text-white text-lg">{registration.rally_name}</h3>
-          <p className="text-slate-400 text-sm">Klass: {registration.class_name}</p>
-          {registration.rally_competition_date && (
-            <p className="text-slate-500 text-xs mt-1">
-              Ralli: {formatEstonianDateTime(registration.rally_competition_date)}
-            </p>
-          )}
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(registration.status)}`}>
-            {getStatusText(registration.status)}
-          </span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        <div>
-          <span className="text-slate-400">Registreeritud:</span>
-          <p className="text-slate-300">
-            {formatEstonianDate(registration.registration_date)}
-          </p>
-        </div>
-      </div>
-
-      {registration.notes && (
-        <div className="mt-4 pt-4 border-t border-slate-700/50">
-          <p className="text-slate-300 text-sm">{registration.notes}</p>
-        </div>
-      )}
-    </div>
-  )
 
   return (
     <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-white flex items-center space-x-3">
-          <span>📋</span>
-          <span>Minu ralli registreerimised ({registrations.length})</span>
+          <span>📝</span>
+          <span>Your Rally Registrations</span>
         </h2>
-        <div className="flex items-center space-x-3">
-          <div className="bg-blue-500/20 border border-blue-500/30 rounded-xl px-3 py-1">
-            <span className="text-blue-300 text-sm font-medium">
-              {currentRegistrations.length} Aktiivsed
-            </span>
-          </div>
-          {pastRegistrations.length > 0 && (
-            <div className="bg-purple-500/20 border border-purple-500/30 rounded-xl px-3 py-1">
-              <span className="text-purple-300 text-sm font-medium">
-                {pastRegistrations.length} toimunud
-              </span>
-            </div>
-          )}
+        
+        <div className="bg-blue-500/20 border border-blue-500/30 rounded-xl px-3 py-1">
+          <span className="text-blue-300 text-sm font-medium">{registrations.length} active</span>
         </div>
       </div>
-      
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-400">Laadin registreerimisi...</p>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          
-          {/* Current/Upcoming Registrations */}
-          {currentRegistrations.length > 0 ? (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <h3 className="text-lg font-semibold text-white">Aktiivsed registreeringud</h3>
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-              </div>
-              {currentRegistrations.map((registration) => (
-                <RegistrationCard key={registration.id} registration={registration} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl text-slate-500">📋</span>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Aktiivseid registreeringuid ei ole</h3>
-              <p className="text-slate-400">Registreerige uueks ralliks, et alustada!</p>
-            </div>
-          )}
 
-          {/* Past Rallies Section */}
-          {pastRegistrations.length > 0 && (
-            <div className="border-t border-slate-700/50 pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-lg font-semibold text-slate-300">Ralli ajalugu</h3>
-                  <span className="text-slate-500 text-sm">({pastRegistrations.length})</span>
-                </div>
-                <button
-                  onClick={() => setShowPastRallies(!showPastRallies)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-xl transition-all duration-200 border border-slate-600/50 hover:border-slate-500/50"
-                >
-                  <span>{showPastRallies ? '📁' : '📂'}</span>
-                  <span>{showPastRallies ? 'Peida toimunud rallid' : 'Näita toimunud rallisid'}</span>
-                  <span className={`transition-transform duration-200 ${showPastRallies ? 'rotate-180' : ''}`}>
-                    ↓
-                  </span>
-                </button>
-              </div>
-
-              {/* Collapsible Past Rallies */}
-              {showPastRallies && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div className="bg-slate-900/20 rounded-xl p-4 border border-slate-700/20">
-                    <p className="text-slate-400 text-sm mb-4 flex items-center space-x-2">
-                      <span>ℹ️</span>
-                      <span>Siin kuvatakse rallid, mis on toimunud rohkem kui 24 tundi tagasi</span>
-                    </p>
-                    <div className="space-y-4">
-                      {pastRegistrations.map((registration) => (
-                        <RegistrationCard 
-                          key={registration.id} 
-                          registration={registration} 
-                          isPast={true}
-                        />
-                      ))}
-                    </div>
+      <div className="space-y-4">
+        {registrations.map((registration) => (
+          <div
+            key={registration.id}
+            className="bg-slate-700/30 rounded-xl border border-slate-600/50 p-6 hover:bg-slate-700/40 transition-all duration-200"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                {/* Rally Info */}
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <span className="text-blue-400 text-lg">🏁</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">{registration.rally_name}</h3>
+                    <p className="text-sm text-slate-400">{registration.class_name}</p>
                   </div>
                 </div>
-              )}
+
+                {/* Registration Details - CLEANED (removed notes, car_number, team_name) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-slate-400">Registered:</span>
+                    <p className="text-slate-300 font-medium">
+                      {new Date(registration.registration_date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  
+                  {registration.rally_competition_date && (
+                    <div>
+                      <span className="text-slate-400">Competition:</span>
+                      <p className="text-slate-300 font-medium">
+                        {new Date(registration.rally_competition_date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <span className="text-slate-400">Rally Status:</span>
+                    <p className="text-slate-300 font-medium capitalize">
+                      {registration.rally_status?.replace('_', ' ') || 'Unknown'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status and Actions */}
+              <div className="flex flex-col items-end space-y-3">
+                {/* Registration Status */}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(registration.status)}`}>
+                  {registration.status.toUpperCase()}
+                </span>
+
+                {/* Actions - FIXED mutation property */}
+                {canCancelRegistration(registration) && (
+                  <button
+                    onClick={() => handleCancelRegistration(registration.id)}
+                    disabled={deleteRegistrationMutation.isPending}
+                    className="px-3 py-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-lg text-xs font-medium transition-all duration-200 disabled:opacity-50"
+                  >
+                    {deleteRegistrationMutation.isPending ? 'Cancelling...' : 'Cancel'}
+                  </button>
+                )}
+              </div>
             </div>
-          )}
+          </div>
+        ))}
+      </div>
+
+      {/* Summary Stats */}
+      <div className="mt-6 pt-6 border-t border-slate-600/50">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+          <div>
+            <p className="text-2xl font-bold text-white">{registrations.length}</p>
+            <p className="text-sm text-slate-400">Total Registrations</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-blue-400">
+              {registrations.filter(r => r.status === 'registered').length}
+            </p>
+            <p className="text-sm text-slate-400">Active</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-green-400">
+              {registrations.filter(r => r.status === 'completed').length}
+            </p>
+            <p className="text-sm text-slate-400">Completed</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-purple-400">
+              {registrations.filter(r => r.status === 'confirmed').length}
+            </p>
+            <p className="text-sm text-slate-400">Confirmed</p>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

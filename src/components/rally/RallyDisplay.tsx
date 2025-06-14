@@ -75,7 +75,7 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
             </span>
           </div>
 
-          {/* Rally Info */}
+          {/* Rally Info - CLEANED (removed prize_pool, entry_fee) */}
           <div className="space-y-3 mb-6">
             <div className="flex items-center space-x-2 text-sm">
               <span className="text-slate-400">🎮</span>
@@ -107,70 +107,59 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
               </span>
             </div>
 
-            <div className="flex items-center space-x-2 text-sm">
-              <span className="text-slate-400">👥</span>
-              <span className="text-slate-300">
-                {rally.registered_participants || 0} / {rally.max_participants || '∞'} participants
-              </span>
-            </div>
-
-            {rally.total_events && rally.total_events > 0 && (
+            {rally.max_participants && (
               <div className="flex items-center space-x-2 text-sm">
-                <span className="text-slate-400">🌍</span>
+                <span className="text-slate-400">👥</span>
                 <span className="text-slate-300">
-                  {rally.total_events} events, {rally.total_tracks || 0} tracks
+                  Max {rally.max_participants} participants
                 </span>
               </div>
             )}
 
-            {rally.prize_pool && rally.prize_pool > 0 && (
+            {/* Events and Tracks Info - CLEANED (removed counts that don't exist) */}
+            {rally.events && rally.events.length > 0 && (
               <div className="flex items-center space-x-2 text-sm">
-                <span className="text-slate-400">💰</span>
-                <span className="text-green-400 font-medium">€{rally.prize_pool} prize pool</span>
-              </div>
-            )}
-
-            {rally.entry_fee && rally.entry_fee > 0 && (
-              <div className="flex items-center space-x-2 text-sm">
-                <span className="text-slate-400">💳</span>
-                <span className="text-slate-300">€{rally.entry_fee} entry fee</span>
+                <span className="text-slate-400">📍</span>
+                <span className="text-slate-300">
+                  {rally.events.length} {rally.events.length === 1 ? 'event' : 'events'}
+                </span>
               </div>
             )}
           </div>
 
           {/* Rally Description */}
           {rally.description && (
-            <div className="mb-4">
-              <p className="text-slate-300 text-sm line-clamp-2">{rally.description}</p>
+            <div className="mb-6">
+              <p className="text-sm text-slate-400 line-clamp-2">
+                {rally.description}
+              </p>
             </div>
           )}
 
-          {/* Rally Actions */}
-          <div className="flex space-x-3">
-            {showRegistration && isRegistrationOpen(rally) ? (
-              <button 
-                onClick={() => onRegister?.(rally)}
-                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-all duration-200"
-              >
-                Register Now
-              </button>
-            ) : showRegistration ? (
-              <button 
-                disabled
-                className="flex-1 px-4 py-2 bg-slate-600 text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed"
-              >
-                Registration Closed
-              </button>
-            ) : (
-              <button className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all duration-200">
+          {/* Registration Actions */}
+          {showRegistration && (
+            <div className="space-y-3">
+              {isRegistrationOpen(rally) ? (
+                <button
+                  onClick={() => onRegister?.(rally)}
+                  className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-200"
+                >
+                  Register Now
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="w-full px-4 py-2 bg-slate-600/50 text-slate-400 rounded-lg font-medium cursor-not-allowed"
+                >
+                  Registration Closed
+                </button>
+              )}
+              
+              <button className="w-full px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition-all duration-200">
                 View Details
               </button>
-            )}
-            
-            <button className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition-all duration-200">
-              Details
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       ))}
     </div>
