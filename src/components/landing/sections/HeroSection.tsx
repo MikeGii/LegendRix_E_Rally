@@ -22,7 +22,7 @@ export function HeroSection({ user, onOpenAuth, onDashboard }: HeroSectionProps)
       <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 drop-shadow-2xl leading-tight">
         Tere tulemast LegendRix
         <span className="block text-blue-400 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-          E-Spordi keskusesse!
+          E-Spordi keskkonda!
         </span>
       </h2>
       <p className="text-xl md:text-2xl text-slate-300 mb-12 drop-shadow-lg max-w-4xl mx-auto leading-relaxed">

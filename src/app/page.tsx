@@ -132,7 +132,7 @@ function HomeContent() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white drop-shadow-xl tracking-wide">LegendRix</h1>
-                <p className="text-sm text-blue-300/90 drop-shadow-lg font-medium -mt-1">E-Rally Championship</p>
+                <p className="text-sm text-blue-300/90 drop-shadow-lg font-medium -mt-1">E-Spordikeskus</p>
               </div>
             </div>
 
