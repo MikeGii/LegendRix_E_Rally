@@ -49,7 +49,7 @@ export function UserWelcomeHeader({ userName, isAdminAsUser }: UserWelcomeHeader
           <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-xl px-4 py-2 relative z-20">
             <div className="flex items-center space-x-2">
               <span className="text-purple-400">👑</span>
-              <span className="text-purple-300 font-medium">Admin - Sõitja</span>
+              <span className="text-purple-300 font-medium">Admin Sõitja</span>
             </div>
           </div>
         )}

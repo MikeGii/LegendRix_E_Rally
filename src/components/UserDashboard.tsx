@@ -34,19 +34,6 @@ export function UserDashboard() {
   const status = getStatusMessage(user, isAdminAsUser)
   const canAccessRallies = isAdminAsUser || (user.email_verified && user.admin_approved)
 
-  // FILTER REGISTRATIONS: Hide those older than 1 day past their competition date
-  const filteredRegistrations = userRegistrations.filter(registration => {
-    // We need the rally's competition date to filter properly
-    // For now, we'll use a simple date check if available
-    // This would be enhanced with actual rally data joining
-    const today = new Date()
-    const oneDayAgo = new Date(today.getTime() - (24 * 60 * 60 * 1000))
-    
-    // If registration has a rally date, check if it's not more than 1 day old
-    // This is a simplified version - ideally we'd join with rally data
-    return true // For now, keeping all registrations until we have proper rally data
-  })
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
       <div className="max-w-6xl mx-auto p-6 space-y-8">
@@ -62,10 +49,10 @@ export function UserDashboard() {
           <UserStatusBanner status={status} />
         )}
 
-        {/* User's Rally Registrations */}
-        {canAccessRallies && filteredRegistrations.length > 0 && (
+        {/* User's Rally Registrations - Component now handles filtering */}
+        {canAccessRallies && userRegistrations.length > 0 && (
           <UserRegistrationsSection
-            registrations={filteredRegistrations}
+            registrations={userRegistrations}
             isLoading={isLoadingRegistrations}
           />
         )}

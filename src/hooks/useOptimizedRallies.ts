@@ -252,14 +252,14 @@ export function useFeaturedRallies(limit = 5) {
 }
 
 // ============================================================================
-// USER RALLY REGISTRATIONS HOOK (Enhanced with Date Filtering)
+// USER RALLY REGISTRATIONS HOOK (Enhanced - Returns ALL registrations)
 // ============================================================================
 
 export function useUserRallyRegistrations() {
   return useQuery({
     queryKey: rallyKeys.registrations(),
     queryFn: async (): Promise<UserRallyRegistration[]> => {
-      console.log('🔄 Loading user rally registrations with date filtering...')
+      console.log('🔄 Loading ALL user rally registrations...')
       
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -267,7 +267,7 @@ export function useUserRallyRegistrations() {
         return []
       }
 
-      // Enhanced query to include rally information for date filtering
+      // Enhanced query to include rally information - NO FILTERING HERE
       const { data: registrations, error } = await supabase
         .from('rally_registrations')
         .select(`
@@ -288,22 +288,8 @@ export function useUserRallyRegistrations() {
         throw error
       }
 
-      // Filter registrations: Hide those where competition date is more than 1 day past
-      const now = new Date()
-      const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000))
-      
-      const filteredRegistrations = registrations?.filter(reg => {
-        if (!reg.rally?.competition_date) return true // Keep if no date available
-        
-        const competitionDate = new Date(reg.rally.competition_date)
-        
-        // Keep registrations if:
-        // 1. Competition date is in the future
-        // 2. Competition date is within the last 24 hours (1 day grace period)
-        return competitionDate >= oneDayAgo
-      }) || []
-
-      const transformedRegistrations: UserRallyRegistration[] = filteredRegistrations.map(reg => ({
+      // Transform but don't filter - let the component decide what to show
+      const transformedRegistrations: UserRallyRegistration[] = (registrations || []).map(reg => ({
         ...reg,
         rally_name: reg.rally?.name || 'Unknown Rally',
         class_name: reg.class?.name || 'Unknown Class',
@@ -311,7 +297,7 @@ export function useUserRallyRegistrations() {
         rally_status: reg.rally?.status
       }))
 
-      console.log(`✅ User registrations loaded and filtered: ${transformedRegistrations.length} (filtered out ${(registrations?.length || 0) - transformedRegistrations.length} old registrations)`)
+      console.log(`✅ ALL user registrations loaded: ${transformedRegistrations.length}`)
       return transformedRegistrations
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
