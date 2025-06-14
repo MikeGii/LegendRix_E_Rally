@@ -1,4 +1,4 @@
-// src/components/UserDashboard.tsx - Cleaned version with redundant components removed
+// src/components/UserDashboard.tsx - Estonian Translation with Modern Theme
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
@@ -10,8 +10,6 @@ import { UpcomingRalliesSection } from '@/components/user/UpcomingRalliesSection
 import { FeaturedRalliesSection } from '@/components/user/FeaturedRalliesSection'
 import { UserRegistrationsSection } from '@/components/user/UserRegistrationsSection'
 import { UserActionPrompt } from '@/components/user/UserActionPrompt'
-// REMOVED: RallyActionButtons - functionality moved to burger menu
-// REMOVED: AdminSwitchPanel - functionality moved to header view switcher
 
 interface StatusMessage {
   type: 'success' | 'warning' | 'info'
@@ -22,7 +20,7 @@ interface StatusMessage {
 
 export function UserDashboard() {
   const { user } = useAuth()
-  const { currentView, canSwitchView } = useView()
+  const { currentView } = useView()
   
   // Load rally data using updated hooks
   const { data: upcomingRallies = [], isLoading: isLoadingUpcoming } = useUpcomingRallies(5)
@@ -35,6 +33,19 @@ export function UserDashboard() {
   const isAdminAsUser = user.role === 'admin' && currentView === 'user'
   const status = getStatusMessage(user, isAdminAsUser)
   const canAccessRallies = isAdminAsUser || (user.email_verified && user.admin_approved)
+
+  // FILTER REGISTRATIONS: Hide those older than 1 day past their competition date
+  const filteredRegistrations = userRegistrations.filter(registration => {
+    // We need the rally's competition date to filter properly
+    // For now, we'll use a simple date check if available
+    // This would be enhanced with actual rally data joining
+    const today = new Date()
+    const oneDayAgo = new Date(today.getTime() - (24 * 60 * 60 * 1000))
+    
+    // If registration has a rally date, check if it's not more than 1 day old
+    // This is a simplified version - ideally we'd join with rally data
+    return true // For now, keeping all registrations until we have proper rally data
+  })
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
@@ -52,9 +63,9 @@ export function UserDashboard() {
         )}
 
         {/* User's Rally Registrations */}
-        {canAccessRallies && userRegistrations.length > 0 && (
+        {canAccessRallies && filteredRegistrations.length > 0 && (
           <UserRegistrationsSection
-            registrations={userRegistrations}
+            registrations={filteredRegistrations}
             isLoading={isLoadingRegistrations}
           />
         )}
@@ -75,29 +86,23 @@ export function UserDashboard() {
           canAccessRallies={canAccessRallies}
         />
 
-        {/* REMOVED: Main Action Buttons (RallyActionButtons) */}
-        {/* Functions now available through burger menu */}
-
         {/* Action needed for non-approved users */}
         <UserActionPrompt 
           canAccessRallies={canAccessRallies}
           emailVerified={user.email_verified}
         />
-
-        {/* REMOVED: Quick Admin Switch (AdminSwitchPanel) */}
-        {/* Admin switching now handled by header view switcher */}
       </div>
     </div>
   )
 }
 
-// Helper Functions
+// Helper Functions - Estonian Messages
 function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage | null {
   // Admins viewing as users show admin status
   if (isAdminAsUser) {
     return {
       type: 'success',
-      message: 'Administrator access - all features unlocked',
+      message: 'Administraatori ligipääs - kõik funktsioonid avatud',
       icon: '👑',
       color: 'green'
     }
@@ -107,7 +112,7 @@ function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage | nu
   if (!user.email_verified) {
     return {
       type: 'warning',
-      message: 'Please verify your email to access rally features',
+      message: 'Palun kinnitage oma e-mail, et pääseda ligi ralli funktsioonidele',
       icon: '📧',
       color: 'yellow'
     }
@@ -116,7 +121,7 @@ function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage | nu
   if (!user.admin_approved) {
     return {
       type: 'info',
-      message: 'Account pending approval - you will be notified when ready',
+      message: 'Konto ootab kinnitust - teavitame teid, kui kõik on valmis',
       icon: '⏳',
       color: 'blue'
     }

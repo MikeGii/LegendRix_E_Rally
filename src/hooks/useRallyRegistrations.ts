@@ -1,8 +1,7 @@
-// src/hooks/useRallyRegistrations.ts - FIXED for actual database structure
-
+// src/hooks/useRallyRegistrations.ts - Fixed with Proper Cache Invalidation
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { rallyKeys } from './useOptimizedRallies'
+import { rallyKeys } from './useOptimizedRallies' // Import rally query keys
 
 export interface RallyRegistration {
   id: string
@@ -31,107 +30,7 @@ export const registrationKeys = {
   user: (userId: string) => [...registrationKeys.all, 'user', userId] as const,
 }
 
-// Get registrations for a specific rally
-export function useRallyRegistrations(rallyId: string) {
-  return useQuery({
-    queryKey: registrationKeys.rally(rallyId),
-    queryFn: async () => {
-      console.log('🔄 Loading registrations for rally:', rallyId)
-      
-      const { data: registrations, error } = await supabase
-        .from('rally_registrations')
-        .select(`
-          *,
-          users!inner(
-            id,
-            name,
-            email,
-            player_name
-          ),
-          game_classes!inner(
-            id,
-            name
-          )
-        `)
-        .eq('rally_id', rallyId)
-        .eq('users.admin_approved', true)
-        .order('registration_date', { ascending: true })
-
-      if (error) {
-        console.error('Error loading rally registrations:', error)
-        throw error
-      }
-
-      // Transform the data to include user info
-      const transformedRegistrations = registrations?.map(reg => ({
-        ...reg,
-        user_name: reg.users?.name,
-        user_email: reg.users?.email,
-        user_player_name: reg.users?.player_name,  // Add player_name
-        class_name: reg.game_classes?.name
-      })) || []
-
-      console.log(`✅ Rally registrations loaded: ${transformedRegistrations.length}`)
-      return transformedRegistrations
-    },
-    staleTime: 2 * 60 * 1000,
-  })
-}
-
-// FIXED: Get available classes for a rally - matching actual database structure
-export function useRallyAvailableClasses(rallyId: string) {
-  return useQuery({
-    queryKey: ['rally_classes', rallyId],
-    queryFn: async () => {
-      if (!rallyId) return []
-      
-      console.log('🔄 Loading available classes for rally:', rallyId)
-      
-      // First, get the rally to find its game_id
-      const { data: rally, error: rallyError } = await supabase
-        .from('rallies')
-        .select('game_id')
-        .eq('id', rallyId)
-        .single()
-
-      if (rallyError) {
-        console.error('Error loading rally:', rallyError)
-        throw rallyError
-      }
-
-      if (!rally?.game_id) {
-        console.log('No game_id found for rally')
-        return []
-      }
-
-      // Get available classes for this game (simplified structure)
-      const { data: gameClasses, error } = await supabase
-        .from('game_classes')
-        .select(`
-          id,
-          name,
-          game_id,
-          is_active,
-          created_at,
-          updated_at
-        `)
-        .eq('game_id', rally.game_id)
-        .eq('is_active', true)
-
-      if (error) {
-        console.error('Error loading game classes:', error)
-        throw error
-      }
-
-      console.log(`✅ Game classes loaded: ${gameClasses?.length || 0}`)
-      return gameClasses || []
-    },
-    enabled: !!rallyId,
-    staleTime: 5 * 60 * 1000,
-  })
-}
-
-// Create registration mutation
+// Create registration mutation with comprehensive cache invalidation
 export function useCreateRegistration() {
   const queryClient = useQueryClient()
   
@@ -139,7 +38,6 @@ export function useCreateRegistration() {
     mutationFn: async (params: {
       rally_id: string
       class_id: string
-      // Removed: car_number, team_name, notes
     }) => {
       console.log('🔄 Creating rally registration...')
       
@@ -152,7 +50,6 @@ export function useCreateRegistration() {
           rally_id: params.rally_id,
           user_id: user.id,
           class_id: params.class_id,
-          // Removed optional fields - set to null/default
           car_number: null,
           team_name: null,
           notes: null,
@@ -171,14 +68,33 @@ export function useCreateRegistration() {
       console.log('✅ Registration created successfully')
       return data
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      console.log('🔄 Invalidating caches after registration creation...')
+      
+      // Invalidate specific rally registration queries
       queryClient.invalidateQueries({ queryKey: registrationKeys.rally(variables.rally_id) })
-      queryClient.invalidateQueries({ queryKey: ['user_rallies'] })
+      queryClient.invalidateQueries({ queryKey: registrationKeys.all })
+      
+      // Invalidate user rally registrations (this is KEY for updating the dashboard)
+      queryClient.invalidateQueries({ queryKey: rallyKeys.registrations() })
+      
+      // Invalidate rally lists that show registration status
+      queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
+      
+      // Force refetch of user registrations for immediate UI update
+      queryClient.refetchQueries({ queryKey: rallyKeys.registrations() })
+      
+      console.log('✅ Cache invalidation completed')
+    },
+    onError: (error) => {
+      console.error('❌ Registration creation failed:', error)
     }
   })
 }
 
-// Delete registration mutation (for unregistering)
+// Delete registration mutation with comprehensive cache invalidation
 export function useDeleteRegistration() {
   const queryClient = useQueryClient()
   
@@ -222,15 +138,32 @@ export function useDeleteRegistration() {
       return { registrationId, rallyId: registration.rally_id }
     },
     onSuccess: (data) => {
-      // Invalidate relevant queries to refresh the UI
+      console.log('🔄 Invalidating caches after registration deletion...')
+      
+      // Invalidate specific rally registration queries
       queryClient.invalidateQueries({ queryKey: registrationKeys.rally(data.rallyId) })
-      queryClient.invalidateQueries({ queryKey: ['rally_registrations'] })
-      queryClient.invalidateQueries({ queryKey: ['user_rallies'] })
+      queryClient.invalidateQueries({ queryKey: registrationKeys.all })
+      
+      // Invalidate user rally registrations (KEY for dashboard updates)
+      queryClient.invalidateQueries({ queryKey: rallyKeys.registrations() })
+      
+      // Invalidate rally lists that show registration status
+      queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
+      
+      // Force immediate refetch for UI update
+      queryClient.refetchQueries({ queryKey: rallyKeys.registrations() })
+      
+      console.log('✅ Cache invalidation completed')
+    },
+    onError: (error) => {
+      console.error('❌ Registration deletion failed:', error)
     }
   })
 }
 
-// Update registration mutation (for changing class)
+// Update registration mutation with comprehensive cache invalidation
 export function useUpdateRegistration() {
   const queryClient = useQueryClient()
   
@@ -282,10 +215,127 @@ export function useUpdateRegistration() {
       return { ...data, rallyId: registration.rally_id }
     },
     onSuccess: (data) => {
-      // Invalidate relevant queries to refresh the UI
+      console.log('🔄 Invalidating caches after registration update...')
+      
+      // Invalidate specific rally registration queries
       queryClient.invalidateQueries({ queryKey: registrationKeys.rally(data.rallyId) })
-      queryClient.invalidateQueries({ queryKey: ['rally_registrations'] })
-      queryClient.invalidateQueries({ queryKey: ['user_rallies'] })
+      queryClient.invalidateQueries({ queryKey: registrationKeys.all })
+      
+      // Invalidate user rally registrations (KEY for dashboard updates)
+      queryClient.invalidateQueries({ queryKey: rallyKeys.registrations() })
+      
+      // Invalidate rally lists that show registration status
+      queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
+      
+      // Force immediate refetch for UI update
+      queryClient.refetchQueries({ queryKey: rallyKeys.registrations() })
+      
+      console.log('✅ Cache invalidation completed')
+    },
+    onError: (error) => {
+      console.error('❌ Registration update failed:', error)
     }
+  })
+}
+
+// Get registrations for a specific rally
+export function useRallyRegistrations(rallyId: string) {
+  return useQuery({
+    queryKey: registrationKeys.rally(rallyId),
+    queryFn: async () => {
+      console.log('🔄 Loading registrations for rally:', rallyId)
+      
+      const { data: registrations, error } = await supabase
+        .from('rally_registrations')
+        .select(`
+          *,
+          users!inner(
+            id,
+            name,
+            email,
+            player_name
+          ),
+          game_classes!inner(
+            id,
+            name
+          )
+        `)
+        .eq('rally_id', rallyId)
+        .eq('users.admin_approved', true)
+        .order('registration_date', { ascending: true })
+
+      if (error) {
+        console.error('Error loading rally registrations:', error)
+        throw error
+      }
+
+      // Transform the data to include user info
+      const transformedRegistrations = registrations?.map(reg => ({
+        ...reg,
+        user_name: reg.users?.name,
+        user_email: reg.users?.email,
+        user_player_name: reg.users?.player_name,
+        class_name: reg.game_classes?.name
+      })) || []
+
+      console.log(`✅ Rally registrations loaded: ${transformedRegistrations.length}`)
+      return transformedRegistrations
+    },
+    staleTime: 2 * 60 * 1000,
+  })
+}
+
+// Get available classes for a rally
+export function useRallyAvailableClasses(rallyId: string) {
+  return useQuery({
+    queryKey: ['rally_classes', rallyId],
+    queryFn: async () => {
+      if (!rallyId) return []
+      
+      console.log('🔄 Loading available classes for rally:', rallyId)
+      
+      // First, get the rally to find its game_id
+      const { data: rally, error: rallyError } = await supabase
+        .from('rallies')
+        .select('game_id')
+        .eq('id', rallyId)
+        .single()
+
+      if (rallyError) {
+        console.error('Error loading rally:', rallyError)
+        throw rallyError
+      }
+
+      if (!rally?.game_id) {
+        console.log('No game_id found for rally')
+        return []
+      }
+
+      // Get available classes for this game
+      const { data: gameClasses, error } = await supabase
+        .from('game_classes')
+        .select(`
+          id,
+          name,
+          game_id,
+          is_active,
+          created_at,
+          updated_at
+        `)
+        .eq('game_id', rally.game_id)
+        .eq('is_active', true)
+
+      if (error) {
+        console.error('Error loading game classes:', error)
+        throw error
+      }
+
+      console.log(`✅ Game classes loaded: ${gameClasses?.length || 0}`)
+      return gameClasses || []
+    },
+    enabled: !!rallyId,
+    staleTime: 5 * 60 * 1000,
   })
 }

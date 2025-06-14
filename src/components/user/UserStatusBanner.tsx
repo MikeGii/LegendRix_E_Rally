@@ -1,4 +1,4 @@
-// src/components/user/UserStatusBanner.tsx
+// src/components/user/UserStatusBanner.tsx - Estonian Compatible
 interface StatusMessage {
   type: 'success' | 'warning' | 'info'
   message: string
