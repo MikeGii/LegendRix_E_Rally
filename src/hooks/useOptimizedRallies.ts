@@ -27,6 +27,11 @@ export interface TransformedRally {
   // Added missing game properties that components expect
   game_name?: string
   game_type_name?: string
+  game_platform?: string
+  // Added missing computed properties that CompetitionsModal expects
+  registered_participants?: number
+  total_events?: number
+  total_tracks?: number
   // Added missing events property that CompetitionsModal expects
   events?: RallyEvent[]
 }
@@ -134,7 +139,7 @@ export function useUpcomingRallies(limit = 10) {
         .from('rallies')
         .select(`
           *,
-          game:games(name),
+          game:games(name, platform),
           game_type:game_types(name)
         `)
         .eq('is_active', true)
@@ -210,12 +215,21 @@ export function useUpcomingRallies(limit = 10) {
       }
 
       // Transform data to include game names and events
-      const transformedRallies = rallies.map(rally => ({
-        ...rally,
-        game_name: rally.game?.name || 'Unknown Game',
-        game_type_name: rally.game_type?.name || 'Unknown Type',
-        events: eventsByRally[rally.id] || []
-      }))
+      const transformedRallies = rallies.map(rally => {
+        const rallyEvents = eventsByRally[rally.id] || []
+        const totalTracks = rallyEvents.reduce((sum, event) => sum + (event.tracks?.length || 0), 0)
+        
+        return {
+          ...rally,
+          game_name: rally.game?.name || 'Unknown Game',
+          game_type_name: rally.game_type?.name || 'Unknown Type',
+          game_platform: rally.game?.platform || undefined,
+          events: rallyEvents,
+          total_events: rallyEvents.length,
+          total_tracks: totalTracks,
+          registered_participants: 0 // TODO: Calculate from registrations if needed
+        }
+      })
 
       console.log(`✅ Upcoming rallies loaded: ${transformedRallies.length} with events`)
       return transformedRallies
