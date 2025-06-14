@@ -1,4 +1,4 @@
-// src/components/rally/RallyDetailModal.tsx - SIMPLE FIX
+// src/components/rally/RallyDetailModal.tsx - ENHANCED with Statistics (Preserves All Existing Functions)
 'use client'
 
 import { useState } from 'react'
@@ -44,6 +44,35 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
            (reg.status === 'registered' || reg.status === 'confirmed')
   )
   const isUserRegistered = !!userRegistration
+
+  // ENHANCED: Calculate rally statistics
+  const calculateStatistics = () => {
+    const events = safeEvents || []
+    
+    // Calculate unique countries/events count
+    const uniqueCountries = events.length
+    
+    // Calculate total tracks count and total length
+    let totalTracks = 0
+    let totalLength = 0
+    
+    events.forEach(event => {
+      if (event.tracks) {
+        totalTracks += event.tracks.length
+        event.tracks.forEach(track => {
+          if (track.length_km) {
+            totalLength += track.length_km
+          }
+        })
+      }
+    })
+    
+    return {
+      countries: uniqueCountries,
+      tracks: totalTracks,
+      totalLength: Math.round(totalLength * 10) / 10 // Round to 1 decimal place
+    }
+  }
   
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -124,6 +153,9 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
     })
   }
 
+  // ENHANCED: Calculate statistics after safeEvents is defined
+  const statistics = calculateStatistics()
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-slate-800 rounded-2xl border border-slate-700/50 w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
@@ -177,7 +209,7 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
         <div className="flex-1 overflow-y-auto p-6">
           {activeTab === 'info' ? (
             <div className="space-y-6">
-              {/* Status and Details */}
+              {/* Status and Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
@@ -243,7 +275,7 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
                 </div>
               </div>
 
-              {/* Description */}
+              {/* ENHANCED: Description - MOVED UP as requested */}
               {rally.description && (
                 <div>
                   <label className="text-sm font-medium text-slate-400">Kirjeldus</label>
@@ -253,7 +285,17 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
                 </div>
               )}
 
-              {/* Events and Tracks - COMPLETELY SAFE */}
+              {/* ENHANCED: Rules - MOVED UNDER DESCRIPTION as requested */}
+              {rally.rules && (
+                <div>
+                  <label className="text-sm font-medium text-slate-400">Reeglid</label>
+                  <div className="mt-2 p-4 bg-slate-700/30 rounded-lg">
+                    <p className="text-slate-300 whitespace-pre-wrap">{rally.rules}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Events and Tracks */}
               {safeEvents.length > 0 && (
                 <div>
                   <label className="text-sm font-medium text-slate-400">Etapid ja rajad</label>
@@ -290,19 +332,53 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
                 </div>
               )}
 
-              {/* Rules */}
-              {rally.rules && (
-                <div>
-                  <label className="text-sm font-medium text-slate-400">Reeglid</label>
-                  <div className="mt-2 p-4 bg-slate-700/30 rounded-lg">
-                    <p className="text-slate-300 whitespace-pre-wrap">{rally.rules}</p>
+              {/* ENHANCED: NEW Statistics Row - Added below Events and Tracks as requested */}
+              {statistics.tracks > 0 && (
+                <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-xl p-6">
+                  <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    📊 Võistluste statistika
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Countries/Events Count */}
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <span className="text-2xl">🌍</span>
+                      </div>
+                      <div className="text-2xl font-bold text-blue-400">{statistics.countries}</div>
+                      <div className="text-sm text-slate-400">
+                        {statistics.countries === 1 ? 'Riik' : 'Riigid'}
+                      </div>
+                    </div>
+
+                    {/* Tracks Count */}
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <span className="text-2xl">🛣️</span>
+                      </div>
+                      <div className="text-2xl font-bold text-yellow-400">{statistics.tracks}</div>
+                      <div className="text-sm text-slate-400">
+                        {statistics.tracks === 1 ? 'Rada' : 'Rajad'}
+                      </div>
+                    </div>
+
+                    {/* Total Length */}
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <span className="text-2xl">📏</span>
+                      </div>
+                      <div className="text-2xl font-bold text-green-400">
+                        {statistics.totalLength}
+                        <span className="text-lg text-slate-400 ml-1">km</span>
+                      </div>
+                      <div className="text-sm text-slate-400">Kogu pikkus</div>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Participants by Class */}
+              {/* Participants Section - PRESERVED ORIGINAL FUNCTIONALITY */}
               {isLoadingParticipants ? (
                 <div className="text-center py-12">
                   <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
@@ -313,46 +389,48 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
                   <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-4xl text-slate-500">👥</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">Registreeringuid pole veel</h3>
-                  <p className="text-slate-400">Osalejad kuvatakse siia pärast registreerimist.</p>
+                  <h3 className="text-lg font-semibold text-white mb-2">Osalejaid pole veel</h3>
+                  <p className="text-slate-400">
+                    Registreerimine on veel avatud!
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {Object.entries(participantsByClass).map(([className, classParticipants]) => (
-                    <div key={className} className="bg-slate-700/30 rounded-xl p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-                          <span>🏆</span>
-                          <span>{className}</span>
-                        </h3>
-                        <span className="text-slate-400 text-sm">
-                          {classParticipants.length} osaleja{classParticipants.length !== 1 ? 't' : ''}
+                  <h3 className="text-lg font-semibold text-white">
+                    Registreeritud osalejad ({totalParticipants})
+                  </h3>
+                  
+                  {Object.keys(participantsByClass).map((className) => (
+                    <div key={className} className="bg-slate-700/30 rounded-lg p-4">
+                      <h4 className="text-white font-medium mb-3 flex items-center space-x-2">
+                        <span className="w-6 h-6 bg-purple-500/20 rounded-full flex items-center justify-center text-purple-400 text-xs">
+                          {participantsByClass[className].length}
                         </span>
-                      </div>
-
-                      <div className="space-y-3">
-                        {classParticipants.map((participant, index) => (
+                        <span>{className}</span>
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        {participantsByClass[className].map((participant: any, index: number) => (
                           <div
-                            key={participant.id}
-                            className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-600/30"
+                            key={participant.id || index}
+                            className="flex items-center justify-between p-3 bg-slate-600/30 rounded-lg"
                           >
-                            <div className="flex items-center space-x-4">
-                              <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-400 font-bold text-sm">
+                            <div className="flex items-center space-x-3">
+                              <span className="w-8 h-8 bg-slate-700/50 rounded-full flex items-center justify-center text-slate-300 text-sm font-medium">
                                 {index + 1}
-                              </div>
+                              </span>
                               <div>
                                 <p className="text-white font-medium">
-                                  {participant.user_player_name || participant.user_name || 'Tundmatu mängija'}
+                                  {participant.user_player_name || participant.user_name || 'Tundmatu kasutaja'}
                                 </p>
-                                <p className="text-slate-400 text-sm">
+                                <p className="text-xs text-slate-400">
                                   Registreeritud: {new Date(participant.registration_date).toLocaleDateString('et-EE')}
                                 </p>
                               </div>
                             </div>
-                            
-                            <div className="text-right">
-                              <span className={`text-xs px-2 py-1 rounded-full border ${
-                                participant.status === 'confirmed' 
+                            <div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                                participant.status === 'confirmed'
                                   ? 'bg-green-500/20 text-green-400 border-green-500/30'
                                   : participant.status === 'registered'
                                   ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
@@ -374,7 +452,7 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
           )}
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer Actions - PRESERVED ORIGINAL FUNCTIONALITY */}
         <div className="border-t border-slate-700/50 p-6 bg-slate-800/50 shrink-0">
           <div className="flex justify-between items-center">
             <button

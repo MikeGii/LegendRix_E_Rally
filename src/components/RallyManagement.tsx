@@ -1,8 +1,8 @@
-// src/components/RallyManagement.tsx - FIXED VERSION
+// src/components/RallyManagement.tsx - FIXED VERSION with Delete Functionality
 'use client'
 
 import { useState } from 'react'
-import { useRallies } from '@/hooks/useRallyManagement'
+import { useRallies, useDeleteRally } from '@/hooks/useRallyManagement'
 import { RallyManagementHeader } from '@/components/rally-management/RallyManagementHeader'
 import { RalliesGrid } from '@/components/rally-management/RalliesGrid'
 import { CreateRallyModal } from '@/components/rally-management/CreateRallyModal'
@@ -13,6 +13,7 @@ export function RallyManagement() {
 
   // Data hooks
   const { data: rallies = [], isLoading, refetch } = useRallies()
+  const deleteRallyMutation = useDeleteRally() // FIXED: Added missing delete hook
 
   const handleCreateRally = () => {
     setEditingRally(null)
@@ -24,9 +25,15 @@ export function RallyManagement() {
     setShowCreateModal(true)
   }
 
-  const handleDeleteRally = (rallyId: string) => {
-    // TODO: Implement delete functionality
-    console.log('Delete rally:', rallyId)
+  // FIXED: Implemented actual delete functionality
+  const handleDeleteRally = async (rallyId: string) => {
+    try {
+      await deleteRallyMutation.mutateAsync(rallyId)
+      // The useDeleteRally hook automatically invalidates queries, so no manual refetch needed
+    } catch (error) {
+      console.error('Error deleting rally:', error)
+      alert('Ralli kustutamine ebaõnnestus. Palun proovi uuesti.')
+    }
   }
 
   const handleCloseModal = () => {
@@ -50,7 +57,7 @@ export function RallyManagement() {
           isLoading={isLoading}
         />
 
-        {/* Rallies Grid - FIXED: Removed onRefresh, added onCreateRally and onDeleteRally */}
+        {/* Rallies Grid */}
         <RalliesGrid
           rallies={rallies}
           isLoading={isLoading}

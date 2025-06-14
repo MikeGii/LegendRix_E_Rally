@@ -1,4 +1,4 @@
-// src/components/game-management/EventTracksTab.tsx
+// src/components/game-management/EventTracksTab.tsx - Fixed version
 'use client'
 
 import { useState } from 'react'
@@ -62,7 +62,7 @@ export function EventTracksTab({
     try {
       const trackData = {
         event_id: selectedEventId,
-        name: formData.name,
+        name: formData.name.trim(),
         surface_type: formData.surface_type,
         length_km: formData.length_km ? Number(formData.length_km) : undefined
       }
@@ -82,7 +82,11 @@ export function EventTracksTab({
     }
   }
 
-  const handleEdit = (track: EventTrack) => {
+  // FIXED: Add proper event handling to prevent page refresh
+  const handleEdit = (e: React.MouseEvent, track: EventTrack) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
     setEditingTrack(track)
     setFormData({ 
       name: track.name,
@@ -92,7 +96,11 @@ export function EventTracksTab({
     setIsCreateModalOpen(true)
   }
 
-  const handleDelete = async (track: EventTrack) => {
+  // FIXED: Add proper event handling to prevent page refresh
+  const handleDelete = async (e: React.MouseEvent, track: EventTrack) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
     if (!confirm(`Are you sure you want to delete track "${track.name}"?`)) {
       return
     }
@@ -137,84 +145,26 @@ export function EventTracksTab({
     )
   }
 
-  // No event selected - show available events to choose from
+  // No event selected
   if (!selectedEventId) {
     return (
-      <div className="space-y-6">
-        
-        {/* Header with Game Selection */}
-        <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-white mb-2">
-                Event Tracks for: <span className="text-blue-400">{selectedGame?.name}</span>
-              </h2>
-              <p className="text-slate-400">
-                First select an event to manage its tracks
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <select
-                value={selectedGameId}
-                onChange={(e) => onGameChange(e.target.value)}
-                className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 text-sm"
-              >
-                {games.map((game) => (
-                  <option key={game.id} value={game.id}>{game.name}</option>
-                ))}
-              </select>
-            </div>
+      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-3xl">🛣️</span>
           </div>
+          <h3 className="text-xl font-semibold text-white mb-3">No Event Selected</h3>
+          <p className="text-slate-400 mb-6">
+            Select an event to manage its tracks.
+          </p>
+          <button
+            onClick={() => onEventChange(gameEvents[0]?.id || '')}
+            disabled={gameEvents.length === 0}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200"
+          >
+            {gameEvents.length > 0 ? 'Select First Event' : 'Create Event First'}
+          </button>
         </div>
-
-        {/* Available Events to Choose From */}
-        {gameEvents.length === 0 ? (
-          <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-            <div className="text-center py-8">
-              <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🏁</span>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">No Events Available</h3>
-              <p className="text-slate-400 mb-4">
-                Create events first in the Game Events tab, then come back here to add tracks.
-              </p>
-              <button
-                onClick={() => {
-                  // Switch to events tab - you may need to pass this function from parent
-                  window.location.hash = '#events'
-                }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
-              >
-                Go to Game Events
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Select an Event to Manage Tracks</h3>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {gameEvents.map((event) => (
-                <div 
-                  key={event.id}
-                  onClick={() => onEventChange(event.id)}
-                  className="bg-slate-700/50 rounded-xl border border-slate-600/50 p-4 hover:bg-slate-700 hover:border-blue-500/50 transition-all duration-200 cursor-pointer"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                      <span className="text-green-300 text-lg">🏁</span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white">{event.name}</h4>
-                      <p className="text-sm text-slate-400">
-                        Click to manage tracks
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     )
   }
@@ -222,22 +172,22 @@ export function EventTracksTab({
   return (
     <div className="space-y-6">
       
-      {/* Header with Game/Event Selection */}
+      {/* Header with Game and Event Selection */}
       <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-white mb-2">
-              Tracks for: <span className="text-blue-400">{selectedEvent?.name}</span>
+              Tracks for: <span className="text-yellow-400">{selectedEvent?.name}</span>
             </h2>
             <p className="text-slate-400">
-              Game: {selectedGame?.name} • Add tracks with surface type and length
+              Manage rally tracks for this event.
             </p>
           </div>
           <div className="flex items-center space-x-3">
             <select
               value={selectedGameId}
               onChange={(e) => onGameChange(e.target.value)}
-              className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 text-sm"
+              className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
             >
               {games.map((game) => (
                 <option key={game.id} value={game.id}>{game.name}</option>
@@ -246,9 +196,8 @@ export function EventTracksTab({
             <select
               value={selectedEventId}
               onChange={(e) => onEventChange(e.target.value)}
-              className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 text-sm"
+              className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
             >
-              <option value="">Select Event</option>
               {gameEvents.map((event) => (
                 <option key={event.id} value={event.id}>{event.name}</option>
               ))}
@@ -304,17 +253,20 @@ export function EventTracksTab({
                 </div>
                 
                 <div className="flex space-x-2">
+                  {/* FIXED: Added proper event handling */}
                   <button
-                    onClick={() => handleEdit(track)}
+                    onClick={(e) => handleEdit(e, track)}
                     className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
                     title="Edit Track"
+                    type="button"
                   >
                     ✏️
                   </button>
                   <button
-                    onClick={() => handleDelete(track)}
+                    onClick={(e) => handleDelete(e, track)}
                     className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
                     title="Delete Track"
+                    type="button"
                   >
                     🗑️
                   </button>
