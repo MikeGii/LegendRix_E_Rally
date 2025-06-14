@@ -1,3 +1,4 @@
+// src/components/user/FeaturedRalliesSection.tsx - CLEANED VERSION
 import { RealRally } from '@/hooks/useOptimizedRallies'
 import { RallyDisplay } from '@/components/rally/RallyDisplay'
 
@@ -35,9 +36,8 @@ export function FeaturedRalliesSection({ rallies, isLoading, canAccessRallies }:
           rallies={rallies}
           showRegistration={true}
           onRegister={(rally) => {
-            // TODO: Open registration modal
             console.log('Register for rally:', rally.name)
-            alert(`Registration for ${rally.name} coming soon!`)
+            alert(`Registration for "${rally.name}" coming soon!`)
           }}
         />
       )}

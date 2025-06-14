@@ -1,10 +1,10 @@
-// src/components/game-management/EventTracksTab.tsx
+// src/components/game-management/EventTracksTab.tsx - Fixed version with proper selection flow
 'use client'
 
 import { useState } from 'react'
 import { Game, GameEvent, EventTrack } from '@/types'
 import { useCreateEventTrack, useUpdateEventTrack, useDeleteEventTrack } from '@/hooks/useGameManagement'
-import { FormModal } from '@/components/ui/Modal'
+import { Modal } from '@/components/ui/Modal'
 
 interface EventTracksTabProps {
   eventTracks: EventTrack[]
@@ -62,7 +62,7 @@ export function EventTracksTab({
     try {
       const trackData = {
         event_id: selectedEventId,
-        name: formData.name,
+        name: formData.name.trim(),
         surface_type: formData.surface_type,
         length_km: formData.length_km ? Number(formData.length_km) : undefined
       }
@@ -82,7 +82,10 @@ export function EventTracksTab({
     }
   }
 
-  const handleEdit = (track: EventTrack) => {
+  const handleEdit = (e: React.MouseEvent, track: EventTrack) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
     setEditingTrack(track)
     setFormData({ 
       name: track.name,
@@ -92,7 +95,10 @@ export function EventTracksTab({
     setIsCreateModalOpen(true)
   }
 
-  const handleDelete = async (track: EventTrack) => {
+  const handleDelete = async (e: React.MouseEvent, track: EventTrack) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
     if (!confirm(`Are you sure you want to delete track "${track.name}"?`)) {
       return
     }
@@ -113,7 +119,7 @@ export function EventTracksTab({
     setFormData({ name: '', surface_type: 'kruus', length_km: '' })
   }
 
-  // No game selected
+  // No game selected - show game selection prompt
   if (!selectedGameId) {
     return (
       <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
@@ -137,27 +143,26 @@ export function EventTracksTab({
     )
   }
 
-  // No event selected - show available events to choose from
-  if (!selectedEventId) {
+  // Game selected but no events available for this game
+  if (gameEvents.length === 0) {
     return (
       <div className="space-y-6">
-        
         {/* Header with Game Selection */}
         <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-white mb-2">
-                Event Tracks for: <span className="text-blue-400">{selectedGame?.name}</span>
+                Tracks for: <span className="text-blue-400">{selectedGame?.name}</span>
               </h2>
               <p className="text-slate-400">
-                First select an event to manage its tracks
+                No events available for this game. Create events first.
               </p>
             </div>
             <div className="flex items-center space-x-3">
               <select
                 value={selectedGameId}
                 onChange={(e) => onGameChange(e.target.value)}
-                className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 text-sm"
+                className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               >
                 {games.map((game) => (
                   <option key={game.id} value={game.id}>{game.name}</option>
@@ -167,54 +172,18 @@ export function EventTracksTab({
           </div>
         </div>
 
-        {/* Available Events to Choose From */}
-        {gameEvents.length === 0 ? (
-          <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-            <div className="text-center py-8">
-              <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🏁</span>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">No Events Available</h3>
-              <p className="text-slate-400 mb-4">
-                Create events first in the Game Events tab, then come back here to add tracks.
-              </p>
-              <button
-                onClick={() => {
-                  // Switch to events tab - you may need to pass this function from parent
-                  window.location.hash = '#events'
-                }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
-              >
-                Go to Game Events
-              </button>
+        {/* No events message */}
+        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
+          <div className="text-center py-8">
+            <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">🏁</span>
             </div>
+            <h3 className="text-lg font-semibold text-white mb-2">No Events Available</h3>
+            <p className="text-slate-400 mb-4">
+              Create events for "{selectedGame?.name}" first, then you can add tracks.
+            </p>
           </div>
-        ) : (
-          <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Select an Event to Manage Tracks</h3>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {gameEvents.map((event) => (
-                <div 
-                  key={event.id}
-                  onClick={() => onEventChange(event.id)}
-                  className="bg-slate-700/50 rounded-xl border border-slate-600/50 p-4 hover:bg-slate-700 hover:border-blue-500/50 transition-all duration-200 cursor-pointer"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                      <span className="text-green-300 text-lg">🏁</span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white">{event.name}</h4>
-                      <p className="text-sm text-slate-400">
-                        Click to manage tracks
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     )
   }
@@ -222,22 +191,31 @@ export function EventTracksTab({
   return (
     <div className="space-y-6">
       
-      {/* Header with Game/Event Selection */}
+      {/* Header with Game and Event Selection - ALWAYS VISIBLE when game is selected */}
       <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-white mb-2">
-              Tracks for: <span className="text-blue-400">{selectedEvent?.name}</span>
+              Tracks for: <span className="text-blue-400">{selectedGame?.name}</span>
+              {selectedEvent && (
+                <span className="text-slate-400"> → </span>
+              )}
+              {selectedEvent && (
+                <span className="text-yellow-400">{selectedEvent.name}</span>
+              )}
             </h2>
             <p className="text-slate-400">
-              Game: {selectedGame?.name} • Add tracks with surface type and length
+              {selectedEvent 
+                ? 'Manage rally tracks for this event.'
+                : 'Select an event to manage its tracks.'
+              }
             </p>
           </div>
           <div className="flex items-center space-x-3">
             <select
               value={selectedGameId}
               onChange={(e) => onGameChange(e.target.value)}
-              className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 text-sm"
+              className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
             >
               {games.map((game) => (
                 <option key={game.id} value={game.id}>{game.name}</option>
@@ -246,25 +224,49 @@ export function EventTracksTab({
             <select
               value={selectedEventId}
               onChange={(e) => onEventChange(e.target.value)}
-              className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 text-sm"
+              className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
             >
-              <option value="">Select Event</option>
+              <option value="">Select Event...</option>
               {gameEvents.map((event) => (
                 <option key={event.id} value={event.id}>{event.name}</option>
               ))}
             </select>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
-            >
-              + Add Track
-            </button>
+            {selectedEventId && (
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
+              >
+                + Add Track
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Event Tracks List */}
-      {eventTracks.length === 0 ? (
+      {/* Content based on event selection */}
+      {!selectedEventId ? (
+        // Event selection prompt
+        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
+          <div className="text-center py-8">
+            <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">🛣️</span>
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Select an Event</h3>
+            <p className="text-slate-400 mb-4">
+              Choose an event from the dropdown above to manage its tracks.
+            </p>
+            {gameEvents.length > 0 && (
+              <button
+                onClick={() => onEventChange(gameEvents[0].id)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
+              >
+                Select First Event
+              </button>
+            )}
+          </div>
+        </div>
+      ) : eventTracks.length === 0 ? (
+        // No tracks for selected event
         <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
           <div className="text-center py-8">
             <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -272,7 +274,7 @@ export function EventTracksTab({
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">No Tracks</h3>
             <p className="text-slate-400 mb-4">
-              Add tracks for this rally event.
+              Add tracks for "{selectedEvent.name}".
             </p>
             <button
               onClick={() => setIsCreateModalOpen(true)}
@@ -283,6 +285,7 @@ export function EventTracksTab({
           </div>
         </div>
       ) : (
+        // Event tracks list
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {eventTracks.map((track) => (
             <div 
@@ -296,23 +299,22 @@ export function EventTracksTab({
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">{track.name}</h3>
-                    <p className="text-sm text-slate-400 capitalize">
-                      {track.surface_type}
-                      {track.length_km && ` • ${track.length_km}km`}
+                    <p className="text-sm text-slate-400">
+                      {track.surface_type && SURFACE_TYPES.find(st => st.value === track.surface_type)?.label}
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => handleEdit(track)}
+                    onClick={(e) => handleEdit(e, track)}
                     className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
                     title="Edit Track"
                   >
                     ✏️
                   </button>
                   <button
-                    onClick={() => handleDelete(track)}
+                    onClick={(e) => handleDelete(e, track)}
                     className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
                     title="Delete Track"
                   >
@@ -321,21 +323,31 @@ export function EventTracksTab({
                 </div>
               </div>
 
-              <div className="bg-slate-700/30 rounded-lg p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Surface:</span>
-                  <span className="text-slate-300 capitalize font-medium">
-                    {track.surface_type}
-                  </span>
-                </div>
+              {/* Track Details */}
+              <div className="space-y-2">
                 {track.length_km && (
-                  <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="text-slate-400">Length:</span>
-                    <span className="text-slate-300 font-medium">
-                      {track.length_km} km
-                    </span>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <span className="text-slate-400">📏</span>
+                    <span className="text-slate-300">{track.length_km} km</span>
                   </div>
                 )}
+                
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="text-slate-400">🗓️</span>
+                  <span className="text-slate-300">
+                    Created {new Date(track.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between mt-3">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                    track.is_active 
+                      ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                      : 'bg-red-500/20 text-red-400 border-red-500/30'
+                  }`}>
+                    {track.is_active ? 'ACTIVE' : 'INACTIVE'}
+                  </span>
+                </div>
               </div>
             </div>
           ))}
@@ -343,14 +355,12 @@ export function EventTracksTab({
       )}
 
       {/* Create/Edit Modal */}
-      <FormModal
+      <Modal
         isOpen={isCreateModalOpen}
         onClose={handleCloseModal}
         title={editingTrack ? 'Edit Track' : 'Create New Track'}
-        maxWidth="lg"
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
-          
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Track Name *
@@ -358,43 +368,40 @@ export function EventTracksTab({
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter track name..."
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter track name"
               required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Teekate (Surface Type) *
+              Surface Type
             </label>
             <select
               value={formData.surface_type}
-              onChange={(e) => setFormData(prev => ({ ...prev, surface_type: e.target.value }))}
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              required
+              onChange={(e) => setFormData({ ...formData, surface_type: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {SURFACE_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
+                <option key={type.value} value={type.value}>{type.label}</option>
               ))}
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Raja pikkus (Track Length in km) - Optional
+              Length (km)
             </label>
             <input
               type="number"
               step="0.1"
               min="0"
               value={formData.length_km}
-              onChange={(e) => setFormData(prev => ({ ...prev, length_km: e.target.value ? Number(e.target.value) : '' }))}
-              placeholder="Enter length in km..."
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              onChange={(e) => setFormData({ ...formData, length_km: e.target.value ? parseFloat(e.target.value) : '' })}
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Track length in kilometers"
             />
           </div>
 
@@ -402,14 +409,14 @@ export function EventTracksTab({
             <button
               type="button"
               onClick={handleCloseModal}
-              className="flex-1 px-4 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-all duration-200"
+              className="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-all duration-200"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!formData.name.trim() || createEventTrackMutation.isPending || updateEventTrackMutation.isPending}
-              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-lg font-medium transition-all duration-200"
+              disabled={createEventTrackMutation.isPending || updateEventTrackMutation.isPending}
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
             >
               {createEventTrackMutation.isPending || updateEventTrackMutation.isPending 
                 ? 'Saving...' 
@@ -418,7 +425,7 @@ export function EventTracksTab({
             </button>
           </div>
         </form>
-      </FormModal>
+      </Modal>
 
     </div>
   )

@@ -1,4 +1,4 @@
-// src/components/user-management/UserTableRow.tsx
+// src/components/user-management/UserTableRow.tsx - Estonian Translation & No Last Login
 import { useState } from 'react'
 import { ExtendedUser } from '@/hooks/useExtendedUsers'
 
@@ -19,6 +19,16 @@ export function UserTableRow({
 }: UserTableRowProps) {
   const [showActions, setShowActions] = useState(false)
 
+  const formatEstonianDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('et-EE', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   return (
     <tr className={`border-b border-slate-700/30 hover:bg-slate-800/30 transition-all duration-200 ${
       index % 2 === 0 ? 'bg-slate-800/10' : ''
@@ -36,12 +46,12 @@ export function UserTableRow({
             <div className="flex items-center space-x-2 mt-1">
               {!user.email_verified && (
                 <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded">
-                  Email Pending
+                  E-mail ootel
                 </span>
               )}
               {user.status === 'pending_approval' && (
                 <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">
-                  Approval Needed
+                  Vajab kinnitust
                 </span>
               )}
             </div>
@@ -49,7 +59,7 @@ export function UserTableRow({
         </div>
       </td>
 
-      {/* Player Name Column - NEW SEPARATE COLUMN */}
+      {/* Player Name Column */}
       <td className="p-4">
         <div className="flex items-center">
           {user.player_name ? (
@@ -57,7 +67,7 @@ export function UserTableRow({
               🎮 {user.player_name}
             </span>
           ) : (
-            <span className="text-slate-500 italic">Not provided</span>
+            <span className="text-slate-500 italic">Ei ole määratud</span>
           )}
         </div>
       </td>
@@ -69,7 +79,7 @@ export function UserTableRow({
             ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
             : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
         }`}>
-          {user.role === 'admin' ? '👑 Admin' : '👤 User'}
+          {user.role === 'admin' ? '👑 Administraator' : '👤 Kasutaja'}
         </span>
       </td>
 
@@ -81,33 +91,11 @@ export function UserTableRow({
       {/* Account Created Column */}
       <td className="p-4">
         <span className="text-slate-300 text-sm">
-          {new Date(user.created_at).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
+          {formatEstonianDate(user.created_at)}
         </span>
       </td>
 
-      {/* Last Login Column */}
-      <td className="p-4">
-        <span className="text-slate-400 text-sm">
-          {user.last_login 
-            ? new Date(user.last_login).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })
-            : 'Never'
-          }
-        </span>
-      </td>
-
-      {/* Actions Column - PRESERVED ALL ORIGINAL FUNCTIONALITY */}
+      {/* Actions Column */}
       <td className="p-4">
         <div className="relative">
           {showApprovalActions && user.status === 'pending_approval' ? (
@@ -117,52 +105,54 @@ export function UserTableRow({
                 disabled={actionLoading === user.id}
                 className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {actionLoading === user.id ? '⏳' : '✅'} Approve
+                {actionLoading === user.id ? '⏳' : '✅'} Kinnita
               </button>
               <button
                 onClick={() => onAction('reject', user)}
                 disabled={actionLoading === user.id}
                 className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {actionLoading === user.id ? '⏳' : '❌'} Reject
+                {actionLoading === user.id ? '⏳' : '❌'} Lükka tagasi
               </button>
             </div>
           ) : (
-            <>
+            <div className="relative">
               <button
                 onClick={() => setShowActions(!showActions)}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all duration-200"
+                className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded-lg transition-all duration-200"
               >
-                ⋯
+                ⚙️ Tegevused
               </button>
               
               {showActions && (
-                <div className="absolute right-0 top-12 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10 min-w-[160px]">
-                  {user.role !== 'admin' && (
+                <div className="absolute right-0 top-8 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10">
+                  <div className="py-1">
+                    {user.role !== 'admin' && (
+                      <button
+                        onClick={() => {
+                          onAction('make_admin', user)
+                          setShowActions(false)
+                        }}
+                        disabled={actionLoading === user.id}
+                        className="w-full text-left px-4 py-2 text-sm text-purple-400 hover:bg-slate-700 disabled:opacity-50"
+                      >
+                        👑 Tee administraatoriks
+                      </button>
+                    )}
                     <button
                       onClick={() => {
-                        onAction('make_admin', user)
+                        onAction('delete', user)
                         setShowActions(false)
                       }}
                       disabled={actionLoading === user.id}
-                      className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200 disabled:opacity-50"
+                      className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-700 disabled:opacity-50"
                     >
-                      👑 Make Admin
+                      🗑️ Kustuta kasutaja
                     </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      onAction('delete', user)
-                      setShowActions(false)
-                    }}
-                    disabled={actionLoading === user.id}
-                    className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors duration-200 disabled:opacity-50"
-                  >
-                    🗑️ Delete Account
-                  </button>
+                  </div>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </td>

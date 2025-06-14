@@ -1,17 +1,15 @@
-// src/components/UserDashboard.tsx - Cleaned version with redundant components removed
+// src/components/UserDashboard.tsx - FIXED VERSION with useAllRallies
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
 import { useView } from '@/components/ViewProvider'
-import { useUpcomingRallies, useFeaturedRallies, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
+import { useAllRallies, useFeaturedRallies, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
 import { UserWelcomeHeader } from '@/components/user/UserWelcomeHeader'
 import { UserStatusBanner } from '@/components/user/UserStatusBanner'
 import { UpcomingRalliesSection } from '@/components/user/UpcomingRalliesSection'
 import { FeaturedRalliesSection } from '@/components/user/FeaturedRalliesSection'
 import { UserRegistrationsSection } from '@/components/user/UserRegistrationsSection'
 import { UserActionPrompt } from '@/components/user/UserActionPrompt'
-// REMOVED: RallyActionButtons - functionality moved to burger menu
-// REMOVED: AdminSwitchPanel - functionality moved to header view switcher
 
 interface StatusMessage {
   type: 'success' | 'warning' | 'info'
@@ -20,12 +18,43 @@ interface StatusMessage {
   color: 'green' | 'yellow' | 'blue'
 }
 
+function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage | null {
+  if (isAdminAsUser) {
+    return {
+      type: 'info',
+      message: 'Kasutajavaates admin režiimis',
+      icon: '👁️',
+      color: 'blue'
+    }
+  }
+
+  if (!user.email_verified) {
+    return {
+      type: 'warning',
+      message: 'Palun kinnitage oma e-posti aadress',
+      icon: '📧',
+      color: 'yellow'
+    }
+  }
+
+  if (!user.admin_approved) {
+    return {
+      type: 'warning',
+      message: 'Ootame admin kinnitust',
+      icon: '⏳',
+      color: 'yellow'
+    }
+  }
+
+  return null
+}
+
 export function UserDashboard() {
   const { user } = useAuth()
-  const { currentView, canSwitchView } = useView()
+  const { currentView } = useView()
   
-  // Load rally data using updated hooks
-  const { data: upcomingRallies = [], isLoading: isLoadingUpcoming } = useUpcomingRallies(5)
+  // Load rally data using updated hooks - Use higher limit to get more rallies
+  const { data: allRallies = [], isLoading: isLoadingAll } = useAllRallies(20)
   const { data: featuredRallies = [], isLoading: isLoadingFeatured } = useFeaturedRallies(3)
   const { data: userRegistrations = [], isLoading: isLoadingRegistrations } = useUserRallyRegistrations()
 
@@ -55,7 +84,6 @@ export function UserDashboard() {
         {canAccessRallies && userRegistrations.length > 0 && (
           <UserRegistrationsSection
             registrations={userRegistrations}
-            isLoading={isLoadingRegistrations}
           />
         )}
 
@@ -68,60 +96,20 @@ export function UserDashboard() {
           />
         )}
 
-        {/* Upcoming Rallies Section */}
-        <UpcomingRalliesSection
-          rallies={upcomingRallies}
-          isLoading={isLoadingUpcoming}
+        {/* All Rallies Section - CHANGE: Pass allRallies instead of upcomingRallies */}
+         <UpcomingRalliesSection
+           rallies={allRallies}
+           isLoading={isLoadingAll}
           canAccessRallies={canAccessRallies}
         />
 
-        {/* REMOVED: Main Action Buttons (RallyActionButtons) */}
-        {/* Functions now available through burger menu */}
-
-        {/* Action needed for non-approved users */}
+        {/* Action Prompt - Encourage participation */}
         <UserActionPrompt 
           canAccessRallies={canAccessRallies}
           emailVerified={user.email_verified}
         />
 
-        {/* REMOVED: Quick Admin Switch (AdminSwitchPanel) */}
-        {/* Admin switching now handled by header view switcher */}
       </div>
     </div>
   )
-}
-
-// Helper Functions
-function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage | null {
-  // Admins viewing as users show admin status
-  if (isAdminAsUser) {
-    return {
-      type: 'success',
-      message: 'Administrator access - all features unlocked',
-      icon: '👑',
-      color: 'green'
-    }
-  }
-
-  // Only show status messages for users who need to take action
-  if (!user.email_verified) {
-    return {
-      type: 'warning',
-      message: 'Please verify your email to access rally features',
-      icon: '📧',
-      color: 'yellow'
-    }
-  }
-  
-  if (!user.admin_approved) {
-    return {
-      type: 'info',
-      message: 'Account pending approval - you will be notified when ready',
-      icon: '⏳',
-      color: 'blue'
-    }
-  }
-  
-  // Return null for approved users - no status banner needed
-  return null
 }

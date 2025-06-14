@@ -1,15 +1,10 @@
-// src/components/user-management/UserManagementSearch.tsx
+// src/components/user-management/UserManagementSearch.tsx - Estonian Translation
 interface UserManagementSearchProps {
   searchTerm: string
   onSearchChange: (term: string) => void
-  resultsCount: number
 }
 
-export function UserManagementSearch({ 
-  searchTerm, 
-  onSearchChange, 
-  resultsCount 
-}: UserManagementSearchProps) {
+export function UserManagementSearch({ searchTerm, onSearchChange }: UserManagementSearchProps) {
   return (
     <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
       <div className="flex items-center space-x-4">
@@ -19,15 +14,20 @@ export function UserManagementSearch({
           </div>
           <input
             type="text"
-            placeholder="Search users by name or email..."
+            placeholder="Otsi kasutajaid nime, e-maili või mängijanime järgi..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
           />
         </div>
-        <div className="text-slate-400 text-sm">
-          {resultsCount} users found
-        </div>
+        {searchTerm && (
+          <button
+            onClick={() => onSearchChange('')}
+            className="px-4 py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded-xl transition-all duration-200"
+          >
+            Tühista
+          </button>
+        )}
       </div>
     </div>
   )

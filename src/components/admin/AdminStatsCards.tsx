@@ -1,4 +1,4 @@
-// src/components/admin/AdminStatsCards.tsx
+// src/components/admin/AdminStatsCards.tsx - Modern Estonian Stats
 import { UserStats } from '@/hooks/useOptimizedUsers'
 
 interface AdminStatsCardsProps {
@@ -8,59 +8,129 @@ interface AdminStatsCardsProps {
 export function AdminStatsCards({ stats }: AdminStatsCardsProps) {
   const cards = [
     {
-      title: 'Total Users',
+      title: 'Kokku kasutajaid',
       value: stats.totalUsers,
       icon: '👥',
-      color: 'blue'
+      description: 'Registreeritud kasutajad',
+      color: 'blue',
+      change: '+0',
+      changeType: 'neutral' as const
     },
     {
-      title: 'Email Pending',
+      title: 'E-mail kinnitamata',
       value: stats.pendingEmail,
       icon: '📧',
-      color: 'yellow'
+      description: 'Ootab e-maili kinnitust',
+      color: 'yellow',
+      change: `${stats.pendingEmail > 0 ? `${stats.pendingEmail} ootel` : 'Kõik kinnitatud'}`,
+      changeType: stats.pendingEmail > 0 ? 'warning' as const : 'success' as const
     },
     {
-      title: 'Approved',
+      title: 'Ootab kinnitust',
+      value: stats.pendingApproval,
+      icon: '⏳',
+      description: 'Vajab admin kinnitust',
+      color: 'orange',
+      change: `${stats.pendingApproval > 0 ? `${stats.pendingApproval} ootel` : 'Kõik kinnitatud'}`,
+      changeType: stats.pendingApproval > 0 ? 'warning' as const : 'success' as const
+    },
+    {
+      title: 'Aktiivsed kasutajad',
       value: stats.approved,
       icon: '✅',
-      color: 'green'
+      description: 'Täielik ligipääs',
+      color: 'green',
+      change: `${Math.round((stats.approved / Math.max(stats.totalUsers, 1)) * 100)}% koguarvust`,
+      changeType: 'success' as const
     }
   ]
 
+  const getColorClasses = (color: string) => {
+    const colorMap = {
+      blue: {
+        bg: 'from-blue-500/10 to-blue-600/5',
+        border: 'border-blue-500/20',
+        iconBg: 'bg-blue-500/20',
+        iconText: 'text-blue-400',
+        valueText: 'text-white',
+        hover: 'hover:border-blue-400/30'
+      },
+      yellow: {
+        bg: 'from-yellow-500/10 to-yellow-600/5',
+        border: 'border-yellow-500/20',
+        iconBg: 'bg-yellow-500/20',
+        iconText: 'text-yellow-400',
+        valueText: 'text-yellow-400',
+        hover: 'hover:border-yellow-400/30'
+      },
+      orange: {
+        bg: 'from-orange-500/10 to-orange-600/5',
+        border: 'border-orange-500/20',
+        iconBg: 'bg-orange-500/20',
+        iconText: 'text-orange-400',
+        valueText: 'text-orange-400',
+        hover: 'hover:border-orange-400/30'
+      },
+      green: {
+        bg: 'from-green-500/10 to-green-600/5',
+        border: 'border-green-500/20',
+        iconBg: 'bg-green-500/20',
+        iconText: 'text-green-400',
+        valueText: 'text-green-400',
+        hover: 'hover:border-green-400/30'
+      }
+    }
+    return colorMap[color as keyof typeof colorMap] || colorMap.blue
+  }
+
+  const getChangeColor = (type: 'success' | 'warning' | 'neutral') => {
+    switch (type) {
+      case 'success': return 'text-green-400'
+      case 'warning': return 'text-yellow-400'
+      case 'neutral': return 'text-slate-400'
+    }
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {cards.map((card) => (
-        <div key={card.title} className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50 p-6 hover:bg-slate-800/40 transition-all duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm font-medium">{card.title}</p>
-              <p className={`text-2xl font-bold mt-1 ${
-                card.color === 'blue' ? 'text-white' :
-                card.color === 'yellow' ? 'text-yellow-400' :
-                card.color === 'green' ? 'text-green-400' :
-                'text-red-400'
-              }`}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {cards.map((card) => {
+        const colors = getColorClasses(card.color)
+        return (
+          <div
+            key={card.title}
+            className={`
+              bg-gradient-to-br ${colors.bg} backdrop-blur-xl 
+              border ${colors.border} ${colors.hover} rounded-2xl p-6 
+              transition-all duration-300 hover:scale-105 hover:shadow-xl
+            `}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className={`w-12 h-12 ${colors.iconBg} rounded-xl flex items-center justify-center`}>
+                <span className={`text-xl ${colors.iconText}`}>{card.icon}</span>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-slate-400 uppercase tracking-wide">{card.title}</p>
+              </div>
+            </div>
+
+            {/* Value */}
+            <div className="mb-3">
+              <p className={`text-3xl font-bold ${colors.valueText}`}>
                 {card.value}
               </p>
+              <p className="text-sm text-slate-400 mt-1">{card.description}</p>
             </div>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-              card.color === 'blue' ? 'bg-blue-500/20' :
-              card.color === 'yellow' ? 'bg-yellow-500/20' :
-              card.color === 'green' ? 'bg-green-500/20' :
-              'bg-red-500/20'
-            }`}>
-              <span className={`text-xl ${
-                card.color === 'blue' ? 'text-blue-400' :
-                card.color === 'yellow' ? 'text-yellow-400' :
-                card.color === 'green' ? 'text-green-400' :
-                'text-red-400'
-              }`}>
-                {card.icon}
+
+            {/* Change Indicator */}
+            <div className="flex items-center justify-between text-xs">
+              <span className={getChangeColor(card.changeType)}>
+                {card.change}
               </span>
             </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
