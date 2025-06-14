@@ -1,9 +1,9 @@
-// src/components/UserManagement.tsx - Estonian Translation
+// src/components/UserManagement.tsx - Updated with Unified Admin Design
 'use client'
 
 import { useState } from 'react'
 import { useAllUsers, useUserAction, useDeleteUser, usePromoteUser, ExtendedUser } from '@/hooks/useExtendedUsers'
-import { UserManagementHeader } from '@/components/user-management/UserManagementHeader'
+import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { UserManagementSearch } from '@/components/user-management/UserManagementSearch'
 import { PendingUsersTable } from '@/components/user-management/PendingUsersTable'
 import { AllUsersTable } from '@/components/user-management/AllUsersTable'
@@ -48,53 +48,44 @@ export function UserManagement() {
   // Event Handlers
   const handleAction = (type: ActionType, user: ExtendedUser) => {
     setCurrentAction({ type, user })
-    setRejectionReason('')
   }
 
   const handleConfirmAction = async () => {
     if (!currentAction) return
 
+    const { type, user } = currentAction
+
     try {
-      switch (currentAction.type) {
+      switch (type) {
         case 'approve':
-          await userActionMutation.mutateAsync({
-            userId: currentAction.user.id,
-            action: 'approve'
-          })
+          await userActionMutation.mutateAsync({ userId: user.id, action: 'approve' })
           break
-        
         case 'reject':
-          await userActionMutation.mutateAsync({
-            userId: currentAction.user.id,
+          if (!rejectionReason.trim()) {
+            alert('Palun sisestage tagasilükkamise põhjus')
+            return
+          }
+          await userActionMutation.mutateAsync({ 
+            userId: user.id, 
             action: 'reject',
-            reason: rejectionReason
+            reason: rejectionReason 
           })
           break
-        
         case 'delete':
-          await deleteUserMutation.mutateAsync(currentAction.user.id)
+          await deleteUserMutation.mutateAsync(user.id)
           break
-        
         case 'make_admin':
-          await promoteUserMutation.mutateAsync(currentAction.user.id)
+          await promoteUserMutation.mutateAsync(user.id)
           break
       }
-      
-      // Close modal and reset state
       setCurrentAction(null)
       setRejectionReason('')
     } catch (error) {
       console.error('Action failed:', error)
-      alert('Tegevus ebaõnnestus. Palun proovige uuesti.')
     }
   }
 
-  const handleCancelAction = () => {
-    setCurrentAction(null)
-    setRejectionReason('')
-  }
-
-  const getActionText = (type: ActionType): { title: string; description: string; confirmText: string } => {
+  const getActionConfig = (type: ActionType) => {
     switch (type) {
       case 'approve':
         return {
@@ -105,7 +96,7 @@ export function UserManagement() {
       case 'reject':
         return {
           title: 'Lükka kasutaja tagasi',
-          description: 'Kas olete kindel, et soovite selle kasutaja tagasi lükata?',
+          description: 'Palun sisestage tagasilükkamise põhjus:',
           confirmText: 'Lükka tagasi'
         }
       case 'delete':
@@ -153,49 +144,73 @@ export function UserManagement() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         
-        {/* Header */}
-        <UserManagementHeader
-          totalUsers={users.length}
-          pendingCount={pendingUsers.length}
-          approvedCount={approvedUsers.length}
-          isLoading={isLoading}
+        {/* Unified Admin Header */}
+        <AdminPageHeader
+          title="Kasutajate haldamine"
+          description="Halda kõiki kasutajakontosid ja õigusi"
+          icon="👥"
+          stats={[
+            { label: 'Kinnitatud', value: approvedUsers.length, color: 'green' },
+            { label: 'Ootab kinnitust', value: pendingUsers.length, color: 'yellow' },
+            { label: 'Kokku kasutajaid', value: users.length, color: 'blue' }
+          ]}
           onRefresh={refetch}
+          isLoading={isLoading}
         />
 
         {/* Search */}
-        <UserManagementSearch 
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-        />
+        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+          <UserManagementSearch 
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+          />
+        </div>
 
         {/* Pending Users Section */}
-        <PendingUsersTable
-          users={pendingUsers}
-          isLoading={isLoading}
-          onAction={handleAction}
-          actionLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending ? 'loading' : null}
-        />
+        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+              <span className="text-yellow-400 text-xl">⏳</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Kinnitust ootavad kasutajad</h2>
+              <p className="text-slate-400">Kasutajad, kes vajavad admin kinnitust</p>
+            </div>
+          </div>
+          
+          <PendingUsersTable
+            users={pendingUsers}
+            isLoading={isLoading}
+            onAction={handleAction}
+            actionLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending ? 'loading' : null}
+          />
+        </div>
 
         {/* All Users Section */}
-        <AllUsersTable
-          users={approvedUsers}
-          isLoading={isLoading}
-          onAction={handleAction}
-          actionLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending ? 'loading' : null}
-        />
+        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+          <AllUsersTable
+            users={approvedUsers}
+            isLoading={isLoading}
+            onAction={handleAction}
+            actionLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending ? 'loading' : null}
+          />
+        </div>
 
         {/* Action Confirmation Modal */}
         {currentAction && (
           <UserActionModal
             isOpen={!!currentAction}
-            onClose={handleCancelAction}
+            onClose={() => {
+              setCurrentAction(null)
+              setRejectionReason('')
+            }}
             onConfirm={handleConfirmAction}
-            actionText={getActionText(currentAction.type)}
             user={currentAction.user}
-            isLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending}
+            actionText={getActionConfig(currentAction.type)}
             rejectionReason={rejectionReason}
             setRejectionReason={setRejectionReason}
             showReasonInput={currentAction.type === 'reject'}
+            isLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending}
           />
         )}
       </div>

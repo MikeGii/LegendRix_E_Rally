@@ -176,7 +176,7 @@ export function GamesTab({ selectedGameId, onGameSelect }: GamesTabProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-white">Games ({games.length})</h2>
-          <p className="text-slate-400">Manage rally games and select one to configure types, events, and classes</p>
+          <p className="text-slate-400">Manageeri mänge, vali mäng, et jätkata komponentide lisamist/muutmist!</p>
         </div>
         <button
           onClick={handleCreateGame}

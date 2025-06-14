@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { useGames, useGameTypes, useGameEvents, useGameClasses, useEventTracks } from '@/hooks/useGameManagement'
+import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { Tab } from '@/types'
 import { GamesTab } from './game-management/GamesTab'
 import { GameTypesTab } from './game-management/GameTypesTab'
@@ -109,16 +110,16 @@ export function GameManagement() {
     }
   }
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
       <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Game Management</h1>
-          <p className="text-slate-400">
-            Manage games, types, events, tracks, and classes for your rally system.
-          </p>
-        </div>
+        {/* Unified Admin Header */}
+        <AdminPageHeader
+          title="Mängude haldamine"
+          description="Halda mänge, riike, radasid ja klasse ralli süsteemi jaoks"
+          icon="🎮"
+        />
 
         {/* Tabs Navigation */}
         <div className="mb-8">

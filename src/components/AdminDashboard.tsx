@@ -20,7 +20,7 @@ export function AdminDashboard() {
         <AdminStatsCards stats={userStats} />
 
         {/* System Overview */}
-        <AdminSystemOverview userStats={userStats} />
+        
       </div>
     </div>
   )
