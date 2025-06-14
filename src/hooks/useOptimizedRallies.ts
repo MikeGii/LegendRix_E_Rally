@@ -24,6 +24,9 @@ export interface TransformedRally {
   created_by: string
   created_at: string
   updated_at: string
+  // Added missing game properties that components expect
+  game_name?: string
+  game_type_name?: string
 }
 
 export interface RealRally {
@@ -127,7 +130,11 @@ export function useUpcomingRallies(limit = 10) {
       
       const { data: rallies, error } = await supabase
         .from('rallies')
-        .select('*')
+        .select(`
+          *,
+          game:games(name),
+          game_type:game_types(name)
+        `)
         .eq('is_active', true)
         .in('status', ['upcoming', 'registration_open', 'registration_closed'])
         .order('competition_date', { ascending: true })
@@ -138,8 +145,15 @@ export function useUpcomingRallies(limit = 10) {
         throw error
       }
 
-      console.log(`✅ Upcoming rallies loaded: ${rallies?.length || 0}`)
-      return rallies || []
+      // Transform data to include game names
+      const transformedRallies = (rallies || []).map(rally => ({
+        ...rally,
+        game_name: rally.game?.name || 'Unknown Game',
+        game_type_name: rally.game_type?.name || 'Unknown Type'
+      }))
+
+      console.log(`✅ Upcoming rallies loaded: ${transformedRallies.length}`)
+      return transformedRallies
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
