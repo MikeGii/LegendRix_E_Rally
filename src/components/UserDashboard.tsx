@@ -1,4 +1,4 @@
-// src/components/UserDashboard.tsx - Estonian Translation with Modern Theme
+// src/components/UserDashboard.tsx - FIXED VERSION
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
@@ -49,11 +49,10 @@ export function UserDashboard() {
           <UserStatusBanner status={status} />
         )}
 
-        {/* User's Rally Registrations - Component now handles filtering */}
+        {/* User's Rally Registrations - FIXED: Removed isLoading prop */}
         {canAccessRallies && userRegistrations.length > 0 && (
           <UserRegistrationsSection
             registrations={userRegistrations}
-            isLoading={isLoadingRegistrations}
           />
         )}
 

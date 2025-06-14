@@ -1,62 +1,61 @@
-// src/lib/validation.ts - Fixed validation utilities
-import { 
-  VALIDATION_RULES, 
-  ERROR_MESSAGES, 
-  RALLY_STATUS, 
-  USER_STATUS,
-  SKILL_LEVELS,
-  type SkillLevel,
-  type RallyStatus, 
-  type UserStatus 
-} from './constants'
+// src/lib/validation.ts - CLEANED VERSION - Remove all unwanted validation properties
+export const VALIDATION_RULES = {
+  EMAIL: {
+    PATTERN: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  },
+  
+  PASSWORD: {
+    MIN_LENGTH: 8,
+    MAX_LENGTH: 128,
+    REQUIRE_UPPERCASE: true,
+    REQUIRE_LOWERCASE: true,
+    REQUIRE_NUMBER: true,
+    REQUIRE_SPECIAL: false
+  },
+  
+  NAME: {
+    MIN_LENGTH: 2,
+    MAX_LENGTH: 100,
+    PATTERN: /^[a-zA-ZÀ-ÿĀ-žА-я\s\-']+$/
+  },
+  
+  RALLY_NAME: {
+    MIN_LENGTH: 3,
+    MAX_LENGTH: 100
+  },
+  
+  PARTICIPANT_COUNT: {
+    MIN: 1,
+    MAX: 100
+  }
+} as const
 
-// ============= Form Validation Types =============
-export interface ValidationResult {
-  isValid: boolean
-  errors: string[]
-}
-
-export interface FieldValidation {
-  field: string
-  value: any
-  rules: ValidationRule[]
-}
-
-export interface ValidationRule {
-  type: 'required' | 'email' | 'minLength' | 'maxLength' | 'pattern' | 'custom'
-  value?: any
-  message?: string
-  validator?: (value: any) => boolean
-}
-
-// ============= Basic Validation Functions =============
+// ============= Base Validation Functions =============
 export const validateRequired = (value: any): boolean => {
-  if (value === null || value === undefined) return false
   if (typeof value === 'string') return value.trim().length > 0
-  if (Array.isArray(value)) return value.length > 0
-  return true
+  if (typeof value === 'number') return !isNaN(value)
+  return value !== null && value !== undefined
 }
 
 export const validateEmail = (email: string): boolean => {
   if (!email) return false
-  return VALIDATION_RULES.EMAIL.PATTERN.test(email) && 
-         email.length <= VALIDATION_RULES.EMAIL.MAX_LENGTH
+  return VALIDATION_RULES.EMAIL.PATTERN.test(email.trim())
 }
 
-export const validatePassword = (password: string): ValidationResult => {
+export const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
   const errors: string[] = []
   
   if (!password) {
-    errors.push(ERROR_MESSAGES.REQUIRED_FIELD)
+    errors.push('Password is required')
     return { isValid: false, errors }
   }
   
   if (password.length < VALIDATION_RULES.PASSWORD.MIN_LENGTH) {
-    errors.push(`Password must be at least ${VALIDATION_RULES.PASSWORD.MIN_LENGTH} characters`)
+    errors.push(`Password must be at least ${VALIDATION_RULES.PASSWORD.MIN_LENGTH} characters long`)
   }
   
   if (password.length > VALIDATION_RULES.PASSWORD.MAX_LENGTH) {
-    errors.push(`Password must be less than ${VALIDATION_RULES.PASSWORD.MAX_LENGTH} characters`)
+    errors.push(`Password must be less than ${VALIDATION_RULES.PASSWORD.MAX_LENGTH} characters long`)
   }
   
   if (!/(?=.*[a-z])/.test(password)) {
@@ -93,6 +92,25 @@ export const validateRallyName = (name: string): boolean => {
 export const validateParticipantCount = (count: number): boolean => {
   return count >= VALIDATION_RULES.PARTICIPANT_COUNT.MIN &&
          count <= VALIDATION_RULES.PARTICIPANT_COUNT.MAX
+}
+
+// ============= Advanced Validation Types =============
+export interface ValidationRule {
+  type: 'required' | 'email' | 'minLength' | 'maxLength' | 'pattern' | 'custom'
+  value?: any
+  message?: string
+  validator?: (value: any) => boolean
+}
+
+export interface FieldValidation {
+  field: string
+  value: any
+  rules: ValidationRule[]
+}
+
+export interface ValidationResult {
+  isValid: boolean
+  errors: string[]
 }
 
 // ============= Advanced Validation Functions =============
@@ -159,7 +177,7 @@ export const validateForm = (fields: FieldValidation[]): ValidationResult => {
   }
 }
 
-// ============= Rally-specific Validations =============
+// ============= Rally-specific Validations - CLEANED =============
 export const validateRallyForm = (data: {
   name: string
   game_id: string
@@ -297,11 +315,9 @@ export const validateUserRegistration = (data: {
   return result
 }
 
-// ============= Game Management Validations =============
+// ============= Game Management Validations - CLEANED =============
 export const validateGameForm = (data: {
   name: string
-  platform?: string
-  developer?: string
 }): ValidationResult => {
   const fields: FieldValidation[] = [
     {
@@ -315,28 +331,11 @@ export const validateGameForm = (data: {
     }
   ]
   
-  if (data.platform) {
-    fields.push({
-      field: 'Platform',
-      value: data.platform,
-      rules: [{ type: 'maxLength', value: 50 }]
-    })
-  }
-  
-  if (data.developer) {
-    fields.push({
-      field: 'Developer',
-      value: data.developer,
-      rules: [{ type: 'maxLength', value: 100 }]
-    })
-  }
-  
   return validateForm(fields)
 }
 
 export const validateGameEventForm = (data: {
   name: string
-  country?: string
   surface_type?: string
 }): ValidationResult => {
   const fields: FieldValidation[] = [
@@ -351,20 +350,11 @@ export const validateGameEventForm = (data: {
     }
   ]
   
-  if (data.country) {
-    fields.push({
-      field: 'Country',
-      value: data.country,
-      rules: [{ type: 'maxLength', value: 50 }]
-    })
-  }
-  
   return validateForm(fields)
 }
 
 export const validateGameClassForm = (data: {
   name: string
-  skill_level?: SkillLevel
   max_participants?: number
 }): ValidationResult => {
   const fields: FieldValidation[] = [
@@ -374,84 +364,58 @@ export const validateGameClassForm = (data: {
       rules: [
         { type: 'required' },
         { type: 'minLength', value: 2 },
-        { type: 'maxLength', value: 100 }
+        { type: 'maxLength', value: 50 }
       ]
     }
   ]
-  
-  if (data.skill_level) {
-    fields.push({
-      field: 'Skill Level',
-      value: data.skill_level,
-      rules: [{
-        type: 'custom',
-        validator: (level: SkillLevel) => Object.values(SKILL_LEVELS).includes(level),
-        message: 'Invalid skill level'
-      }]
-    })
-  }
   
   if (data.max_participants) {
     fields.push({
       field: 'Max Participants',
       value: data.max_participants,
-      rules: [{
-        type: 'custom',
-        validator: validateParticipantCount,
-        message: `Max participants must be between ${VALIDATION_RULES.PARTICIPANT_COUNT.MIN} and ${VALIDATION_RULES.PARTICIPANT_COUNT.MAX}`
-      }]
+      rules: [
+        {
+          type: 'custom',
+          validator: (value) => validateParticipantCount(value),
+          message: `Max participants must be between ${VALIDATION_RULES.PARTICIPANT_COUNT.MIN} and ${VALIDATION_RULES.PARTICIPANT_COUNT.MAX}`
+        }
+      ]
     })
   }
   
   return validateForm(fields)
 }
 
-// ============= Utility Functions =============
-export const getValidationErrors = (result: ValidationResult): string[] => {
-  return result.errors
-}
-
-export const getFirstValidationError = (result: ValidationResult): string | null => {
-  return result.errors.length > 0 ? result.errors[0] : null
-}
-
-export const formatValidationErrors = (result: ValidationResult): string => {
-  return result.errors.join(', ')
-}
-
-// ============= Export validation rule builders =============
-export const rules = {
-  required: (message?: string): ValidationRule => ({ 
-    type: 'required', 
-    message 
-  }),
+export const validateEventTrackForm = (data: {
+  name: string
+  length_km?: number
+  surface_type?: string
+}): ValidationResult => {
+  const fields: FieldValidation[] = [
+    {
+      field: 'Track Name',
+      value: data.name,
+      rules: [
+        { type: 'required' },
+        { type: 'minLength', value: 2 },
+        { type: 'maxLength', value: 100 }
+      ]
+    }
+  ]
   
-  email: (message?: string): ValidationRule => ({ 
-    type: 'email', 
-    message 
-  }),
+  if (data.length_km !== undefined) {
+    fields.push({
+      field: 'Track Length',
+      value: data.length_km,
+      rules: [
+        {
+          type: 'custom',
+          validator: (value) => value > 0 && value <= 1000,
+          message: 'Track length must be between 0.1 and 1000 km'
+        }
+      ]
+    })
+  }
   
-  minLength: (length: number, message?: string): ValidationRule => ({ 
-    type: 'minLength', 
-    value: length, 
-    message 
-  }),
-  
-  maxLength: (length: number, message?: string): ValidationRule => ({ 
-    type: 'maxLength', 
-    value: length, 
-    message 
-  }),
-  
-  pattern: (pattern: RegExp, message?: string): ValidationRule => ({ 
-    type: 'pattern', 
-    value: pattern, 
-    message 
-  }),
-  
-  custom: (validator: (value: any) => boolean, message?: string): ValidationRule => ({ 
-    type: 'custom', 
-    validator, 
-    message 
-  })
+  return validateForm(fields)
 }
