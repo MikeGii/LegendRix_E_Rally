@@ -1,4 +1,4 @@
-// src/app/sponsors/page.tsx - Complete Sponsors Management Admin Page with proper layout
+// src/app/sponsors/page.tsx - Complete Sponsors Management with Edit Functionality
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -33,6 +33,10 @@ export default function SponsorsPage() {
   const [supporters, setSupporters] = useState<StreamSupporter[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  
+  // Editing state for supporters
+  const [editingSupporter, setEditingSupporter] = useState<string | null>(null)
+  const [editAmount, setEditAmount] = useState('')
 
   // Form states for adding new items
   const [newSponsor, setNewSponsor] = useState({
@@ -160,25 +164,66 @@ export default function SponsorsPage() {
     }
   }
 
-  const handleToggleActive = async (type: 'sponsor' | 'supporter', id: string, currentStatus: boolean) => {
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
     try {
-      const table = type === 'sponsor' ? 'big_sponsors' : 'stream_supporters'
-      
       const { error } = await supabase
-        .from(table)
+        .from('big_sponsors')
         .update({ is_active: !currentStatus })
         .eq('id', id)
 
       if (error) {
-        setMessage({ type: 'error', text: `Error updating ${type}: ${error.message}` })
+        setMessage({ type: 'error', text: `Error updating sponsor: ${error.message}` })
         return
       }
 
-      setMessage({ type: 'success', text: `${type} updated successfully!` })
+      setMessage({ type: 'success', text: 'Sponsor updated successfully!' })
       fetchData()
     } catch (error) {
-      console.error(`Error updating ${type}:`, error)
-      setMessage({ type: 'error', text: `Failed to update ${type}` })
+      console.error('Error updating sponsor:', error)
+      setMessage({ type: 'error', text: 'Failed to update sponsor' })
+    }
+  }
+
+  const handleEditSupporter = async (supporterId: string, newAmount: number) => {
+    try {
+      const { error } = await supabase
+        .from('stream_supporters')
+        .update({ donation_amount: newAmount })
+        .eq('id', supporterId)
+
+      if (error) {
+        setMessage({ type: 'error', text: `Error updating supporter: ${error.message}` })
+        return
+      }
+
+      setMessage({ type: 'success', text: 'Supporter updated successfully!' })
+      setEditingSupporter(null)
+      setEditAmount('')
+      fetchData()
+    } catch (error) {
+      console.error('Error updating supporter:', error)
+      setMessage({ type: 'error', text: 'Failed to update supporter' })
+    }
+  }
+
+  const handleStartEdit = (supporter: StreamSupporter) => {
+    setEditingSupporter(supporter.id)
+    setEditAmount(supporter.donation_amount.toString())
+  }
+
+  const handleCancelEdit = () => {
+    setEditingSupporter(null)
+    setEditAmount('')
+  }
+
+  const handleSaveEdit = () => {
+    const amount = parseFloat(editAmount)
+    if (isNaN(amount) || amount <= 0) {
+      setMessage({ type: 'error', text: 'Please enter a valid amount' })
+      return
+    }
+    if (editingSupporter) {
+      handleEditSupporter(editingSupporter, amount)
     }
   }
 
@@ -363,7 +408,7 @@ export default function SponsorsPage() {
                           alt={sponsor.name}
                           className="h-12 w-auto object-contain"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/images/sponsor-placeholder.png'
+                            (e.target as HTMLImageElement).src = '/image/sponsor-placeholder.png'
                           }}
                         />
                         <div>
@@ -383,7 +428,7 @@ export default function SponsorsPage() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => handleToggleActive('sponsor', sponsor.id, sponsor.is_active)}
+                          onClick={() => handleToggleActive(sponsor.id, sponsor.is_active)}
                           className={`px-3 py-1 rounded-lg text-sm font-medium ${
                             sponsor.is_active
                               ? 'bg-green-600/20 text-green-400 border border-green-600/30'
@@ -503,20 +548,52 @@ export default function SponsorsPage() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <span className="text-green-400 font-semibold text-lg">
-                          {supporter.donation_amount.toFixed(2)}€
-                        </span>
+                        {editingSupporter === supporter.id ? (
+                          // Edit mode
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={editAmount}
+                              onChange={(e) => setEditAmount(e.target.value)}
+                              className="w-20 px-2 py-1 bg-slate-700/50 border border-slate-600/50 rounded text-white text-sm"
+                              autoFocus
+                            />
+                            <span className="text-green-400 text-sm">€</span>
+                          </div>
+                        ) : (
+                          // Display mode
+                          <span className="text-green-400 font-semibold text-lg">
+                            {supporter.donation_amount.toFixed(2)}€
+                          </span>
+                        )}
                         <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleToggleActive('supporter', supporter.id, supporter.is_active)}
-                            className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                              supporter.is_active
-                                ? 'bg-green-600/20 text-green-400 border border-green-600/30'
-                                : 'bg-gray-600/20 text-gray-400 border border-gray-600/30'
-                            }`}
-                          >
-                            {supporter.is_active ? 'Active' : 'Inactive'}
-                          </button>
+                          {editingSupporter === supporter.id ? (
+                            // Edit mode buttons
+                            <>
+                              <button
+                                onClick={handleSaveEdit}
+                                className="px-3 py-1 bg-green-600/20 text-green-400 border border-green-600/30 rounded-lg text-sm font-medium hover:bg-green-600/30"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="px-3 py-1 bg-gray-600/20 text-gray-400 border border-gray-600/30 rounded-lg text-sm font-medium hover:bg-gray-600/30"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            // Display mode buttons
+                            <button
+                              onClick={() => handleStartEdit(supporter)}
+                              className="px-3 py-1 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-lg text-sm font-medium hover:bg-blue-600/30"
+                            >
+                              Edit
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDelete('supporter', supporter.id)}
                             className="px-3 py-1 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-sm font-medium hover:bg-red-600/30"
@@ -532,8 +609,6 @@ export default function SponsorsPage() {
             </div>
           </div>
         )}
-
-        {/* Back to Dashboard - Removed since navigation is in header */}
       </div>
     </DashboardLayout>
   )
