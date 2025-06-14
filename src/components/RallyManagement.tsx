@@ -1,3 +1,4 @@
+// src/components/RallyManagement.tsx - FIXED VERSION
 'use client'
 
 import { useState } from 'react'
@@ -23,6 +24,11 @@ export function RallyManagement() {
     setShowCreateModal(true)
   }
 
+  const handleDeleteRally = (rallyId: string) => {
+    // TODO: Implement delete functionality
+    console.log('Delete rally:', rallyId)
+  }
+
   const handleCloseModal = () => {
     setShowCreateModal(false)
     setEditingRally(null)
@@ -44,12 +50,13 @@ export function RallyManagement() {
           isLoading={isLoading}
         />
 
-        {/* Rallies Grid */}
+        {/* Rallies Grid - FIXED: Removed onRefresh, added onCreateRally and onDeleteRally */}
         <RalliesGrid
           rallies={rallies}
           isLoading={isLoading}
+          onCreateRally={handleCreateRally}
           onEditRally={handleEditRally}
-          onRefresh={handleRefresh}
+          onDeleteRally={handleDeleteRally}
         />
 
         {/* Create/Edit Modal */}
