@@ -153,7 +153,7 @@ export function UserSettings() {
       return
     }
 
-    // Validate password strength
+    // Enhanced password validation
     if (data.newPassword.length < 8) {
       setMessage({
         type: 'error',
@@ -162,22 +162,35 @@ export function UserSettings() {
       return
     }
 
+    // Check password strength
+    const hasUpperCase = /[A-Z]/.test(data.newPassword)
+    const hasLowerCase = /[a-z]/.test(data.newPassword)
+    const hasNumbers = /\d/.test(data.newPassword)
+    
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
+      setMessage({
+        type: 'error',
+        text: 'Password must contain at least one uppercase letter, one lowercase letter, and one number.'
+      })
+      return
+    }
+
     setLoading(true)
     setMessage(null)
 
     try {
+      // SIMPLIFIED: Use direct Supabase client-side auth update
       console.log('🔄 Updating password for user:', user.id)
 
-      // Update password in Supabase auth
-      const { error: authError } = await supabase.auth.updateUser({
+      const { error: updateError } = await supabase.auth.updateUser({
         password: data.newPassword
       })
 
-      if (authError) {
-        console.error('❌ Password update error:', authError)
+      if (updateError) {
+        console.error('❌ Password update error:', updateError)
         setMessage({
           type: 'error',
-          text: authError.message || 'Failed to update password. Please try again.'
+          text: updateError.message || 'Failed to update password. Please try again.'
         })
         return
       }
@@ -188,8 +201,17 @@ export function UserSettings() {
         text: 'Password updated successfully!'
       })
 
-      // Clear password form
-      passwordForm.reset()
+      // SECURITY FIX: Immediately clear all password fields
+      passwordForm.setValue('currentPassword', '')
+      passwordForm.setValue('newPassword', '')
+      passwordForm.setValue('confirmPassword', '')
+      
+      // Force form to re-render with empty values
+      passwordForm.reset({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      })
 
     } catch (error) {
       console.error('❌ Password update error:', error)
@@ -199,6 +221,13 @@ export function UserSettings() {
       })
     } finally {
       setLoading(false)
+      
+      // SECURITY: Additional cleanup - clear any residual form data
+      setTimeout(() => {
+        passwordForm.setValue('currentPassword', '')
+        passwordForm.setValue('newPassword', '')
+        passwordForm.setValue('confirmPassword', '')
+      }, 100)
     }
   }
 
@@ -306,7 +335,17 @@ export function UserSettings() {
     <div>
       <h3 className="text-2xl font-bold text-white mb-6">Password & Security</h3>
       <form onSubmit={passwordForm.handleSubmit(handlePasswordUpdate)} className="space-y-6">
-        {/* Current Password Field - Optional for now */}
+        {/* Hidden username field for accessibility */}
+        <input
+          type="text"
+          name="username"
+          value={user?.email || ''}
+          autoComplete="username"
+          style={{ display: 'none' }}
+          readOnly
+        />
+
+        {/* Current Password Field */}
         <div>
           <label htmlFor="currentPassword" className="block text-sm font-medium text-slate-300 mb-2">
             Current Password <span className="text-slate-500">(optional)</span>
@@ -314,6 +353,7 @@ export function UserSettings() {
           <input
             {...passwordForm.register('currentPassword')}
             type="password"
+            autoComplete="current-password"
             className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
             placeholder="Enter your current password"
           />
@@ -333,6 +373,7 @@ export function UserSettings() {
               }
             })}
             type="password"
+            autoComplete="new-password"
             className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
             placeholder="Enter your new password"
           />
@@ -351,12 +392,24 @@ export function UserSettings() {
               required: 'Please confirm your new password'
             })}
             type="password"
+            autoComplete="new-password"
             className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
             placeholder="Confirm your new password"
           />
           {passwordForm.formState.errors.confirmPassword && (
             <p className="text-red-400 text-sm mt-1">{passwordForm.formState.errors.confirmPassword.message}</p>
           )}
+        </div>
+
+        {/* Password Requirements Info */}
+        <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-slate-300 mb-2">Password Requirements:</h4>
+          <ul className="text-xs text-slate-400 space-y-1">
+            <li>• At least 8 characters long</li>
+            <li>• Contains uppercase letters (A-Z)</li>
+            <li>• Contains lowercase letters (a-z)</li>
+            <li>• Contains numbers (0-9)</li>
+          </ul>
         </div>
 
         {/* Update Button */}
