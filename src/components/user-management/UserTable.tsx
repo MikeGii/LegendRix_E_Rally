@@ -1,4 +1,4 @@
-// src/components/user-management/UserTable.tsx - Updated with Player Name column
+// src/components/user-management/UserTable.tsx - Estonian Translation & No Last Login
 import { ExtendedUser } from '@/hooks/useExtendedUsers'
 import { UserTableRow } from './UserTableRow'
 
@@ -16,13 +16,12 @@ export function UserTable({ users, onAction, actionLoading, showApprovalActions 
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-700/50">
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Account Name</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Player Name</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Role</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Email</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Account Created</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Last Login</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Actions</th>
+              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Konto nimi</th>
+              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Mängijanimi</th>
+              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Roll</th>
+              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">E-mail</th>
+              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Konto loodud</th>
+              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Tegevused</th>
             </tr>
           </thead>
           <tbody>

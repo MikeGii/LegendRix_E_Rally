@@ -1,4 +1,4 @@
-// src/components/UserManagement.tsx
+// src/components/UserManagement.tsx - Estonian Translation
 'use client'
 
 import { useState } from 'react'
@@ -31,7 +31,8 @@ export function UserManagement() {
   // Filter users based on search
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.player_name && user.player_name.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   // Separate pending and approved users
@@ -84,7 +85,7 @@ export function UserManagement() {
       setRejectionReason('')
     } catch (error) {
       console.error('Action failed:', error)
-      alert('Action failed. Please try again.')
+      alert('Tegevus ebaõnnestus. Palun proovige uuesti.')
     }
   }
 
@@ -93,21 +94,55 @@ export function UserManagement() {
     setRejectionReason('')
   }
 
-  // Error State
+  const getActionText = (type: ActionType): { title: string; description: string; confirmText: string } => {
+    switch (type) {
+      case 'approve':
+        return {
+          title: 'Kinnita kasutaja',
+          description: 'Kas olete kindel, et soovite selle kasutaja kinnitada?',
+          confirmText: 'Kinnita'
+        }
+      case 'reject':
+        return {
+          title: 'Lükka kasutaja tagasi',
+          description: 'Kas olete kindel, et soovite selle kasutaja tagasi lükata?',
+          confirmText: 'Lükka tagasi'
+        }
+      case 'delete':
+        return {
+          title: 'Kustuta kasutaja',
+          description: 'See tegevus on lõplik ja seda ei saa tagasi võtta!',
+          confirmText: 'Kustuta'
+        }
+      case 'make_admin':
+        return {
+          title: 'Tee administraatoriks',
+          description: 'Kas olete kindel, et soovite anda sellele kasutajale administraatori õigused?',
+          confirmText: 'Tee administraatoriks'
+        }
+      default:
+        return {
+          title: 'Kinnita tegevus',
+          description: 'Kas olete kindel?',
+          confirmText: 'Kinnita'
+        }
+    }
+  }
+
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-4xl text-red-400">❌</span>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">Failed to load users</h3>
-          <p className="text-slate-400 mb-4">There was an error loading the user management data.</p>
+          <h2 className="text-2xl font-bold text-white mb-4">Viga andmete laadimisel</h2>
+          <p className="text-slate-400 mb-6">Kasutajate andmeid ei õnnestunud laadida.</p>
           <button
             onClick={() => refetch()}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium"
           >
-            Try Again
+            Proovi uuesti
           </button>
         </div>
       </div>
@@ -115,50 +150,54 @@ export function UserManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         
         {/* Header */}
-        <UserManagementHeader 
+        <UserManagementHeader
           totalUsers={users.length}
           pendingCount={pendingUsers.length}
           approvedCount={approvedUsers.length}
           isLoading={isLoading}
-          onRefresh={() => refetch()}
+          onRefresh={refetch}
         />
 
-        {/* Search Bar */}
-        <UserManagementSearch
+        {/* Search */}
+        <UserManagementSearch 
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          resultsCount={filteredUsers.length}
         />
 
-        {/* Pending Users Table */}
+        {/* Pending Users Section */}
         <PendingUsersTable
           users={pendingUsers}
           isLoading={isLoading}
           onAction={handleAction}
-          actionLoading={isLoading ? currentAction?.user?.id || null : null}
+          actionLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending ? 'loading' : null}
         />
 
-        {/* All Users Table */}
+        {/* All Users Section */}
         <AllUsersTable
           users={approvedUsers}
           isLoading={isLoading}
           onAction={handleAction}
-          actionLoading={isLoading ? currentAction?.user?.id || null : null}
+          actionLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending ? 'loading' : null}
         />
 
-        {/* Action Modal */}
-        <UserActionModal
-          action={currentAction}
-          reason={rejectionReason}
-          onReasonChange={setRejectionReason}
-          onConfirm={handleConfirmAction}
-          onCancel={handleCancelAction}
-          isLoading={isLoading}
-        />
+        {/* Action Confirmation Modal */}
+        {currentAction && (
+          <UserActionModal
+            isOpen={!!currentAction}
+            onClose={handleCancelAction}
+            onConfirm={handleConfirmAction}
+            actionText={getActionText(currentAction.type)}
+            user={currentAction.user}
+            isLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending}
+            rejectionReason={rejectionReason}
+            setRejectionReason={setRejectionReason}
+            showReasonInput={currentAction.type === 'reject'}
+          />
+        )}
       </div>
     </div>
   )
