@@ -1,6 +1,7 @@
 // src/components/rally/RallyDetailModal.tsx - CLEANED VERSION
 import { useState } from 'react'
 import { Rally } from '@/types'
+import { useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
 
 interface RallyDetailModalProps {
   rally: Rally | null
@@ -9,10 +10,20 @@ interface RallyDetailModalProps {
 }
 
 export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModalProps) {
+  // Get user's registrations to check if already registered
+  const { data: userRegistrations = [] } = useUserRallyRegistrations()
+  
   if (!rally) return null
 
   const isRegistrationOpen = rally.status === 'registration_open'
   const isUpcoming = rally.status === 'upcoming'
+  
+  // Check if user is already registered for this rally
+  const userRegistration = userRegistrations.find(
+    reg => reg.rally_id === rally.id && 
+           (reg.status === 'registered' || reg.status === 'confirmed')
+  )
+  const isUserRegistered = !!userRegistration
   
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -188,26 +199,45 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
           {/* Registration Section */}
           {onRegister && (isRegistrationOpen || isUpcoming) && (
             <div className="bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-500/20 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-3">Registreeru rallile</h3>
-              <p className="text-slate-300 mb-4">
-                {isRegistrationOpen 
-                  ? 'Registreerimine on avatud. Kliki all olevale nupule, et end rallile registreerida.'
-                  : 'Registreerimine avab varsti. Saad end registreerida kohe, kui registreerimine avaneb.'
-                }
-              </p>
-              <button
-                onClick={onRegister}
-                disabled={!isRegistrationOpen}
-                className={`
-                  px-6 py-3 rounded-lg font-medium transition-all duration-200
-                  ${isRegistrationOpen 
-                    ? 'bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-500 hover:to-green-500 text-white' 
-                    : 'bg-slate-600 text-slate-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isRegistrationOpen ? 'Registreeru nüüd' : 'Registreerimine pole veel avatud'}
-              </button>
+              <h3 className="text-lg font-semibold text-white mb-3">Ralli registreerimine</h3>
+              
+              {/* Check if user is already registered */}
+              {isUserRegistered ? (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2 text-green-400">
+                    <span>✓</span>
+                    <span>Sa oled juba sellele rallile registreeritud</span>
+                  </div>
+                  <button
+                    onClick={onRegister}
+                    className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-medium transition-all duration-200"
+                  >
+                    Tühista registreerimine
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-slate-300">
+                    {isRegistrationOpen 
+                      ? 'Registreerimine on avatud. Kliki all olevale nupule, et end rallile registreerida.'
+                      : 'Registreerimine avab varsti. Saad end registreerida kohe, kui registreerimine avaneb.'
+                    }
+                  </p>
+                  <button
+                    onClick={onRegister}
+                    disabled={!isRegistrationOpen}
+                    className={`
+                      px-6 py-3 rounded-lg font-medium transition-all duration-200
+                      ${isRegistrationOpen 
+                        ? 'bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-500 hover:to-green-500 text-white' 
+                        : 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                      }
+                    `}
+                  >
+                    {isRegistrationOpen ? 'Registreeru nüüd' : 'Registreerimine pole veel avatud'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
