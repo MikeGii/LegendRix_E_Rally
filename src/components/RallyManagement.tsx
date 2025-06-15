@@ -63,7 +63,7 @@ export function RallyManagement() {
     // NEW: Handle rally notification
   const handleSendNotification = async (rally: Rally) => {
     // For testing, we can use the admin email
-    const useTestEmail = true // Set to false for production
+    const useTestEmail = false // Set to false for production
     const testEmail = useTestEmail ? 'ewrc.admin@ideemoto.ee' : undefined
     
     const confirmMessage = useTestEmail 
