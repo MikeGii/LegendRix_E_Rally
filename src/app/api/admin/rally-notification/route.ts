@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     console.log('📅 Rally events found:', formattedEvents.length)
 
-    // Get email recipients
+    // Get email recipients - Include both approved users AND all admins
     let userEmails: string[] = []
     
     if (testEmail) {
@@ -98,10 +98,9 @@ export async function POST(request: NextRequest) {
     } else {
       const { data: users, error: usersError } = await supabase
         .from('users')
-        .select('email, name')
-        .eq('status', 'approved')
-        .eq('email_verified', true)
-        .eq('admin_approved', true)
+        .select('email, name, role')
+        .or(`and(status.eq.approved,email_verified.eq.true,admin_approved.eq.true),role.eq.admin`)
+        .eq('email_verified', true) // All recipients must have verified emails
 
       if (usersError) {
         console.error('❌ Error fetching users:', usersError)
@@ -112,7 +111,11 @@ export async function POST(request: NextRequest) {
       }
 
       userEmails = users.map(user => user.email)
-      console.log('👥 Production mode - found', userEmails.length, 'users')
+      const adminCount = users.filter(user => user.role === 'admin').length
+      const userCount = users.filter(user => user.role === 'user').length
+      
+      console.log('👥 Production mode - found', userEmails.length, 'total recipients')
+      console.log('👤 Regular users:', userCount, '| 👑 Admins:', adminCount)
     }
 
     if (userEmails.length === 0) {

@@ -35,7 +35,7 @@ const formatEstonianDate = (dateString: string): string => {
 export function generateRallyNotificationEmail(data: RallyEmailData): { subject: string; html: string } {
   const { rally, events } = data
 
-  const subject = `🏁 Uus ralli: ${rally.name} - LegendRix E-Rally`
+  const subject = `Uus ralli: ${rally.name} - LegendRix E-Spordikeskus`
 
   const html = `
     <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); min-height: 100vh; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
@@ -58,10 +58,10 @@ export function generateRallyNotificationEmail(data: RallyEmailData): { subject:
             <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><defs><pattern id=\"grain\" width=\"100\" height=\"100\" patternUnits=\"userSpaceOnUse\"><circle cx=\"50\" cy=\"50\" r=\"1\" fill=\"%23ffffff\" opacity=\"0.05\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23grain)\"/></svg>'); opacity: 0.3;"></div>
             <div style="position: relative; z-index: 1;">
               <h1 style="margin: 0; font-size: 32px; font-weight: 800; color: white; text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); letter-spacing: -0.5px;">
-                🏁 Uus ralli avaldatud!
+                Uus ralli avaldatud!
               </h1>
               <p style="margin: 15px 0 0 0; font-size: 18px; color: rgba(255, 255, 255, 0.9); font-weight: 500;">
-                LegendRix E-Rally Championship
+                LegendRix E-Spordikeskus
               </p>
               <div style="width: 60px; height: 4px; background: rgba(255, 255, 255, 0.3); margin: 20px auto; border-radius: 2px;"></div>
             </div>
