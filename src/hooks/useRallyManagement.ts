@@ -82,7 +82,7 @@ export function useRallies() {
   return useQuery({
     queryKey: rallyManagementKeys.rallies(),
     queryFn: async (): Promise<Rally[]> => {
-      console.log('🔄 Loading rallies...')
+      console.log('🔄 Loading rallies for rally management...')
       
       const { data: rallies, error } = await supabase
         .from('rallies')
@@ -91,7 +91,7 @@ export function useRallies() {
           game:games(name),
           game_type:game_types(name)
         `)
-        .eq('is_active', true)
+        // ADMIN VIEW: Include inactive rallies but show them differently
         .order('competition_date', { ascending: false })
 
       if (error) {
@@ -99,17 +99,20 @@ export function useRallies() {
         throw error
       }
 
-      // Transform with game info
-      const transformedRallies = rallies?.map(rally => ({
+      // Transform with admin-specific info
+      const transformedRallies = rallies?.map((rally: any) => ({
         ...rally,
         game_name: rally.game?.name || 'Unknown Game',
         game_type_name: rally.game_type?.name || 'Unknown Type',
         registered_participants: 0, // Calculate if needed
         total_events: 0, // Calculate if needed
-        total_tracks: 0 // Calculate if needed
+        total_tracks: 0, // Calculate if needed
+        // Add admin-specific display info
+        display_status: !rally.is_active ? 'inactive' : rally.status,
+        admin_note: !rally.is_active ? 'Deactivated' : null
       })) || []
 
-      console.log(`✅ Rallies loaded: ${transformedRallies.length}`)
+      console.log(`✅ Rallies loaded for management: ${transformedRallies.length} (${transformedRallies.filter(r => !r.is_active).length} inactive)`)
       return transformedRallies
     },
     staleTime: 5 * 60 * 1000,
@@ -209,23 +212,23 @@ export function useDeleteRally() {
   
   return useMutation({
     mutationFn: async (rallyId: string) => {
-      console.log('🔄 Deleting rally:', rallyId)
+      console.log('🔄 Deactivating rally:', rallyId)
       
-      // Soft delete by setting is_active to false
+      // Set is_active = false when admin deletes rally from rally management page
       const { error } = await supabase
         .from('rallies')
         .update({ 
-          is_active: false,
+          is_active: false, // This is what you requested - set is_active to false
           updated_at: new Date().toISOString()
         })
         .eq('id', rallyId)
 
       if (error) {
-        console.error('Error deleting rally:', error)
+        console.error('Error deactivating rally:', error)
         throw error
       }
 
-      console.log('✅ Rally deleted')
+      console.log('✅ Rally deactivated (is_active = false)')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rallyManagementKeys.rallies() })
