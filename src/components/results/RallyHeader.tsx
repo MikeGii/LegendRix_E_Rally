@@ -34,10 +34,10 @@ export function RallyHeader({ rally, participants, onAddParticipant }: RallyHead
     (participants.length > 0 ? Math.round((participantsWithResults.length / participants.length) * 100) : 0)
   
   // FIXED: Better approval readiness logic
-  const isReadyForApproval = progressPercentage === 100 && 
-    resultsStatus?.results_completed && 
+    const isReadyForApproval = progressPercentage === 100 && 
+    participantsNeedingResults.length === 0 && 
     !resultsStatus?.results_approved &&
-    participantsNeedingResults.length === 0
+    participants.length > 0  // ✅ Removed results_completed requirement
 
   const handleAutoComplete = async () => {
     if (participantsNeedingResults.length === 0) return

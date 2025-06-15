@@ -27,13 +27,14 @@ export interface RallyParticipant {
   id: string
   user_id: string
   user_name: string
-  player_name?: string
+  player_name: string
   user_email: string
   class_name: string
   registration_date: string
   overall_position?: number
+  class_position?: number  // NEW: Add class_position
   total_points?: number
-  results_entered?: boolean
+  results_entered: boolean
 }
 
 // ============================================================================
@@ -182,79 +183,58 @@ export function useRallyParticipants(rallyId: string) {
     queryFn: async (): Promise<RallyParticipant[]> => {
       if (!rallyId) return []
 
-      console.log('🔄 Loading participants for rally:', rallyId)
+      console.log('🔄 Loading rally participants with class positions...')
 
-      // Get real participants from rally_registrations
-      const { data: realParticipants, error: realError } = await supabase
+      // Get registered participants
+      const { data: realParticipants, error: registeredError } = await supabase
         .from('rally_registrations')
         .select(`
           id,
           user_id,
+          class_id,
           registration_date,
           users!inner(
-            name,
-            player_name,
-            email
+            id,
+            player_name
           ),
           game_classes!inner(
+            id,
             name
           )
         `)
         .eq('rally_id', rallyId)
         .in('status', ['registered', 'confirmed'])
-        .order('registration_date', { ascending: true })
 
-      if (realError) {
-        console.error('Error loading rally participants:', realError)
-        throw realError
-      }
-
-      // Get manual participants from rally_results
-      let manualParticipants: any[] = []
-      try {
-        const { data: manualData, error: manualError } = await supabase
-          .from('rally_results')
-          .select(`
-            id,
-            participant_name,
-            class_name,
-            overall_position,
-            total_points,
-            user_id,
-            results_entered_at
-          `)
-          .eq('rally_id', rallyId)
-          .is('user_id', null)
-          .not('participant_name', 'is', null)
-
-        if (manualError) {
-          console.log('Note: No manual participants found:', manualError.message)
-        } else {
-          manualParticipants = manualData || []
-          console.log(`🔍 Found ${manualParticipants.length} manual participants`)
-        }
-      } catch (error) {
-        console.log('Manual participants query failed:', error)
-      }
+      // Get manual participants
+      const { data: manualParticipants, error: manualError } = await supabase
+        .from('rally_results')
+        .select(`
+          id,
+          participant_name,
+          class_name,
+          overall_position,
+          class_position,
+          total_points,
+          results_entered_at
+        `)
+        .eq('rally_id', rallyId)
+        .is('user_id', null)
 
       const allParticipants: RallyParticipant[] = []
 
-      // Transform real participants
+      // Transform registered participants
       if (realParticipants) {
         const participantUserIds = realParticipants.map(p => p.user_id)
         let existingResults: any[] = []
         
         if (participantUserIds.length > 0) {
-          // Get results with all fields needed
           const { data: results, error: resultsError } = await supabase
             .from('rally_results')
-            .select('user_id, overall_position, total_points, results_entered_at')
+            .select('user_id, overall_position, class_position, total_points, results_entered_at')
             .eq('rally_id', rallyId)
             .in('user_id', participantUserIds)
 
-          if (resultsError) {
-            console.error('Error loading existing results:', resultsError)
-          } else {
+          if (!resultsError) {
             existingResults = results || []
           }
         }
@@ -264,12 +244,9 @@ export function useRallyParticipants(rallyId: string) {
           resultsMap[r.user_id] = r
         })
 
-        // Transform real participants
         realParticipants.forEach((p: any) => {
           const result = resultsMap[p.user_id]
           
-          // FIXED: Backward compatible logic - if results_entered_at is missing but overall_position exists,
-          // consider results as entered (for existing data)
           const hasResultsEntered = result?.results_entered_at || 
                                    (result?.overall_position !== null && result?.overall_position !== undefined)
           
@@ -282,50 +259,40 @@ export function useRallyParticipants(rallyId: string) {
             class_name: p.game_classes.name,
             registration_date: p.registration_date,
             overall_position: result?.overall_position,
+            class_position: result?.class_position ? parseInt(result.class_position) : null, // CONVERT string to number
             total_points: result?.total_points,
             results_entered: !!hasResultsEntered
           })
         })
       }
 
-      // Transform manual participants with backward compatibility
-      manualParticipants.forEach(mp => {
-        const hasResultsEntered = mp.results_entered_at || 
-                                 (mp.overall_position !== null && mp.overall_position !== undefined)
-        
-        allParticipants.push({
-          id: mp.id,
-          user_id: 'manual-participant',
-          user_name: '',
-          player_name: mp.participant_name,
-          user_email: '',
-          class_name: mp.class_name || 'Manual Entry',
-          registration_date: '2024-01-01T00:00:00Z',
-          overall_position: mp.overall_position,
-          total_points: mp.total_points,
-          results_entered: !!hasResultsEntered
+      // Transform manual participants
+      if (manualParticipants) {
+        manualParticipants.forEach(mp => {
+          const hasResultsEntered = mp.results_entered_at || 
+                                   (mp.overall_position !== null && mp.overall_position !== undefined)
+          
+          allParticipants.push({
+            id: mp.id,
+            user_id: 'manual-participant',
+            user_name: '',
+            player_name: mp.participant_name,
+            user_email: '',
+            class_name: mp.class_name || 'Manual Entry',
+            registration_date: '2024-01-01T00:00:00Z',
+            overall_position: mp.overall_position,
+            class_position: mp.class_position ? parseInt(mp.class_position) : null, // CONVERT string to number
+            total_points: mp.total_points,
+            results_entered: !!hasResultsEntered
+          })
         })
-      })
+      }
 
-      // Sort by overall position (nulls last), then by name
-      allParticipants.sort((a, b) => {
-        if (a.overall_position && b.overall_position) {
-          return a.overall_position - b.overall_position
-        }
-        if (a.overall_position && !b.overall_position) return -1
-        if (!a.overall_position && b.overall_position) return 1
-        return (a.player_name || a.user_name).localeCompare(b.player_name || b.user_name)
-      })
-
-      console.log(`✅ Loaded ${allParticipants.length} participants`)
-      // Log participants with results for debugging
-      const withResults = allParticipants.filter(p => p.results_entered)
-      console.log(`📊 ${withResults.length}/${allParticipants.length} participants have results entered`)
-      
+      console.log(`✅ Total participants loaded: ${allParticipants.length}`)
       return allParticipants
     },
     enabled: !!rallyId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
   })
 }
 

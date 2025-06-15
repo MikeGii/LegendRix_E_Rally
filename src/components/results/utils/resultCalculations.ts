@@ -1,17 +1,24 @@
 // src/components/results/utils/resultCalculations.ts
+
 import type { ParticipantResult } from '../hooks/useResultsState'
+import { calculateClassBasedPositions } from './classBasedCalculations'
 
 export function calculatePositionsFromPoints(
   results: Record<string, ParticipantResult>,
   updateResult: (participantId: string, field: keyof ParticipantResult, value: any) => void
 ) {
-  const resultsArray = Object.values(results)
-    .filter(r => r.totalPoints !== null && r.totalPoints > 0)
-    .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0))
-
-  resultsArray.forEach((result, index) => {
-    updateResult(result.participantId, 'overallPosition', index + 1)
+  console.log('🔄 Starting class-based position calculation...')
+  
+  // Calculate class-based positions
+  const classPositions = calculateClassBasedPositions(results)
+  
+  // Update results with calculated positions
+  classPositions.forEach(position => {
+    updateResult(position.participantId, 'overallPosition', position.overallPosition)
+    updateResult(position.participantId, 'classPosition', position.classPosition)
   })
+  
+  console.log('✅ Class-based positions calculated and applied')
 }
 
 export function clearParticipantResults(
@@ -19,6 +26,7 @@ export function clearParticipantResults(
   updateResult: (participantId: string, field: keyof ParticipantResult, value: any) => void
 ) {
   updateResult(participantId, 'overallPosition', null)
+  updateResult(participantId, 'classPosition', null)
   updateResult(participantId, 'totalPoints', null)
 }
 

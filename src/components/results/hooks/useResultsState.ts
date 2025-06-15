@@ -6,8 +6,10 @@ export interface ParticipantResult {
   playerName: string
   className: string
   overallPosition: number | null
+  classPosition: number | null  // NEW: Position within class
   totalPoints: number | null
   eventResults: Record<string, number>
+  isModified: boolean  // NEW: Track modifications for save optimization
 }
 
 export interface ManualParticipant {
@@ -36,11 +38,13 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
     participants.forEach(participant => {
       initialResults[participant.id] = {
         participantId: participant.id,
-        playerName: participant.player_name || participant.user_name,
-        className: participant.class_name,
+        playerName: participant.player_name || participant.user_name || 'Unknown',
+        className: participant.class_name || 'Unknown Class',
         overallPosition: participant.overall_position,
+        classPosition: participant.class_position, // NEW: Include class position
         totalPoints: participant.total_points,
-        eventResults: {}
+        eventResults: {},
+        isModified: false // NEW: Initialize as not modified
       }
     })
     
@@ -52,7 +56,7 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
     if (rallyClasses.length > 0 && !newParticipant.className) {
       setNewParticipant(prev => ({
         ...prev,
-        className: rallyClasses[0]?.class_name || ''
+        className: rallyClasses[0]?.class_name || rallyClasses[0]?.name || ''
       }))
     }
   }, [rallyClasses, newParticipant.className])
@@ -62,7 +66,8 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
       ...prev,
       [participantId]: {
         ...prev[participantId],
-        [field]: value
+        [field]: value,
+        isModified: true // Mark as modified when any field changes
       }
     }))
   }
@@ -78,9 +83,19 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
   const resetNewParticipantForm = () => {
     setNewParticipant({ 
       playerName: '', 
-      className: rallyClasses[0]?.class_name || '' 
+      className: rallyClasses[0]?.class_name || rallyClasses[0]?.name || '' 
     })
     setShowAddParticipant(false)
+  }
+
+  const resetModificationFlags = () => {
+    setResults(prev => {
+      const resetResults = { ...prev }
+      Object.keys(resetResults).forEach(id => {
+        resetResults[id] = { ...resetResults[id], isModified: false }
+      })
+      return resetResults
+    })
   }
 
   return {
@@ -96,6 +111,7 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
     setNewParticipant,
     updateResult,
     removeParticipantFromState,
-    resetNewParticipantForm
+    resetNewParticipantForm,
+    resetModificationFlags // NEW: For save optimization
   }
 }

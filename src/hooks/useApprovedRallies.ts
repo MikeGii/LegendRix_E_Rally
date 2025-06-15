@@ -22,6 +22,7 @@ export interface ApprovedRallyResult {
   user_id?: string
   class_name: string
   overall_position: number
+  class_position: number | null  // NEW: Add class_position field
   total_points: number
   registration_date?: string
 }
@@ -72,7 +73,7 @@ export function useApprovedRallyResults(rallyId: string) {
         return []
       }
 
-      // Get all results for this approved rally
+      // Get all results for this approved rally - INCLUDE class_position
       const { data: results, error } = await supabase
         .from('rally_results')
         .select(`
@@ -81,6 +82,7 @@ export function useApprovedRallyResults(rallyId: string) {
           user_id,
           class_name,
           overall_position,
+          class_position,
           total_points,
           rally_registrations(registration_date)
         `)
@@ -100,6 +102,7 @@ export function useApprovedRallyResults(rallyId: string) {
         user_id: result.user_id,
         class_name: result.class_name || 'Unknown Class',
         overall_position: result.overall_position,
+        class_position: result.class_position ? parseInt(result.class_position) : null, // CONVERT string to number
         total_points: result.total_points || 0,
         registration_date: result.rally_registrations?.[0]?.registration_date
       }))

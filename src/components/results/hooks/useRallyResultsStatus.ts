@@ -1,4 +1,4 @@
-// src/components/results/hooks/useRallyResultsStatus.ts - FIXED WITH CORRECT COLUMN NAMES
+// src/components/results/hooks/useRallyResultsStatus.ts - COMPLETE FIXED VERSION
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { resultsKeys } from '@/hooks/useResultsManagement'
@@ -15,6 +15,10 @@ export interface RallyResultsStatus {
   participants_with_results: number
   progress_percentage: number
 }
+
+// ============================================================================
+// GET RALLY RESULTS STATUS
+// ============================================================================
 
 export function useRallyResultsStatus(rallyId: string) {
   return useQuery({
@@ -76,9 +80,14 @@ export function useRallyResultsStatus(rallyId: string) {
       }
     },
     enabled: !!rallyId,
-    refetchInterval: 10000 // Refresh every 10 seconds to keep progress updated
+    refetchInterval: 10000, // Refresh every 10 seconds to keep progress updated
+    staleTime: 5000 // Consider data fresh for 5 seconds
   })
 }
+
+// ============================================================================
+// AUTO-COMPLETE MISSING RESULTS
+// ============================================================================
 
 export function useAutoCompleteResults() {
   const queryClient = useQueryClient()
@@ -87,16 +96,24 @@ export function useAutoCompleteResults() {
     mutationFn: async (rallyId: string) => {
       console.log('🔄 Auto-completing missing results for rally:', rallyId)
 
-      // FIXED: Get current user at the beginning
+      // Get current authenticated user
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) {
-        console.warn('No authenticated user for auto-complete')
+        throw new Error('User not authenticated')
       }
 
-      // Step 1: Get all registered participants (simplified query)
+      // Step 1: Get all registered participants with class information
       const { data: registrations, error: regError } = await supabase
         .from('rally_registrations')
-        .select('id, user_id')
+        .select(`
+          id,
+          user_id,
+          class_id,
+          game_classes!inner(
+            id,
+            name
+          )
+        `)
         .eq('rally_id', rallyId)
         .in('status', ['registered', 'confirmed'])
 
@@ -108,15 +125,16 @@ export function useAutoCompleteResults() {
       // Step 2: Get existing results
       const { data: existingResults } = await supabase
         .from('rally_results')
-        .select('user_id')
+        .select('user_id, registration_id')
         .eq('rally_id', rallyId)
-        .not('user_id', 'is', null) // Only check registered participants
 
-      const existingUserIds = new Set(existingResults?.map(r => r.user_id) || [])
+      const existingUserIds = new Set(existingResults?.map(r => r.user_id).filter(Boolean) || [])
+      const existingRegistrationIds = new Set(existingResults?.map(r => r.registration_id).filter(Boolean) || [])
 
       // Step 3: Find participants without results
-      const missingParticipants = (registrations || [])
-        .filter(reg => !existingUserIds.has(reg.user_id))
+      const missingParticipants = (registrations || []).filter(reg => 
+        !existingUserIds.has(reg.user_id) && !existingRegistrationIds.has(reg.id)
+      )
 
       console.log(`📊 Found ${missingParticipants.length} participants without results`)
 
@@ -132,41 +150,46 @@ export function useAutoCompleteResults() {
 
         let nextPosition = (maxPositionResult?.[0]?.overall_position || 0) + 1
 
-        // Step 5: Create results with fallback class lookup
+        // Step 5: Create results with proper class name resolution
         const resultsToInsert = []
         
+        const { data: registrations, error: regError } = await supabase
+        .from('rally_registrations')
+        .select('id, user_id, class_id')
+        .eq('rally_id', rallyId)
+        .in('status', ['registered', 'confirmed'])
+
+        if (regError) {
+        console.error('Error loading registrations:', regError)
+        throw regError
+        }
+
+        // Get class names separately to avoid join complexity
+        const classIds = Array.from(new Set(registrations?.map(r => r.class_id).filter(Boolean) || []))
+        const { data: classes } = await supabase
+        .from('game_classes')
+        .select('id, name')
+        .in('id', classIds)
+
+        const classMap = new Map(classes?.map(c => [c.id, c.name]) || [])
+
+        // Then in the loop:
         for (const participant of missingParticipants) {
-          // Get the registration details including class_id
-          const { data: registration } = await supabase
-            .from('rally_registrations')
-            .select('class_id')
-            .eq('id', participant.id)
-            .single()
-
-          // Get the class name separately
-          let className = 'Unknown Class'
-          if (registration?.class_id) {
-            const { data: gameClass } = await supabase
-              .from('game_classes')
-              .select('name')
-              .eq('id', registration.class_id)
-              .single()
-            
-            className = gameClass?.name || 'Unknown Class'
-          }
-
-          resultsToInsert.push({
+        const className = classMap.get(participant.class_id) || 'Unknown Class'
+        
+        resultsToInsert.push({
             rally_id: rallyId,
             user_id: participant.user_id,
             registration_id: participant.id,
             participant_name: null,
             class_name: className,
             overall_position: nextPosition++,
+            class_position: null,
             total_points: 0,
-            results_entered_at: new Date().toISOString(), // FIXED: Mark as entered
-            results_entered_by: user?.id, // FIXED: Track who entered
+            results_entered_at: new Date().toISOString(),
+            results_entered_by: user?.id,
             updated_at: new Date().toISOString()
-          })
+        })
         }
 
         // Step 6: Insert all missing results
@@ -182,7 +205,7 @@ export function useAutoCompleteResults() {
         console.log(`✅ Auto-completed ${resultsToInsert.length} missing results with positions ${nextPosition - resultsToInsert.length} to ${nextPosition - 1}`)
       }
 
-      // Step 7: Update rally results status to completed with correct column names
+      // Step 7: Update rally results status to completed
       const { error: statusError } = await supabase
         .from('rally_results_status')
         .upsert({
@@ -192,7 +215,7 @@ export function useAutoCompleteResults() {
           results_entered_by: user?.id,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'rally_id' // FIXED: Specify the conflict column
+          onConflict: 'rally_id'
         })
 
       if (statusError) {
@@ -214,6 +237,10 @@ export function useAutoCompleteResults() {
   })
 }
 
+// ============================================================================
+// APPROVE RALLY RESULTS
+// ============================================================================
+
 export function useApproveResults() {
   const queryClient = useQueryClient()
 
@@ -221,14 +248,14 @@ export function useApproveResults() {
     mutationFn: async (rallyId: string) => {
       console.log('🔄 Approving results for rally:', rallyId)
 
-      // Get current user
+      // Get current authenticated user
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) {
         throw new Error('User not authenticated')
       }
 
-      // Verify all participants have results before approving
-      const { data: totalParticipants } = await supabase
+      // Step 1: Verify all participants have results before approving
+      const { data: totalRegistrations } = await supabase
         .from('rally_registrations')
         .select('id')
         .eq('rally_id', rallyId)
@@ -246,48 +273,120 @@ export function useApproveResults() {
         .eq('rally_id', rallyId)
         .not('overall_position', 'is', null)
 
-      const totalCount = (totalParticipants?.length || 0) + (manualParticipants?.length || 0)
-      const resultsCount = resultsWithPositions?.length || 0
+      const totalParticipants = (totalRegistrations?.length || 0) + (manualParticipants?.length || 0)
+      const participantsWithResults = resultsWithPositions?.length || 0
 
-      if (resultsCount < totalCount) {
-        throw new Error(`Mitte kõigil osalejatel pole tulemused sisestatud (${resultsCount}/${totalCount})`)
+      if (participantsWithResults < totalParticipants) {
+        throw new Error(`Cannot approve: ${totalParticipants - participantsWithResults} participants still missing results`)
       }
 
-      // Update rally results status to approved with correct column names
-      const { error } = await supabase
+      // Step 2: Mark results as completed first (if not already)
+      await supabase
         .from('rally_results_status')
         .upsert({
           rally_id: rallyId,
           results_completed: true,
-          results_approved: true,
-          results_completed_at: new Date().toISOString(), // CORRECT: matches DB schema
-          results_entered_by: user.id, // CORRECT: matches DB schema
-          approved_at: new Date().toISOString(), // CORRECT: matches DB schema  
-          approved_by: user.id, // CORRECT: matches DB schema
+          results_completed_at: new Date().toISOString(),
+          results_entered_by: user?.id,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'rally_id' // FIXED: Specify the conflict column
+          onConflict: 'rally_id'
         })
 
-      if (error) {
-        console.error('Error approving results:', error)
-        throw error
+      // Step 3: Approve the results
+      const { error: approvalError } = await supabase
+        .from('rally_results_status')
+        .update({
+          results_approved: true,
+          approved_at: new Date().toISOString(),
+          approved_by: user?.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('rally_id', rallyId)
+
+      if (approvalError) {
+        console.error('Error approving results:', approvalError)
+        throw approvalError
       }
 
-      console.log('✅ Results approved successfully')
-      return rallyId
+      // Step 4: Update rally status to completed
+      const { error: rallyUpdateError } = await supabase
+        .from('rallies')
+        .update({
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', rallyId)
+
+      if (rallyUpdateError) {
+        console.error('Error updating rally status:', rallyUpdateError)
+        // Don't throw here as approval was successful
+      }
+
+      console.log('✅ Results approved and rally marked as completed')
+      return { rallyId, approvedAt: new Date().toISOString() }
     },
-    onSuccess: (rallyId) => {
-      // Invalidate all related queries
-      queryClient.invalidateQueries({ queryKey: resultsKeys.rally_results(rallyId) })
+    onSuccess: (data, rallyId) => {
+      console.log('✅ Results approved successfully for rally:', rallyId)
+      
+      // Invalidate all relevant caches
+      queryClient.invalidateQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
       queryClient.invalidateQueries({ queryKey: [...resultsKeys.rally_results(rallyId), 'status'] })
       queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
-      
-      // Also invalidate approved rallies query (for public view)
       queryClient.invalidateQueries({ queryKey: ['approved-rallies'] })
+      queryClient.invalidateQueries({ queryKey: ['rally-management'] })
+      
+      // Force a refetch of approved rallies for public view
+      queryClient.refetchQueries({ queryKey: ['approved-rallies'] })
     },
     onError: (error) => {
       console.error('❌ Failed to approve results:', error)
+    }
+  })
+}
+
+// ============================================================================
+// MARK RALLY AS NEEDING RESULTS
+// ============================================================================
+
+export function useMarkRallyNeedsResults() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (rallyId: string) => {
+      console.log('🔄 Marking rally as needing results:', rallyId)
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        throw new Error('User not authenticated')
+      }
+
+      const { error } = await supabase
+        .from('rally_results_status')
+        .upsert({
+          rally_id: rallyId,
+          results_needed: true,
+          results_needed_since: new Date().toISOString(),
+          results_completed: false,
+          results_approved: false,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'rally_id'
+        })
+
+      if (error) {
+        console.error('Error marking rally as needing results:', error)
+        throw error
+      }
+
+      return { rallyId }
+    },
+    onSuccess: (data, rallyId) => {
+      queryClient.invalidateQueries({ queryKey: [...resultsKeys.rally_results(rallyId), 'status'] })
+      queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
+    },
+    onError: (error) => {
+      console.error('❌ Failed to mark rally as needing results:', error)
     }
   })
 }
