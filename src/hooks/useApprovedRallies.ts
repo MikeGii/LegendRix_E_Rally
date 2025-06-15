@@ -1,4 +1,5 @@
-// src/hooks/useApprovedRallies.ts - Public hook for approved rallies
+// src/hooks/useApprovedRallies.ts - FIXED VERSION with class_position
+
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
@@ -22,7 +23,7 @@ export interface ApprovedRallyResult {
   user_id?: string
   class_name: string
   overall_position: number
-  class_position: number | null  // NEW: Add class_position field
+  class_position: number | null  // FIXED: Added class_position field
   total_points: number
   registration_date?: string
 }
@@ -73,7 +74,7 @@ export function useApprovedRallyResults(rallyId: string) {
         return []
       }
 
-      // Get all results for this approved rally - INCLUDE class_position
+      // FIXED: Get all results including class_position
       const { data: results, error } = await supabase
         .from('rally_results')
         .select(`
@@ -102,7 +103,7 @@ export function useApprovedRallyResults(rallyId: string) {
         user_id: result.user_id,
         class_name: result.class_name || 'Unknown Class',
         overall_position: result.overall_position,
-        class_position: result.class_position ? parseInt(result.class_position) : null, // CONVERT string to number
+        class_position: result.class_position ? parseInt(result.class_position.toString()) : null, // FIXED: Convert and handle type
         total_points: result.total_points || 0,
         registration_date: result.rally_registrations?.[0]?.registration_date
       }))

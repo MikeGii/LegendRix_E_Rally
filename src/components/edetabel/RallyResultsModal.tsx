@@ -50,14 +50,14 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
     })
   }
 
-  const getPodiumEmoji = (position: number) => {
+    const getPodiumEmoji = (position: number) => {
     switch (position) {
-      case 1: return '🥇'
-      case 2: return '🥈'
-      case 3: return '🥉'
-      default: return `${position}.`
+        case 1: return '🥇'
+        case 2: return '🥈'
+        case 3: return '🥉'
+        default: return ''  // ✅ Empty string for positions 4+
     }
-  }
+    }
 
   const getPositionColors = (position: number) => {
     switch (position) {
@@ -173,9 +173,6 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                             <th className="text-left py-4 px-6 text-slate-400 font-medium">
                               Osaleja
                             </th>
-                            <th className="text-center py-4 px-6 text-slate-400 font-medium">
-                              Üldkoht
-                            </th>
                             <th className="text-right py-4 px-6 text-slate-400 font-medium">
                               Punktid
                             </th>
@@ -183,6 +180,7 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                         </thead>
                         <tbody>
                           {classResults.map((result, index) => {
+                            // FIXED: Use the actual class_position from the database
                             const classPosition = result.class_position || (index + 1)
                             const isTopThree = classPosition <= 3
                             
@@ -193,7 +191,7 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                                   isTopThree ? 'bg-gradient-to-r from-yellow-500/5 to-transparent' : ''
                                 }`}
                               >
-                                {/* Class Position */}
+                                {/* Class Position - FIXED: Use database class_position */}
                                 <td className="py-4 px-6">
                                   <div className="flex items-center gap-3">
                                     <span className="text-2xl">
@@ -224,13 +222,6 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                                       )}
                                     </div>
                                   </div>
-                                </td>
-
-                                {/* Overall Position */}
-                                <td className="py-4 px-6 text-center">
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-slate-700/50 text-slate-300 border border-slate-600/30">
-                                    {result.overall_position}. üldkoht
-                                  </span>
                                 </td>
 
                                 {/* Points */}
