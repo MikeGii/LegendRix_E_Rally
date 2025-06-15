@@ -248,9 +248,8 @@ export function useUpcomingRallies(limit = 10) {
   return useQuery({
     queryKey: rallyKeys.upcoming(limit),
     queryFn: async (): Promise<TransformedRally[]> => {
-      console.log('🔄 Loading upcoming rallies with participant counts...')
+      console.log('🔄 Loading upcoming rallies for users...')
       
-      // First, get the basic rally data
       const { data: rallies, error } = await supabase
         .from('rallies')
         .select(`
@@ -258,8 +257,8 @@ export function useUpcomingRallies(limit = 10) {
           game:games(name),
           game_type:game_types(name)
         `)
-        .eq('is_active', true)
-        .in('status', ['upcoming', 'registration_open', 'registration_closed'])
+        .eq('is_active', true) // Users only see active rallies
+        .in('status', ['upcoming', 'registration_open', 'registration_closed']) // Only upcoming statuses
         .order('competition_date', { ascending: true })
         .limit(limit)
 
@@ -273,39 +272,20 @@ export function useUpcomingRallies(limit = 10) {
         return []
       }
 
+      // Same transformation logic as before...
       const rallyIds = rallies.map(rally => rally.id)
 
-      // Get rally events and tracks (existing logic)
-      const { data: rallyEvents, error: eventsError } = await supabase
-        .from('rally_events')
-        .select(`
-          *,
-          event:game_events(*),
-          rally_event_tracks(
-            *,
-            track:event_tracks(*)
-          )
-        `)
-        .in('rally_id', rallyIds)
-        .eq('is_active', true)
-        .order('event_order', { ascending: true })
-
-      if (eventsError) {
-        console.error('Error loading rally events:', eventsError)
-      }
-
-      // FIXED: Get actual participant counts from rally_registrations
+      // Get participant counts
       const { data: registrationCounts, error: registrationsError } = await supabase
         .from('rally_registrations')
         .select('rally_id')
         .in('rally_id', rallyIds)
-        .in('status', ['registered', 'confirmed']) // Only count active registrations
+        .in('status', ['registered', 'confirmed'])
 
       if (registrationsError) {
         console.error('Error loading registration counts:', registrationsError)
       }
 
-      // Count participants per rally
       const participantCounts: Record<string, number> = {}
       rallyIds.forEach(rallyId => {
         participantCounts[rallyId] = 0
@@ -317,63 +297,17 @@ export function useUpcomingRallies(limit = 10) {
         })
       }
 
-      // Group events by rally ID (existing logic)
-      const eventsByRally: Record<string, RallyEvent[]> = {}
-      rallyIds.forEach(rallyId => {
-        eventsByRally[rallyId] = []
-      })
+      const transformedRallies: TransformedRally[] = rallies.map((rally: any) => ({
+        ...rally,
+        game_name: rally.game?.name || 'Unknown Game',
+        game_type_name: rally.game_type?.name || 'Unknown Type',
+        registered_participants: participantCounts[rally.id] || 0
+      }))
 
-      if (rallyEvents) {
-        rallyEvents.forEach((rallyEvent: any) => {
-          const gameEvent = Array.isArray(rallyEvent.event) ? 
-            rallyEvent.event[0] : rallyEvent.event
-          
-          if (gameEvent && gameEvent.id && gameEvent.name) {
-            const eventTracks = rallyEvent.rally_event_tracks || []
-            const tracks = eventTracks
-              .filter((ret: any) => ret.track && ret.track.id)
-              .map((ret: any) => ({
-                id: ret.track.id,
-                name: ret.track.name,
-                surface_type: ret.track.surface_type,
-                length_km: ret.track.length_km,
-                track_order: ret.track_order
-              }))
-
-            eventsByRally[rallyEvent.rally_id].push({
-              event_id: gameEvent.id,
-              event_name: gameEvent.name,
-              event_order: rallyEvent.event_order,
-              tracks: tracks
-            })
-          }
-        })
-      }
-
-      // FIXED: Transform data with real participant counts
-      const transformedRallies: TransformedRally[] = rallies.map(rally => {
-        const rallyEvents = eventsByRally[rally.id] || []
-        const totalTracks = rallyEvents.reduce((sum, event) => sum + (event.tracks?.length || 0), 0)
-        
-        return {
-          ...rally,
-          game_name: rally.game?.name || 'Unknown Game',
-          game_type_name: rally.game_type?.name || 'Unknown Type',
-          events: rallyEvents,
-          total_events: rallyEvents.length,
-          total_tracks: totalTracks,
-          registered_participants: participantCounts[rally.id] || 0 // FIXED: Real count!
-        }
-      })
-
-      console.log(`✅ Upcoming rallies loaded: ${transformedRallies.length} with real participant counts`)
-      transformedRallies.forEach(rally => {
-        console.log(`   📊 ${rally.name}: ${rally.registered_participants} participants`)
-      })
-      
+      console.log(`✅ Loaded ${transformedRallies.length} upcoming rallies for users`)
       return transformedRallies
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes (shorter since participant counts change more frequently)
+    staleTime: 2 * 60 * 1000,
   })
 }
 
@@ -542,16 +476,15 @@ export function useAutoUpdateRallyStatuses() {
   
   return useMutation({
     mutationFn: async () => {
-      console.log('🔄 Auto-updating rally statuses based on dates...')
-      
+      console.log('🔄 Starting rally status auto-update...')
       const now = new Date()
       const currentTime = now.toISOString()
       
-      // Get all active rallies
+      // FIXED: Get ALL rallies, not just active ones
       const { data: rallies, error: fetchError } = await supabase
         .from('rallies')
-        .select('id, competition_date, registration_deadline, status')
-        .eq('is_active', true)
+        .select('id, competition_date, registration_deadline, status, is_active')
+        // REMOVED: .eq('is_active', true) - now includes all rallies
       
       if (fetchError) throw fetchError
       if (!rallies) return { updated: 0 }
@@ -576,7 +509,7 @@ export function useAutoUpdateRallyStatuses() {
           newStatus = 'registration_open'
         }
         
-        // Update if status needs to change
+        // CRITICAL FIX: Only update status, NEVER set is_active = false automatically
         if (newStatus !== rally.status) {
           console.log(`📅 Updating rally ${rally.id} status: ${rally.status} → ${newStatus}`)
           
@@ -585,6 +518,7 @@ export function useAutoUpdateRallyStatuses() {
             .update({ 
               status: newStatus,
               updated_at: currentTime
+              // REMOVED: Any is_active updates
             })
             .eq('id', rally.id)
           
@@ -600,7 +534,6 @@ export function useAutoUpdateRallyStatuses() {
       return { updated: updatedCount }
     },
     onSuccess: () => {
-      // Invalidate all rally queries to refresh data
       queryClient.invalidateQueries({ queryKey: rallyKeys.all })
     }
   })
@@ -717,5 +650,81 @@ export function useAllRalliesWithAutoUpdate(limit = 20) {
       return transformedRallies
     },
     staleTime: 5 * 60 * 1000,
+  })
+}
+
+// ============================================================================
+// STEP 3: Add New Admin Rally Hook - Include All Rallies
+// ============================================================================
+
+// Add this NEW function to src/hooks/useOptimizedRallies.ts:
+
+export function useAdminAllRallies(limit = 50) {
+  return useQuery({
+    queryKey: [...rallyKeys.all, 'admin-all-rallies', limit],
+    queryFn: async (): Promise<TransformedRally[]> => {
+      console.log('🔄 Loading ALL rallies for admin (including inactive)...')
+      
+      const { data: rallies, error } = await supabase
+        .from('rallies')
+        .select(`
+          *,
+          game:games(name),
+          game_type:game_types(name)
+        `)
+        // NO is_active filter - admin sees everything
+        .order('competition_date', { ascending: false })
+        .limit(limit)
+
+      if (error) {
+        console.error('Error loading all rallies for admin:', error)
+        throw error
+      }
+
+      if (!rallies || rallies.length === 0) {
+        console.log('No rallies found for admin')
+        return []
+      }
+
+      const rallyIds = rallies.map(rally => rally.id)
+
+      // Get participant counts
+      const { data: registrationCounts, error: registrationsError } = await supabase
+        .from('rally_registrations')
+        .select('rally_id')
+        .in('rally_id', rallyIds)
+        .in('status', ['registered', 'confirmed'])
+
+      if (registrationsError) {
+        console.error('Error loading registration counts:', registrationsError)
+      }
+
+      // Count participants per rally
+      const participantCounts: Record<string, number> = {}
+      rallyIds.forEach(rallyId => {
+        participantCounts[rallyId] = 0
+      })
+
+      if (registrationCounts) {
+        registrationCounts.forEach(reg => {
+          participantCounts[reg.rally_id] = (participantCounts[reg.rally_id] || 0) + 1
+        })
+      }
+
+      // Transform data with additional admin info
+      const transformedRallies: TransformedRally[] = rallies.map((rally: any) => ({
+        ...rally,
+        game_name: rally.game?.name || 'Unknown Game',
+        game_type_name: rally.game_type?.name || 'Unknown Type',
+        registered_participants: participantCounts[rally.id] || 0,
+        // Add visual indicators for admin
+        display_status: !rally.is_active ? 'inactive' : rally.status,
+        is_visible_to_users: rally.is_active
+      }))
+
+      console.log(`✅ Loaded ${transformedRallies.length} rallies for admin (including ${transformedRallies.filter(r => !r.is_active).length} inactive)`)
+      return transformedRallies
+    },
+    staleTime: 2 * 60 * 1000,
   })
 }

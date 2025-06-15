@@ -82,7 +82,7 @@ export function useAuth() {
     // Setup auth state listener with proper player_name handling
     let authEventTimeout: NodeJS.Timeout | null = null
     
-    subscriptionRef.current = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth event:', event)
       
       // Clear any pending auth event processing

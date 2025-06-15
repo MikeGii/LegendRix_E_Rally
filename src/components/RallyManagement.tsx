@@ -6,6 +6,7 @@ import { useRallies, useDeleteRally } from '@/hooks/useRallyManagement'
 import { useRallyNotification } from '@/hooks/useRallyNotification'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { CreateRallyModal } from '@/components/rally-management/CreateRallyModal'
+import { useAdminAllRallies } from '@/hooks/useOptimizedRallies'
 
 interface Rally {
   id: string
@@ -34,7 +35,7 @@ export function RallyManagement() {
   const [selectedRally, setSelectedRally] = useState<string | null>(null)
 
   // Data hooks
-  const { data: rallies = [], isLoading, refetch } = useRallies()
+  const { data: rallies = [], isLoading, error, refetch } = useAdminAllRallies(100)
   const deleteRallyMutation = useDeleteRally()
   const rallyNotificationMutation = useRallyNotification()
 
