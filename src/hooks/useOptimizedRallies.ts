@@ -491,44 +491,45 @@ export function useAutoUpdateRallyStatuses() {
       
       let updatedCount = 0
       
-      for (const rally of rallies) {
-        const competitionDate = new Date(rally.competition_date)
-        const registrationDeadline = new Date(rally.registration_deadline)
-        const twentyFourHoursAfterCompetition = new Date(competitionDate.getTime() + (24 * 60 * 60 * 1000))
+    for (const rally of rallies) {
+      const competitionDate = new Date(rally.competition_date)
+      const registrationDeadline = new Date(rally.registration_deadline)
+      // FIXED: Changed from 24 hours to 12 hours as per requirements
+      const twelveHoursAfterCompetition = new Date(competitionDate.getTime() + (12 * 60 * 60 * 1000))
+      
+      let newStatus = rally.status
+      
+      // Determine correct status based on dates
+      if (now > twelveHoursAfterCompetition) {
+        newStatus = 'completed'
+      } else if (now > competitionDate) {
+        newStatus = 'active'
+      } else if (now > registrationDeadline) {
+        newStatus = 'registration_closed'
+      } else {
+        newStatus = 'registration_open'
+      }
+      
+      // CRITICAL FIX: Only update status, NEVER set is_active = false automatically
+      if (newStatus !== rally.status) {
+        console.log(`📅 Updating rally ${rally.id} status: ${rally.status} → ${newStatus}`)
         
-        let newStatus = rally.status
+        const { error: updateError } = await supabase
+          .from('rallies')
+          .update({ 
+            status: newStatus,
+            updated_at: currentTime
+            // REMOVED: Any is_active updates
+          })
+          .eq('id', rally.id)
         
-        // Determine correct status based on dates
-        if (now > twentyFourHoursAfterCompetition) {
-          newStatus = 'completed'
-        } else if (now > competitionDate) {
-          newStatus = 'active'
-        } else if (now > registrationDeadline) {
-          newStatus = 'registration_closed'
+        if (updateError) {
+          console.error(`Error updating rally ${rally.id}:`, updateError)
         } else {
-          newStatus = 'registration_open'
-        }
-        
-        // CRITICAL FIX: Only update status, NEVER set is_active = false automatically
-        if (newStatus !== rally.status) {
-          console.log(`📅 Updating rally ${rally.id} status: ${rally.status} → ${newStatus}`)
-          
-          const { error: updateError } = await supabase
-            .from('rallies')
-            .update({ 
-              status: newStatus,
-              updated_at: currentTime
-              // REMOVED: Any is_active updates
-            })
-            .eq('id', rally.id)
-          
-          if (updateError) {
-            console.error(`Error updating rally ${rally.id}:`, updateError)
-          } else {
-            updatedCount++
-          }
+          updatedCount++
         }
       }
+    }
       
       console.log(`✅ Rally status update complete. Updated ${updatedCount} rallies.`)
       return { updated: updatedCount }
