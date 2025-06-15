@@ -1,4 +1,4 @@
-// src/app/page.tsx - Fixed with original layout and cover photo
+// src/app/page.tsx - PROPERLY INTEGRATED with all original features preserved
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -9,7 +9,7 @@ import { LoginForm } from '@/components/auth/LoginForm'
 import { RegisterForm } from '@/components/auth/RegisterForm'
 import { VerificationMessage } from '@/components/auth/VerificationMessage'
 import { CompetitionsModal } from '@/components/landing/CompetitionsModal'
-import { AdminQuickActions } from '@/components/admin/AdminQuickActions'
+import { EdetabelModal } from '@/components/landing/EdetabelModal'
 import { useUpcomingRallies } from '@/hooks/useOptimizedRallies'
 
 // Import modular landing page components
@@ -27,6 +27,7 @@ function HomeContent() {
   const [authView, setAuthView] = useState<AuthView>('login')
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [isCompetitionsModalOpen, setIsCompetitionsModalOpen] = useState(false)
+  const [isEdetabelModalOpen, setIsEdetabelModalOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
   // Load upcoming rallies for competitions modal
@@ -100,6 +101,11 @@ function HomeContent() {
 
   const handleOpenCompetitions = () => {
     setIsCompetitionsModalOpen(true)
+  }
+
+  // NEW: Handle opening Edetabel modal
+  const handleOpenEdetabel = () => {
+    setIsEdetabelModalOpen(true)
   }
 
   // Simple loading state to prevent hydration issues
@@ -225,10 +231,13 @@ function HomeContent() {
             onDashboard={handleDashboard}
           />
 
-          {/* Features Section */}
-          <FeaturesSection onOpenCompetitions={handleOpenCompetitions} />
+          {/* Features Section - NOW WITH EDETABEL */}
+          <FeaturesSection 
+            onOpenCompetitions={handleOpenCompetitions}
+            onOpenEdetabel={handleOpenEdetabel}
+          />
 
-          {/* NEW: Supporters Section - Replaces Call to Action */}
+          {/* Supporters Section */}
           <SupportersSection />
 
           {/* Social Media Section */}
@@ -300,6 +309,12 @@ function HomeContent() {
         onClose={() => setIsCompetitionsModalOpen(false)}
         rallies={upcomingRallies}
         isLoading={isLoadingRallies}
+      />
+
+      {/* NEW: Edetabel Modal */}
+      <EdetabelModal
+        isOpen={isEdetabelModalOpen}
+        onClose={() => setIsEdetabelModalOpen(false)}
       />
     </div>
   )

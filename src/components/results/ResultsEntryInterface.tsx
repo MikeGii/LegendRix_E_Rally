@@ -5,6 +5,7 @@ import { useRallyClasses } from '@/hooks/useRallyManagement'
 import { useResultsState } from './hooks/useResultsState'
 import { useParticipantActions } from './hooks/useParticipantActions'
 import { useSaveResults } from './hooks/useSaveResults'
+import { useRallyResultsStatus } from './hooks/useRallyResultsStatus'
 import { calculatePositionsFromPoints, clearParticipantResults, sortParticipantsByResults } from './utils/resultCalculations'
 import { ResultsHeader } from './components/ResultsHeader'
 import { AddParticipantForm } from './components/AddParticipantForm'
@@ -26,6 +27,7 @@ export function ResultsEntryInterface({
 }: ResultsEntryInterfaceProps) {
   // Data hooks
   const { data: rallyClasses = [] } = useRallyClasses(rallyId)
+  const { data: resultsStatus } = useRallyResultsStatus(rallyId)
 
   // State management
   const {
@@ -83,6 +85,9 @@ export function ResultsEntryInterface({
   // Sort participants for display
   const sortedParticipants = sortParticipantsByResults(participants, results)
 
+  // Disable editing if results are approved
+  const isEditingDisabled = resultsStatus?.results_approved || false
+
   if (isLoading) {
     return (
       <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
@@ -103,17 +108,17 @@ export function ResultsEntryInterface({
       {/* Header & Controls */}
       <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
         <ResultsHeader
-          editMode={editMode}
+          editMode={editMode && !isEditingDisabled}
           showAddParticipant={showAddParticipant}
-          onToggleEditMode={() => setEditMode(!editMode)}
-          onToggleAddParticipant={() => setShowAddParticipant(!showAddParticipant)}
+          onToggleEditMode={() => !isEditingDisabled && setEditMode(!editMode)}
+          onToggleAddParticipant={() => !isEditingDisabled && setShowAddParticipant(!showAddParticipant)}
           onCalculatePositions={handleCalculatePositions}
           onSaveResults={handleSave}
           isSaving={saveResultsMutation.isPending}
         />
 
         <AddParticipantForm
-          show={showAddParticipant}
+          show={showAddParticipant && !isEditingDisabled}
           participant={newParticipant}
           rallyClasses={rallyClasses}
           isAdding={addManualParticipantMutation.isPending}
@@ -125,12 +130,12 @@ export function ResultsEntryInterface({
         <ParticipantsTable
           participants={sortedParticipants}
           results={results}
-          editMode={editMode}
+          editMode={editMode && !isEditingDisabled}
           isRemoving={removeParticipantMutation.isPending}
           onUpdateResult={updateResult}
           onClearResults={handleClearResults}
           onRemoveParticipant={handleRemoveParticipant}
-          onShowAddParticipant={() => setShowAddParticipant(true)}
+          onShowAddParticipant={() => !isEditingDisabled && setShowAddParticipant(true)}
         />
       </div>
 
@@ -141,6 +146,21 @@ export function ResultsEntryInterface({
         saveSuccess={saveResultsMutation.isSuccess}
         isSaving={saveResultsMutation.isPending}
       />
+
+      {/* Approval Notice */}
+      {isEditingDisabled && (
+        <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+          <div className="flex items-start">
+            <span className="text-blue-400 text-lg mr-3">ℹ️</span>
+            <div>
+              <p className="text-blue-400 font-medium">Tulemused on kinnitatud</p>
+              <p className="text-blue-300 text-sm mt-1">
+                Selle ralli tulemused on kinnitatud ja avalikustatud. Muudatused pole enam võimalikud.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
