@@ -18,9 +18,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    console.log('🗑️ Deleting user:', userId)
-
-    // Get user details before deletion (for logging)
+    // Get user details before deletion
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('name, email')
@@ -28,7 +26,6 @@ export async function DELETE(request: NextRequest) {
       .single()
 
     if (userError) {
-      console.error('User not found:', userError)
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -43,14 +40,11 @@ export async function DELETE(request: NextRequest) {
       .eq('id', userId)
 
     if (deleteError) {
-      console.error('Delete error:', deleteError)
       return NextResponse.json(
         { error: 'Failed to delete user' },
         { status: 500 }
       )
     }
-
-    console.log(`✅ User deleted successfully: ${user.name} (${user.email})`)
 
     return NextResponse.json({
       message: 'User deleted successfully',
@@ -62,7 +56,6 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Delete user error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
