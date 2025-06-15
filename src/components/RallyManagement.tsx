@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { useRallies, useDeleteRally } from '@/hooks/useRallyManagement'
+import { useRallyNotification } from '@/hooks/useRallyNotification'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { CreateRallyModal } from '@/components/rally-management/CreateRallyModal'
 
@@ -35,6 +36,7 @@ export function RallyManagement() {
   // Data hooks
   const { data: rallies = [], isLoading, refetch } = useRallies()
   const deleteRallyMutation = useDeleteRally()
+  const rallyNotificationMutation = useRallyNotification()
 
   const handleCreateRally = () => {
     setEditingRally(null)
@@ -53,6 +55,35 @@ export function RallyManagement() {
       } catch (error) {
         console.error('Error deleting rally:', error)
         alert('Ralli kustutamine ebaõnnestus. Palun proovi uuesti.')
+      }
+    }
+  }
+
+    // NEW: Handle rally notification
+  const handleSendNotification = async (rally: Rally) => {
+    // For testing, we can use the admin email
+    const useTestEmail = true // Set to false for production
+    const testEmail = useTestEmail ? 'ewrc.admin@ideemoto.ee' : undefined
+    
+    const confirmMessage = useTestEmail 
+      ? `Kas soovite saata teavituse testimiseks e-posti aadressile ewrc.admin@ideemoto.ee?\n\nRalli: ${rally.name}`
+      : `Kas olete kindel, et soovite saata e-maili teavituse kõikidele registreeritud kasutajatele?\n\nRalli: ${rally.name}`
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        const result = await rallyNotificationMutation.mutateAsync({
+          rallyId: rally.id,
+          testEmail
+        })
+        
+        const successMessage = useTestEmail
+          ? `✅ Test e-mail saadetud!\n\nSaadeti: ${result.emailsSent} e-maili\nEbaõnnestus: ${result.emailsFailed} e-maili`
+          : `✅ Teavitus saadetud!\n\nSaadeti: ${result.emailsSent} e-maili\nEbaõnnestus: ${result.emailsFailed} e-maili\nKokku kasutajaid: ${result.totalEmails}`
+        
+        alert(successMessage)
+      } catch (error) {
+        console.error('Error sending notification:', error)
+        alert('E-maili saatmine ebaõnnestus. Palun proovi uuesti.')
       }
     }
   }
@@ -215,15 +246,14 @@ export function RallyManagement() {
                       {rally.status.toUpperCase()}
                     </span>
                   </div>
-
-                  {/* Rally Actions */}
-                  <div className="flex space-x-2">
+                  {/* Rally Actions - UPDATED WITH NOTIFICATION BUTTON */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleEditRally(rally)
                       }}
-                      className="flex-1 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg text-sm font-medium transition-all duration-200"
+                      className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg text-sm font-medium transition-all duration-200"
                     >
                       Muuda
                     </button>
@@ -233,9 +263,33 @@ export function RallyManagement() {
                         handleDeleteRally(rally.id)
                       }}
                       disabled={deleteRallyMutation.isPending}
-                      className="flex-1 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                      className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
                     >
                       Kustuta
+                    </button>
+                  </div>
+
+                  {/* NEW: Notification Button */}
+                  <div className="mb-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleSendNotification(rally)
+                      }}
+                      disabled={rallyNotificationMutation.isPending}
+                      className="w-full px-3 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-600/30 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                    >
+                      {rallyNotificationMutation.isPending ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-green-400/30 border-t-green-400 rounded-full animate-spin"></div>
+                          <span>Saadan...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center space-x-2">
+                          <span>📧</span>
+                          <span>Saada teavitus</span>
+                        </div>
+                      )}
                     </button>
                   </div>
 
