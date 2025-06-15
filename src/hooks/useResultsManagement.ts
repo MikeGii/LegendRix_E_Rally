@@ -206,9 +206,10 @@ export function useRallyParticipants(rallyId: string) {
 
       if (realError) {
         console.error('Error loading rally participants:', realError)
+        throw realError
       }
 
-      // FIXED: Get manual participants from rally_results - removed player_name from select
+      // Get manual participants from rally_results
       let manualParticipants: any[] = []
       try {
         const { data: manualData, error: manualError } = await supabase
@@ -219,11 +220,12 @@ export function useRallyParticipants(rallyId: string) {
             class_name,
             overall_position,
             total_points,
-            user_id
+            user_id,
+            results_entered_at
           `)
           .eq('rally_id', rallyId)
-          .is('user_id', null) // Manual participants have null user_id
-          .not('participant_name', 'is', null) // Ensure participant_name exists
+          .is('user_id', null)
+          .not('participant_name', 'is', null)
 
         if (manualError) {
           console.log('Note: No manual participants found:', manualError.message)
@@ -237,15 +239,16 @@ export function useRallyParticipants(rallyId: string) {
 
       const allParticipants: RallyParticipant[] = []
 
-      // Transform real participants - SIMPLIFIED display data
+      // Transform real participants
       if (realParticipants) {
         const participantUserIds = realParticipants.map(p => p.user_id)
         let existingResults: any[] = []
         
         if (participantUserIds.length > 0) {
+          // Get results with all fields needed
           const { data: results, error: resultsError } = await supabase
             .from('rally_results')
-            .select('user_id, overall_position, total_points')
+            .select('user_id, overall_position, total_points, results_entered_at')
             .eq('rally_id', rallyId)
             .in('user_id', participantUserIds)
 
@@ -261,38 +264,46 @@ export function useRallyParticipants(rallyId: string) {
           resultsMap[r.user_id] = r
         })
 
-        // SIMPLIFIED: Only show player_name and class for registered participants
+        // Transform real participants
         realParticipants.forEach((p: any) => {
           const result = resultsMap[p.user_id]
+          
+          // FIXED: Backward compatible logic - if results_entered_at is missing but overall_position exists,
+          // consider results as entered (for existing data)
+          const hasResultsEntered = result?.results_entered_at || 
+                                   (result?.overall_position !== null && result?.overall_position !== undefined)
           
           allParticipants.push({
             id: p.id,
             user_id: p.user_id,
-            user_name: '', // Hide real name
-            player_name: p.users.player_name, // Only show player name
-            user_email: '', // Hide email
+            user_name: '',
+            player_name: p.users.player_name,
+            user_email: '',
             class_name: p.game_classes.name,
             registration_date: p.registration_date,
             overall_position: result?.overall_position,
             total_points: result?.total_points,
-            results_entered: result?.overall_position !== null
+            results_entered: !!hasResultsEntered
           })
         })
       }
 
-      // FIXED: Transform manual participants
+      // Transform manual participants with backward compatibility
       manualParticipants.forEach(mp => {
+        const hasResultsEntered = mp.results_entered_at || 
+                                 (mp.overall_position !== null && mp.overall_position !== undefined)
+        
         allParticipants.push({
           id: mp.id,
           user_id: 'manual-participant',
           user_name: '',
-          player_name: mp.participant_name, // Use participant_name for manual participants
+          player_name: mp.participant_name,
           user_email: '',
           class_name: mp.class_name || 'Manual Entry',
           registration_date: '2024-01-01T00:00:00Z',
           overall_position: mp.overall_position,
           total_points: mp.total_points,
-          results_entered: mp.overall_position !== null
+          results_entered: !!hasResultsEntered
         })
       })
 
@@ -306,7 +317,11 @@ export function useRallyParticipants(rallyId: string) {
         return (a.player_name || a.user_name).localeCompare(b.player_name || b.user_name)
       })
 
-      console.log(`✅ Loaded ${allParticipants.length} participants (${realParticipants?.length || 0} real + ${manualParticipants.length} manual)`)
+      console.log(`✅ Loaded ${allParticipants.length} participants`)
+      // Log participants with results for debugging
+      const withResults = allParticipants.filter(p => p.results_entered)
+      console.log(`📊 ${withResults.length}/${allParticipants.length} participants have results entered`)
+      
       return allParticipants
     },
     enabled: !!rallyId,

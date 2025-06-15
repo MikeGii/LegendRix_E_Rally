@@ -1,11 +1,15 @@
-// src/components/landing/sections/EdetabelSection.tsx
+// src/components/landing/sections/EdetabelSection.tsx - FIXED VERSION
 'use client'
 
 import { useState } from 'react'
 import { useApprovedRallies } from '@/hooks/useApprovedRallies'
-import { EdetabelModal } from '@/components/landing/EdetabelModal'
+import { EdetabelModal } from '../EdetabelModal'
 
-export function EdetabelSection() {
+interface EdetabelSectionProps {
+  onOpenCompetitions?: () => void
+}
+
+export function EdetabelSection({ onOpenCompetitions }: EdetabelSectionProps) {
   const [isEdetabelModalOpen, setIsEdetabelModalOpen] = useState(false)
   const { data: approvedRallies = [] } = useApprovedRallies()
 
@@ -18,7 +22,7 @@ export function EdetabelSection() {
       <div className="grid md:grid-cols-3 gap-8 mb-20">
         {/* Võistlused */}
         <button
-          onClick={() => {/* onOpenCompetitions from parent */}}
+          onClick={onOpenCompetitions}
           className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-10 text-center hover:bg-slate-800/50 hover:border-slate-700/50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 cursor-pointer group"
         >
           <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-blue-600/30 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-2 ring-blue-500/20 group-hover:ring-blue-400/30 transition-all duration-300">

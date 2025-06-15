@@ -1,4 +1,4 @@
-// src/components/results/RallyHeader.tsx - ENHANCED VERSION with approval system
+// src/components/results/RallyHeader.tsx - FIXED VERSION with better approval logic
 'use client'
 
 import { CompletedRally, RallyParticipant } from '@/hooks/useResultsManagement'
@@ -25,6 +25,7 @@ export function RallyHeader({ rally, participants, onAddParticipant }: RallyHead
     })
   }
 
+  // FIXED: Better logic for determining participants with results
   const participantsWithResults = participants.filter(p => p.results_entered)
   const participantsNeedingResults = participants.filter(p => !p.results_entered)
   
@@ -32,62 +33,63 @@ export function RallyHeader({ rally, participants, onAddParticipant }: RallyHead
   const progressPercentage = resultsStatus?.progress_percentage || 
     (participants.length > 0 ? Math.round((participantsWithResults.length / participants.length) * 100) : 0)
   
-  const isReadyForApproval = progressPercentage === 100 && resultsStatus?.results_completed && !resultsStatus?.results_approved
+  // FIXED: Better approval readiness logic
+  const isReadyForApproval = progressPercentage === 100 && 
+    resultsStatus?.results_completed && 
+    !resultsStatus?.results_approved &&
+    participantsNeedingResults.length === 0
 
   const handleAutoComplete = async () => {
     if (participantsNeedingResults.length === 0) return
 
-    const message = `Kas oled kindel, et soovid automaatselt seada ${participantsNeedingResults.length} puuduva osaleja tulemused 0 punktile?`
+    const message = `Kas oled kindel, et soovid automaatselt seada ${participantsNeedingResults.length} puuduva osaleja tulemused 0 punktile?\n\nNeed osalejad saavad viimased kohad ralli lõpus.`
     
     if (confirm(message)) {
-      await autoCompleteMutation.mutateAsync(rally.id)
+      try {
+        await autoCompleteMutation.mutateAsync(rally.id)
+      } catch (error) {
+        console.error('Auto-complete failed:', error)
+        alert('Viga automaatsel täiendamisel. Palun proovi uuesti.')
+      }
     }
   }
 
   const handleApproveResults = async () => {
-    const message = `Kas oled kindel, et soovid kinnitada ralli "${rally.name}" tulemused? Pärast kinnitamist ilmuvad tulemused avalikus edetabelis.`
+    const message = `Kas oled kindel, et soovid kinnitada ralli "${rally.name}" tulemused?\n\nPärast kinnitamist:\n• Tulemused ilmuvad avalikus edetabelis\n• Tulemusi ei saa enam muuta\n• Ralli märgitakse lõpetatuks`
     
     if (confirm(message)) {
-      await approveResultsMutation.mutateAsync(rally.id)
+      try {
+        await approveResultsMutation.mutateAsync(rally.id)
+        alert('Tulemused on edukalt kinnitatud ja avaldatud!')
+      } catch (error) {
+        console.error('Approval failed:', error)
+        alert(`Viga tulemuste kinnitamisel: ${error instanceof Error ? error.message : 'Tundmatu viga'}`)
+      }
     }
   }
 
   return (
-    <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-      <div className="flex items-start justify-between mb-6">
+    <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 space-y-6">
+      {/* Rally Info Header */}
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <h2 className="text-xl font-bold text-white">
-              {rally.name}
-            </h2>
-            {resultsStatus?.results_approved && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-500/20 text-green-400 border border-green-500/30">
-                ✅ Kinnitatud
-              </span>
-            )}
+          <h2 className="text-2xl font-bold text-white mb-2">{rally.name}</h2>
+          <div className="text-slate-400 text-sm space-y-1">
+            <p>📅 {formatDate(rally.competition_date)}</p>
+            <p>🎮 {rally.game_name} - {rally.game_type_name}</p>
+            {rally.description && <p>📝 {rally.description}</p>}
           </div>
-          
-          <div className="flex items-center space-x-4 text-sm text-slate-400 mb-3">
-            <span>📅 {formatDate(rally.competition_date)}</span>
-            <span>🎮 {rally.game_name}</span>
-            <span>👥 {participants.length} osalejat</span>
-          </div>
-
-          {rally.description && (
-            <p className="text-slate-300 text-sm mt-2 max-w-2xl">
-              {rally.description}
-            </p>
-          )}
         </div>
-        
+
         {/* Action Buttons */}
-        <div className="flex items-center space-x-3">
-          {/* Auto Complete Results Button */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* FIXED: Auto Complete Button - show only when there are missing results and not approved */}
           {participantsNeedingResults.length > 0 && !resultsStatus?.results_approved && (
             <button
               onClick={handleAutoComplete}
               disabled={autoCompleteMutation.isPending}
               className="px-4 py-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-600/30 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
+              title="Seab puuduvate osalejate tulemused automaatselt 0 punktile ja viimastele kohtadele"
             >
               {autoCompleteMutation.isPending ? (
                 <>⏳ Täiendan...</>
@@ -131,12 +133,12 @@ export function RallyHeader({ rally, participants, onAddParticipant }: RallyHead
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>{participantsWithResults.length} / {participants.length} osalejal tulemused sisestatud</span>
             {resultsStatus?.results_completed && (
-              <span className="text-green-400">✓ Tulemused salvestatud</span>
+              <span className="text-green-400">✓ Tulemused valmis</span>
             )}
           </div>
         </div>
 
-        {/* Approval Button */}
+        {/* FIXED: Approval Section - show when ready */}
         {isReadyForApproval && (
           <div className="border-t border-slate-700/50 pt-4">
             <div className="flex items-center justify-between">
@@ -185,7 +187,7 @@ export function RallyHeader({ rally, participants, onAddParticipant }: RallyHead
           </div>
         </div>
 
-        {/* Approval Info */}
+        {/* Status Messages */}
         {resultsStatus?.results_approved && resultsStatus.approved_at && (
           <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
             <div className="flex items-start">
@@ -197,6 +199,22 @@ export function RallyHeader({ rally, participants, onAddParticipant }: RallyHead
                 </p>
                 <p className="text-green-300 text-sm">
                   Tulemused on nüüd nähtavad avalikus edetabelis.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FIXED: Warning when not all results are entered */}
+        {participantsNeedingResults.length > 0 && !resultsStatus?.results_approved && (
+          <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-4">
+            <div className="flex items-start">
+              <span className="text-amber-400 text-lg mr-3">⚠️</span>
+              <div>
+                <p className="text-amber-400 font-medium">Pooleli tulemused</p>
+                <p className="text-amber-300 text-sm mt-1">
+                  {participantsNeedingResults.length} osalejal puuduvad veel tulemused. 
+                  Kasuta "Täienda automaatselt" nuppu, et seada neile 0 punkti.
                 </p>
               </div>
             </div>

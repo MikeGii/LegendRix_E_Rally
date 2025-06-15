@@ -136,18 +136,17 @@ export function ParticipantsTable({
                     </span>
                   )}
                 </td>
-
                 {/* Status */}
                 <td className="py-4 px-6 text-center">
-                  {result.overallPosition ? (
+                {participant.results_entered ? (  // FIXED: Use participant.results_entered instead of result.overallPosition
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
-                      ✓ Valmis
+                    ✓ Valmis
                     </span>
-                  ) : (
+                ) : (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                      Ootab
+                    Ootab
                     </span>
-                  )}
+                )}
                 </td>
                 
                 {/* Actions */}

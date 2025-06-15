@@ -1,4 +1,4 @@
-// src/components/landing/EdetabelModal.tsx
+// src/components/landing/EdetabelModal.tsx - FIXED VERSION
 'use client'
 
 import { useState } from 'react'
@@ -47,6 +47,20 @@ export function EdetabelModal({ isOpen, onClose }: EdetabelModalProps) {
   const totalParticipants = approvedRallies.reduce((sum, rally) => sum + rally.total_participants, 0)
   const selectedRally = approvedRallies.find(r => r.id === selectedRallyId)
 
+  // FIXED: Handle close function properly
+  const handleClose = () => {
+    setSelectedRallyId(null)
+    onClose()
+  }
+
+  const handleBackdropClick = () => {
+    if (selectedRallyId) {
+      setSelectedRallyId(null)
+    } else {
+      handleClose()
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -56,7 +70,7 @@ export function EdetabelModal({ isOpen, onClose }: EdetabelModalProps) {
         {/* Backdrop */}
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-          onClick={() => setSelectedRallyId(null) || onClose()}
+          onClick={handleBackdropClick}
         />
         
         {/* Modal */}
@@ -74,7 +88,7 @@ export function EdetabelModal({ isOpen, onClose }: EdetabelModalProps) {
                 </div>
                 
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                 >
                   <span className="text-2xl">×</span>
@@ -91,64 +105,71 @@ export function EdetabelModal({ isOpen, onClose }: EdetabelModalProps) {
                     </div>
                     <input
                       type="text"
+                      placeholder="Otsi rallisid..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Otsi ralli või mängu nime järgi..."
-                      className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="block w-full pl-10 pr-3 py-2 border border-slate-600 rounded-lg bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
 
                 {/* Game Filter */}
-                <select
-                  value={gameFilter}
-                  onChange={(e) => setGameFilter(e.target.value)}
-                  className="px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:border-blue-500"
-                >
-                  <option value="">Kõik mängud</option>
-                  {availableGames.map((game) => (
-                    <option key={game} value={game}>{game}</option>
-                  ))}
-                </select>
+                <div className="lg:w-48">
+                  <select
+                    value={gameFilter}
+                    onChange={(e) => setGameFilter(e.target.value)}
+                    className="block w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800/50 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Kõik mängud</option>
+                    {availableGames.map(game => (
+                      <option key={game} value={game}>{game}</option>
+                    ))}
+                  </select>
+                </div>
 
                 {/* Sort */}
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:border-blue-500"
-                >
-                  <option value="date">Kuupäev</option>
-                  <option value="name">Nimi</option>
-                  <option value="participants">Osalejaid</option>
-                </select>
+                <div className="lg:w-48">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'date' | 'name' | 'participants')}
+                    className="block w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800/50 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="date">Kuupäev</option>
+                    <option value="name">Nimi</option>
+                    <option value="participants">Osalejate arv</option>
+                  </select>
+                </div>
               </div>
             </div>
 
             {/* Content */}
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
               {isLoading ? (
-                <div className="text-center py-12">
-                  <div className="inline-block w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-                  <p className="text-slate-400">Laen edetabelit...</p>
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="bg-slate-800/30 rounded-xl p-6 animate-pulse">
+                      <div className="h-6 bg-slate-700 rounded w-1/3 mb-4"></div>
+                      <div className="h-4 bg-slate-700 rounded w-1/2 mb-2"></div>
+                      <div className="h-4 bg-slate-700 rounded w-1/4"></div>
+                    </div>
+                  ))}
                 </div>
               ) : filteredRallies.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span className="text-4xl text-slate-500">🏆</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">
-                    {approvedRallies.length === 0 ? 'Tulemusi pole veel kinnitatud' : 'Tulemused ei vasta filtritele'}
+                <div className="text-center py-16">
+                  <div className="text-6xl mb-4">🏆</div>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    {approvedRallies.length === 0 ? 'Pole veel kinnitatud rallisid' : 'Rallisid ei leitud'}
                   </h3>
-                  <p className="text-slate-400 max-w-md mx-auto">
+                  <p className="text-slate-400">
                     {approvedRallies.length === 0 
-                      ? 'Kui rallidel on tulemused sisestatud ja kinnitatud, ilmuvad need siia.'
-                      : 'Proovi muuta otsingukriteeriume või filtreid.'
+                      ? 'Kinnitatud ralliid ilmuvad siia, kui tulemused on heaks kiidetud.'
+                      : 'Proovi muuta filtrit või otsingusõna.'
                     }
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredRallies.map((rally) => (
+                <div className="space-y-6">
+                  {filteredRallies.map(rally => (
                     <ApprovedRallyCard
                       key={rally.id}
                       rally={rally}
@@ -158,26 +179,11 @@ export function EdetabelModal({ isOpen, onClose }: EdetabelModalProps) {
                 </div>
               )}
             </div>
-
-            {/* Footer */}
-            <div className="sticky bottom-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-700 p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">
-                  Näidatakse {filteredRallies.length} tulemust
-                </span>
-                <button
-                  onClick={onClose}
-                  className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
-                >
-                  Sulge
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Rally Results Modal (on top) */}
+      {/* Rally Results Modal */}
       {selectedRally && (
         <RallyResultsModal
           rally={selectedRally}
