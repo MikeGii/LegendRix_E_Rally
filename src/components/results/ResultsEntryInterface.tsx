@@ -1,4 +1,4 @@
-// src/components/results/ResultsEntryInterface.tsx
+// src/components/results/ResultsEntryInterface.tsx - COMPLETE CLEAN VERSION
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -47,7 +47,7 @@ export function ResultsEntryInterface({
   const [editMode, setEditMode] = useState(false)
   const queryClient = useQueryClient()
 
-  // Load real rally classes
+  // Load rally classes for manual participants
   const { data: rallyClasses = [] } = useQuery({
     queryKey: ['rally-classes', rallyId],
     queryFn: async (): Promise<RallyClass[]> => {
@@ -112,10 +112,9 @@ export function ResultsEntryInterface({
         .from('rally_results')
         .insert({
           rally_id: rallyId,
-          user_id: null,
+          user_id: null, // NULL for manual participants
           registration_id: null,
           participant_name: participant.playerName,
-          player_name: participant.playerName,
           class_name: participant.className,
           overall_position: null,
           total_points: 0
@@ -154,21 +153,21 @@ export function ResultsEntryInterface({
         const participant = participants.find(p => p.id === result.participantId)
         if (!participant) continue
 
+        const isManualParticipant = participant.user_id === 'manual-participant'
+        
         const { error } = await supabase
           .from('rally_results')
           .upsert({
             rally_id: rallyId,
-            user_id: participant.user_id === 'manual-participant' ? null : participant.user_id,
-            registration_id: participant.user_id === 'manual-participant' ? null : participant.id,
-            participant_name: result.playerName,
-            player_name: result.playerName,
-            class_name: result.className,
+            user_id: isManualParticipant ? null : participant.user_id,
+            registration_id: isManualParticipant ? null : participant.id,
+            participant_name: isManualParticipant ? result.playerName : null,
+            class_name: isManualParticipant ? result.className : null,
             overall_position: result.overallPosition,
             total_points: result.totalPoints,
-            results_entered_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }, {
-            onConflict: participant.user_id === 'manual-participant' ? 'rally_id,participant_name' : 'rally_id,user_id'
+            onConflict: isManualParticipant ? 'rally_id,participant_name' : 'rally_id,user_id'
           })
 
         if (error) {
@@ -245,52 +244,47 @@ export function ResultsEntryInterface({
           <div className="flex-1">
             <h3 className="text-xl font-bold text-white mb-2">Tulemuste sisestamine</h3>
             <p className="text-slate-400 text-sm">
-              Sisesta osalejate kohad ja punktid. Automaatselt arvutatakse positsioonid punktide järgi.
+              Sisesta osalejate kohad ja punktid.
             </p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setShowAddParticipant(!showAddParticipant)}
-              className="inline-flex items-center px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-600/30 rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
             >
-              <span className="mr-2">➕</span>
+              <span className="text-lg">➕</span>
               Lisa osaleja
             </button>
             
-            {!editMode ? (
-              <button
-                onClick={() => setEditMode(true)}
-                disabled={participants.length === 0}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
-              >
-                <span className="mr-2">✏️</span>
-                Muuda tulemusi
-              </button>
-            ) : (
-              <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setEditMode(!editMode)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                editMode 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'bg-gray-600 hover:bg-gray-700 text-white'
+              }`}
+            >
+              {editMode ? '✅ Valmis' : '✏️ Muuda'}
+            </button>
+            
+            {editMode && (
+              <>
                 <button
                   onClick={calculatePositionsFromPoints}
-                  className="inline-flex items-center px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-600/30 rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all duration-200"
                 >
-                  <span className="mr-2">🔢</span>
-                  Arvuta kohad
+                  📊 Arvuta kohad
                 </button>
-                <button
-                  onClick={() => setEditMode(false)}
-                  className="px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors"
-                >
-                  Tühista
-                </button>
+                
                 <button
                   onClick={() => saveResultsMutation.mutate()}
                   disabled={saveResultsMutation.isPending}
-                  className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 text-white rounded-lg font-medium transition-colors"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
                 >
-                  <span className="mr-2">💾</span>
-                  {saveResultsMutation.isPending ? 'Salvestab...' : 'Salvesta'}
+                  {saveResultsMutation.isPending ? '💾 Salvestab...' : '💾 Salvesta'}
                 </button>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -298,51 +292,43 @@ export function ResultsEntryInterface({
         {/* Add Manual Participant Form */}
         {showAddParticipant && (
           <div className="border-t border-slate-700/50 pt-6">
-            <h4 className="text-lg font-semibold text-white mb-4">Lisa uus osaleja käsitsi</h4>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
-              <div className="lg:col-span-6">
+            <h4 className="text-lg font-semibold text-white mb-4">Lisa käsitsi osaleja</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Mängija nimi / Player name
+                  Mängijanimi
                 </label>
                 <input
                   type="text"
-                  placeholder="nt. OttT_EST, Speedster123"
                   value={newParticipant.playerName}
-                  onChange={(e) => setNewParticipant({...newParticipant, playerName: e.target.value})}
-                  className="w-full px-4 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  onChange={(e) => setNewParticipant(prev => ({ ...prev, playerName: e.target.value }))}
+                  className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                  placeholder="Sisesta mängijanimi"
                 />
               </div>
               
-              <div className="lg:col-span-4">
+              <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Klass
                 </label>
                 <select
                   value={newParticipant.className}
-                  onChange={(e) => setNewParticipant({...newParticipant, className: e.target.value})}
-                  className="w-full px-4 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  onChange={(e) => setNewParticipant(prev => ({ ...prev, className: e.target.value }))}
+                  className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
                 >
-                  {rallyClasses.length === 0 ? (
-                    <option value="">Klassi pole saadaval</option>
-                  ) : (
-                    <>
-                      <option value="">Vali klass</option>
-                      {rallyClasses.map(cls => (
-                        <option key={cls.id} value={cls.class_name}>
-                          {cls.class_name}
-                        </option>
-                      ))}
-                    </>
-                  )}
+                  {rallyClasses.map(cls => (
+                    <option key={cls.id} value={cls.class_name}>
+                      {cls.class_name}
+                    </option>
+                  ))}
                 </select>
               </div>
               
-              <div className="lg:col-span-2">
+              <div className="flex items-end">
                 <button
                   onClick={addManualParticipant}
-                  disabled={!newParticipant.playerName || !newParticipant.className || addManualParticipantMutation.isPending}
-                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+                  disabled={!newParticipant.playerName.trim() || !newParticipant.className.trim() || addManualParticipantMutation.isPending}
+                  className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
                 >
                   {addManualParticipantMutation.isPending ? 'Lisab...' : 'Lisa'}
                 </button>
@@ -415,9 +401,6 @@ export function ResultsEntryInterface({
                     Mängija nimi
                   </th>
                   <th className="text-left py-4 px-6 text-slate-400 font-medium border-b border-slate-700/50">
-                    Kasutaja
-                  </th>
-                  <th className="text-left py-4 px-6 text-slate-400 font-medium border-b border-slate-700/50">
                     Klass
                   </th>
                   <th className="text-right py-4 px-6 text-slate-400 font-medium border-b border-slate-700/50">
@@ -446,46 +429,36 @@ export function ResultsEntryInterface({
                     if (!aResult?.overallPosition && bResult?.overallPosition) return 1
                     return (aResult?.playerName || '').localeCompare(bResult?.playerName || '')
                   })
-                  .map((participant, index) => {
-                    const result = results[participant.id] || {
-                      participantId: participant.id,
-                      playerName: participant.player_name || participant.user_name,
-                      className: participant.class_name,
-                      overallPosition: participant.overall_position,
-                      totalPoints: participant.total_points,
-                      eventResults: {}
-                    }
-
+                  .map((participant) => {
+                    const result = results[participant.id]
                     const isManual = participant.user_id === 'manual-participant'
+                    
+                    if (!result) return null
 
                     return (
-                      <tr 
-                        key={participant.id} 
-                        className={`border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors ${
-                          index % 2 === 0 ? 'bg-slate-900/20' : ''
-                        }`}
-                      >
+                      <tr key={participant.id} className="border-b border-slate-700/30 hover:bg-slate-800/20 transition-all duration-200">
                         {/* Position */}
                         <td className="py-4 px-6">
                           {editMode ? (
                             <input
                               type="number"
-                              min="1"
                               value={result.overallPosition || ''}
-                              onChange={(e) => updateResult(participant.id, 'overallPosition', e.target.value ? parseInt(e.target.value) : null)}
-                              className="w-20 px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white text-sm text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                              placeholder="Koht"
+                              onChange={(e) => updateResult(participant.id, 'overallPosition', parseInt(e.target.value) || null)}
+                              className="w-16 px-2 py-1 bg-slate-800/50 border border-slate-600/50 rounded text-white text-center focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                              placeholder="0"
+                              min="1"
+                              step="1"
                             />
                           ) : result.overallPosition ? (
                             <div className="flex items-center">
-                              <span className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
                                 result.overallPosition === 1 
-                                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' 
-                                  : result.overallPosition === 2 
-                                  ? 'bg-slate-400/20 text-slate-300 border border-slate-400/30'
-                                  : result.overallPosition === 3 
-                                  ? 'bg-amber-600/20 text-amber-500 border border-amber-600/30'
-                                  : 'bg-slate-600/20 text-slate-400 border border-slate-600/30'
+                                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' 
+                                : result.overallPosition === 2 
+                                ? 'bg-slate-400/20 text-slate-300 border border-slate-400/30'
+                                : result.overallPosition === 3 
+                                ? 'bg-amber-600/20 text-amber-500 border border-amber-600/30'
+                                : 'bg-slate-600/20 text-slate-400 border border-slate-600/30'
                               }`}>
                                 {result.overallPosition}
                               </span>
@@ -512,22 +485,6 @@ export function ResultsEntryInterface({
                           )}
                         </td>
                         
-                        {/* User Info */}
-                        <td className="py-4 px-6">
-                          {isManual ? (
-                            <span className="text-slate-500 text-sm">Manual entry</span>
-                          ) : (
-                            <div>
-                              <div className="text-slate-300 font-medium">
-                                {participant.user_name}
-                              </div>
-                              <div className="text-xs text-slate-500 mt-1">
-                                {participant.user_email}
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                        
                         {/* Class */}
                         <td className="py-4 px-6">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
@@ -540,23 +497,23 @@ export function ResultsEntryInterface({
                           {editMode ? (
                             <input
                               type="number"
-                              step="0.1"
-                              min="0"
                               value={result.totalPoints || ''}
-                              onChange={(e) => updateResult(participant.id, 'totalPoints', e.target.value ? parseFloat(e.target.value) : null)}
-                              className="w-24 px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white text-sm text-right focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                              placeholder="0.0"
+                              onChange={(e) => updateResult(participant.id, 'totalPoints', parseInt(e.target.value) || null)}
+                              className="w-20 px-3 py-2 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white text-right focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                              placeholder="0"
+                              min="0"
+                              step="1"
                             />
                           ) : (
-                            <div className="font-bold text-white">
+                            <span className="text-white font-medium">
                               {result.totalPoints || '-'}
-                            </div>
+                            </span>
                           )}
                         </td>
                         
                         {/* Status */}
                         <td className="py-4 px-6 text-center">
-                          {result.overallPosition ? (
+                          {result.overallPosition && result.totalPoints ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
                               ✓ Valmis
                             </span>

@@ -212,23 +212,23 @@ export function useDeleteRally() {
   
   return useMutation({
     mutationFn: async (rallyId: string) => {
-      console.log('🔄 Soft deleting rally:', rallyId)
+      console.log('🔄 Deactivating rally:', rallyId)
       
-      // FIXED: Instead of setting is_active = false, set status to 'cancelled'
+      // Set is_active = false when admin deletes rally from rally management page
       const { error } = await supabase
         .from('rallies')
         .update({ 
-          status: 'cancelled', // Use cancelled status instead of is_active = false
+          is_active: false, // This is what you requested - set is_active to false
           updated_at: new Date().toISOString()
         })
         .eq('id', rallyId)
 
       if (error) {
-        console.error('Error deleting rally:', error)
+        console.error('Error deactivating rally:', error)
         throw error
       }
 
-      console.log('✅ Rally cancelled (soft delete)')
+      console.log('✅ Rally deactivated (is_active = false)')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rallyManagementKeys.rallies() })

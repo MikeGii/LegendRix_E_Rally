@@ -173,6 +173,9 @@ export function useCompletedRallies() {
 // GET RALLY PARTICIPANTS (real registrations + manual participants)
 // ============================================================================
 
+// Fixed useRallyParticipants function in useResultsManagement.ts
+// Replace the manual participants loading section
+
 export function useRallyParticipants(rallyId: string) {
   return useQuery({
     queryKey: resultsKeys.rally_participants(rallyId),
@@ -205,7 +208,7 @@ export function useRallyParticipants(rallyId: string) {
         console.error('Error loading rally participants:', realError)
       }
 
-      // Get manual participants from rally_results (if table exists and has data)
+      // FIXED: Get manual participants from rally_results - removed player_name from select
       let manualParticipants: any[] = []
       try {
         const { data: manualData, error: manualError } = await supabase
@@ -213,7 +216,6 @@ export function useRallyParticipants(rallyId: string) {
           .select(`
             id,
             participant_name,
-            player_name,
             class_name,
             overall_position,
             total_points,
@@ -221,21 +223,22 @@ export function useRallyParticipants(rallyId: string) {
           `)
           .eq('rally_id', rallyId)
           .is('user_id', null) // Manual participants have null user_id
+          .not('participant_name', 'is', null) // Ensure participant_name exists
 
         if (manualError) {
-          console.log('Note: No manual participants found or table not accessible')
+          console.log('Note: No manual participants found:', manualError.message)
         } else {
           manualParticipants = manualData || []
+          console.log(`🔍 Found ${manualParticipants.length} manual participants`)
         }
       } catch (error) {
-        console.log('Manual participants table not available')
+        console.log('Manual participants query failed:', error)
       }
 
       const allParticipants: RallyParticipant[] = []
 
-      // Transform real participants
+      // Transform real participants - SIMPLIFIED display data
       if (realParticipants) {
-        // Check if results already exist for real participants
         const participantUserIds = realParticipants.map(p => p.user_id)
         let existingResults: any[] = []
         
@@ -258,33 +261,33 @@ export function useRallyParticipants(rallyId: string) {
           resultsMap[r.user_id] = r
         })
 
-        // Add real participants
+        // SIMPLIFIED: Only show player_name and class for registered participants
         realParticipants.forEach((p: any) => {
           const result = resultsMap[p.user_id]
           
           allParticipants.push({
             id: p.id,
             user_id: p.user_id,
-            user_name: p.users.name,
-            player_name: p.users.player_name,
-            user_email: p.users.email,
+            user_name: '', // Hide real name
+            player_name: p.users.player_name, // Only show player name
+            user_email: '', // Hide email
             class_name: p.game_classes.name,
             registration_date: p.registration_date,
             overall_position: result?.overall_position,
             total_points: result?.total_points,
-            results_entered: !!result
+            results_entered: result?.overall_position !== null
           })
         })
       }
 
-      // Transform manual participants
+      // FIXED: Transform manual participants
       manualParticipants.forEach(mp => {
         allParticipants.push({
           id: mp.id,
           user_id: 'manual-participant',
           user_name: '',
-          player_name: mp.participant_name,
-          user_email: 'manual@rally.ee',
+          player_name: mp.participant_name, // Use participant_name for manual participants
+          user_email: '',
           class_name: mp.class_name || 'Manual Entry',
           registration_date: '2024-01-01T00:00:00Z',
           overall_position: mp.overall_position,
