@@ -10,7 +10,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm'
 import { VerificationMessage } from '@/components/auth/VerificationMessage'
 import { CompetitionsModal } from '@/components/landing/CompetitionsModal'
 import { EdetabelModal } from '@/components/landing/EdetabelModal'
-import { useUpcomingRallies } from '@/hooks/useOptimizedRallies'
+import { usePublicUpcomingRallies } from '@/hooks/usePublicRallies'
 
 // Import modular landing page components
 import { HeroSection } from '@/components/landing/sections/HeroSection'
@@ -31,7 +31,7 @@ function HomeContent() {
   const [isMounted, setIsMounted] = useState(false)
 
   // Load upcoming rallies for competitions modal
-  const { data: upcomingRallies = [], isLoading: isLoadingRallies } = useUpcomingRallies(10)
+  const { data: upcomingRallies = [], isLoading: isLoadingRallies } = usePublicUpcomingRallies(10)
 
   // Fix hydration issues
   useEffect(() => {
