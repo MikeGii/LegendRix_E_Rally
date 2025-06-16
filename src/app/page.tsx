@@ -232,9 +232,10 @@ function HomeContent() {
           />
 
           {/* Features Section - NOW WITH EDETABEL */}
-          <FeaturesSection 
-            onOpenCompetitions={handleOpenCompetitions}
-            onOpenEdetabel={handleOpenEdetabel}
+          <FeaturesSection
+            onOpenCompetitions={() => setIsCompetitionsModalOpen(true)}
+            showDynamicData={true} // Näitab reaalseid andmeid
+            showEdetabelModal={true} // Käsitseb modali ise
           />
 
           {/* Supporters Section */}
