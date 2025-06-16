@@ -1,3 +1,4 @@
+// src/components/edetabel/ChampionshipResultsModal.tsx - DETAILED VERSION LIKE ADMIN
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -39,39 +40,9 @@ export function ChampionshipResultsModal({
     new Set(results?.participants?.map(p => p.class_name) || [])
   ).sort()
 
-  // Filter participants by class
-  const filteredParticipants = selectedClass === 'all' 
-    ? results?.participants || []
-    : results?.participants?.filter(p => p.class_name === selectedClass) || []
-
-  // Sort by championship position (or total points if viewing all classes)
-  const sortedParticipants = [...filteredParticipants].sort((a, b) => {
-    if (selectedClass === 'all') {
-      // In multi-class view, sort by total points descending
-      return b.total_points - a.total_points
-    } else {
-      // In single class view, sort by championship position
-      return (a.championship_position || 999) - (b.championship_position || 999)
-    }
-  })
-
-  const getPodiumIcon = (position: number): string => {
-    switch (position) {
-      case 1: return '🥇'
-      case 2: return '🥈'
-      case 3: return '🥉'
-      default: return ''
-    }
-  }
-
-  const getPositionColor = (position: number): string => {
-    switch (position) {
-      case 1: return 'text-yellow-400 font-bold'
-      case 2: return 'text-slate-300 font-bold'
-      case 3: return 'text-amber-600 font-bold'
-      default: return 'text-slate-400'
-    }
-  }
+  // Get sorted rally data for headers (by etapp_number/date order)
+  const sortedRallies = results?.participants?.[0]?.rally_scores
+    ?.sort((a, b) => (a.etapp_number || a.round_number) - (b.etapp_number || b.round_number)) || []
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -84,12 +55,12 @@ export function ChampionshipResultsModal({
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div 
-          className="relative w-full max-w-5xl bg-slate-900/95 backdrop-blur-xl rounded-2xl border border-slate-700 shadow-2xl max-h-[90vh] overflow-hidden"
+          className="relative w-full max-w-7xl bg-slate-900/95 backdrop-blur-xl rounded-2xl border border-slate-700 shadow-2xl max-h-[90vh] flex flex-col"
           onClick={handleModalClick}
         >
           
-          {/* Header */}
-          <div className="sticky top-0 bg-slate-900/90 backdrop-blur-xl border-b border-slate-700 p-6 z-10">
+          {/* Header - Fixed */}
+          <div className="flex-shrink-0 p-6 border-b border-slate-700">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">
@@ -158,7 +129,7 @@ export function ChampionshipResultsModal({
             </div>
           </div>
 
-          {/* Content */}
+          {/* Content - Scrollable */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="p-8">
@@ -173,7 +144,7 @@ export function ChampionshipResultsModal({
                 <div className="text-red-400 mb-2">❌ Viga tulemuste laadimisel</div>
                 <p className="text-slate-400 text-sm">{error.message}</p>
               </div>
-            ) : sortedParticipants.length === 0 ? (
+            ) : !results || results.participants.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="text-slate-400 text-lg mb-2">📊</div>
                 <p className="text-slate-400">Tulemusi ei leitud</p>
@@ -181,104 +152,243 @@ export function ChampionshipResultsModal({
             ) : (
               <div className="p-6">
                 
-                {/* SIMPLIFIED RESULTS TABLE */}
-                <div className="bg-slate-800/20 rounded-xl border border-slate-700/50 overflow-hidden">
-                  
-                  {/* Table Header */}
-                  <div className="sticky top-0 bg-slate-800/90 backdrop-blur border-b border-slate-700/50 text-xs font-medium text-slate-400 uppercase tracking-wide">
-                    <div className="grid grid-cols-12 gap-2 py-3 px-4">
-                      <div className="col-span-1 text-center">Koht</div>
-                      <div className="col-span-4">Osaleja</div>
-                      <div className="col-span-2">Klass</div>
-                      <div className="col-span-2 text-center">Etapid</div>
-                      <div className="col-span-2 text-right">Punktid</div>
-                      <div className="col-span-1 text-center">🏆</div>
-                    </div>
+                {/* ✅ DETAILED CHAMPIONSHIP RESULTS TABLE - Same as Admin View */}
+                <div className="bg-slate-700/30 border border-slate-600 rounded-xl overflow-hidden">
+                  <div className="p-3 border-b border-slate-600">
+                    <h3 className="text-lg font-semibold text-white">Koondtulemused klassiti</h3>
                   </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead className="bg-slate-700/50">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
+                            Koht
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
+                            Osaleja
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
+                            Klass
+                          </th>
+                          <th className="px-3 py-2 text-center text-xs font-medium text-slate-300 uppercase">
+                            Etapid
+                          </th>
+                          {/* Individual etapp columns */}
+                          {sortedRallies.map((rally) => (
+                            <th key={rally.rally_id} className="px-2 py-2 text-center text-xs font-medium text-slate-300 uppercase">
+                              {rally.etapp_number || rally.round_number}. etapp
+                            </th>
+                          ))}
+                          <th className="px-3 py-2 text-center text-xs font-medium text-slate-300 uppercase">
+                            Punktid
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-700/50">
+                        {(() => {
+                          // Filter participants by selected class
+                          const filteredParticipants = selectedClass === 'all' 
+                            ? results.participants 
+                            : results.participants.filter(p => p.class_name === selectedClass)
 
-                  {/* Results Rows */}
-                  <div className="divide-y divide-slate-700/30 max-h-[60vh] overflow-y-auto">
-                    {sortedParticipants.map((participant, index) => {
-                      const position = selectedClass === 'all' ? index + 1 : participant.championship_position
-                      const isTopPerformer = position && position <= 3
-                      
-                      return (
-                        <div 
-                          key={participant.participant_key}
-                          className={`grid grid-cols-12 gap-2 py-3 px-4 text-sm hover:bg-slate-800/30 transition-colors ${
-                            isTopPerformer ? 'bg-gradient-to-r from-yellow-500/5 to-transparent' : ''
-                          }`}
-                        >
-                          {/* Position */}
-                          <div className="col-span-1 text-center">
-                            <span className={getPositionColor(position || 999)}>
-                              {position || '-'}
-                            </span>
-                          </div>
+                          if (selectedClass === 'all') {
+                            // Show all classes separated
+                            const participantsByClass = filteredParticipants.reduce((acc, participant) => {
+                              const className = participant.class_name
+                              if (!acc[className]) {
+                                acc[className] = []
+                              }
+                              acc[className].push(participant)
+                              return acc
+                            }, {} as Record<string, typeof results.participants>)
 
-                          {/* Participant Name */}
-                          <div className="col-span-4 flex items-center gap-2">
-                            <div className="w-6 h-6 bg-slate-700 rounded-full flex items-center justify-center text-xs text-white">
-                              {participant.participant_name.charAt(0).toUpperCase()}
-                            </div>
-                            <span className="text-white font-medium truncate">
-                              {participant.participant_name}
-                            </span>
-                          </div>
+                            const rows: JSX.Element[] = []
+                            
+                            // Sort classes alphabetically
+                            Object.keys(participantsByClass)
+                              .sort((a, b) => a.localeCompare(b))
+                              .forEach((className) => {
+                                // Add class header row
+                                rows.push(
+                                  <tr key={`class-header-${className}`} className="bg-slate-600/50">
+                                    <td colSpan={5 + sortedRallies.length} className="px-3 py-2">
+                                      <div className="font-bold text-white text-base">
+                                        🏆 {className}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
 
-                          {/* Class */}
-                          <div className="col-span-2">
-                            <span className="text-slate-300 text-xs truncate">
-                              {participant.class_name}
-                            </span>
-                          </div>
+                                // Sort participants by championship position
+                                const sortedParticipants = participantsByClass[className].sort((a, b) => {
+                                  const posA = a.championship_position || 999
+                                  const posB = b.championship_position || 999
+                                  if (posA !== posB) return posA - posB
+                                  if (a.total_points !== b.total_points) return b.total_points - a.total_points
+                                  return b.rounds_participated - a.rounds_participated
+                                })
 
-                          {/* Etapps Participated */}
-                          <div className="col-span-2 text-center">
-                            <span className="text-slate-400 text-xs">
-                              {participant.rounds_participated}/{results?.total_rounds || 0} etappi
-                            </span>
-                          </div>
+                                // Add participants for this class with alternating row colors
+                                sortedParticipants.forEach((participant, index) => {
+                                  const isEven = index % 2 === 0
+                                  rows.push(
+                                    <tr 
+                                      key={`${participant.participant_name}-${participant.class_name}`} 
+                                      className={`hover:bg-slate-700/30 transition-colors ${
+                                        isEven ? 'bg-slate-800/20' : 'bg-slate-700/20'
+                                      }`}
+                                    >
+                                      {/* Position */}
+                                      <td className="px-3 py-1.5">
+                                        <div className="flex items-center justify-center">
+                                          <span className="text-lg">
+                                            {participant.championship_position === 1 && '🥇'}
+                                            {participant.championship_position === 2 && '🥈'}
+                                            {participant.championship_position === 3 && '🥉'}
+                                            {participant.championship_position > 3 && (
+                                              <span className="text-white font-bold">
+                                                {participant.championship_position}.
+                                              </span>
+                                            )}
+                                          </span>
+                                        </div>
+                                      </td>
+                                      
+                                      {/* Participant Name */}
+                                      <td className="px-3 py-1.5">
+                                        <span className="text-white font-medium">{participant.participant_name}</span>
+                                      </td>
+                                      
+                                      {/* Class */}
+                                      <td className="px-3 py-1.5 text-slate-300 text-sm">
+                                        {participant.class_name}
+                                      </td>
+                                      
+                                      {/* Participated Etapps */}
+                                      <td className="px-3 py-1.5 text-center text-slate-300 text-sm">
+                                        {participant.rounds_participated}/{results.total_rounds}
+                                      </td>
+                                      
+                                      {/* Individual Rally Scores */}
+                                      {sortedRallies.map((rally) => {
+                                        const rallyScore = participant.rally_scores.find(rs => rs.rally_id === rally.rally_id)
+                                        return (
+                                          <td key={rally.rally_id} className="px-2 py-1.5 text-center">
+                                            {rallyScore?.participated ? (
+                                              <div className="flex flex-col">
+                                                <span className="text-white font-medium text-sm">{rallyScore.points}</span>
+                                                {rallyScore.class_position && (
+                                                  <span className="text-xs text-slate-400">({rallyScore.class_position}. koht)</span>
+                                                )}
+                                              </div>
+                                            ) : (
+                                              <span className="text-slate-500">-</span>
+                                            )}
+                                          </td>
+                                        )
+                                      })}
+                                      
+                                      {/* Total Points */}
+                                      <td className="px-3 py-1.5 text-center">
+                                        <span className="text-white font-bold text-base">{participant.total_points}</span>
+                                      </td>
+                                    </tr>
+                                  )
+                                })
+                              })
 
-                          {/* Total Points */}
-                          <div className="col-span-2 text-right">
-                            <span className={`font-bold ${getPositionColor(position || 999)}`}>
-                              {participant.total_points.toFixed(1)}
-                            </span>
-                          </div>
+                            return rows
+                          } else {
+                            // Show single class
+                            const sortedParticipants = filteredParticipants.sort((a, b) => {
+                              const posA = a.championship_position || 999
+                              const posB = b.championship_position || 999
+                              if (posA !== posB) return posA - posB
+                              if (a.total_points !== b.total_points) return b.total_points - a.total_points
+                              return b.rounds_participated - a.rounds_participated
+                            })
 
-                          {/* Podium Icon */}
-                          <div className="col-span-1 text-center">
-                            <span className="text-sm">
-                              {getPodiumIcon(position || 999)}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })}
+                            return sortedParticipants.map((participant, index) => {
+                              const isEven = index % 2 === 0
+                              return (
+                                <tr 
+                                  key={`${participant.participant_name}-${participant.class_name}`} 
+                                  className={`hover:bg-slate-700/30 transition-colors ${
+                                    isEven ? 'bg-slate-800/20' : 'bg-slate-700/20'
+                                  }`}
+                                >
+                                  {/* Position */}
+                                  <td className="px-3 py-1.5">
+                                    <div className="flex items-center justify-center">
+                                      <span className="text-lg">
+                                        {participant.championship_position === 1 && '🥇'}
+                                        {participant.championship_position === 2 && '🥈'}
+                                        {participant.championship_position === 3 && '🥉'}
+                                        {participant.championship_position > 3 && (
+                                          <span className="text-white font-bold">
+                                            {participant.championship_position}.
+                                          </span>
+                                        )}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  
+                                  {/* Participant Name */}
+                                  <td className="px-3 py-1.5">
+                                    <span className="text-white font-medium">{participant.participant_name}</span>
+                                  </td>
+                                  
+                                  {/* Class */}
+                                  <td className="px-3 py-1.5 text-slate-300 text-sm">
+                                    {participant.class_name}
+                                  </td>
+                                  
+                                  {/* Participated Etapps */}
+                                  <td className="px-3 py-1.5 text-center text-slate-300 text-sm">
+                                    {participant.rounds_participated}/{results.total_rounds}
+                                  </td>
+                                  
+                                  {/* Individual Rally Scores */}
+                                  {sortedRallies.map((rally) => {
+                                    const rallyScore = participant.rally_scores.find(rs => rs.rally_id === rally.rally_id)
+                                    return (
+                                      <td key={rally.rally_id} className="px-2 py-1.5 text-center">
+                                        {rallyScore?.participated ? (
+                                          <div className="flex flex-col">
+                                            <span className="text-white font-medium text-sm">{rallyScore.points}</span>
+                                            {rallyScore.class_position && (
+                                              <span className="text-xs text-slate-400">({rallyScore.class_position}. koht)</span>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <span className="text-slate-500">-</span>
+                                        )}
+                                      </td>
+                                    )
+                                  })}
+                                  
+                                  {/* Total Points */}
+                                  <td className="px-3 py-1.5 text-center">
+                                    <span className="text-white font-bold text-base">{participant.total_points}</span>
+                                  </td>
+                                </tr>
+                              )
+                            })
+                          }
+                        })()}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
                 {/* Championship Summary */}
-                {results && results.participants.length > 0 && (
-                  <div className="mt-6 p-4 bg-slate-800/20 rounded-lg border border-slate-700/30">
-                    <h3 className="text-sm font-medium text-slate-300 mb-2">Meistrivõistluse kokkuvõte</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-slate-400">
-                      <div>
-                        <span className="text-green-400 font-medium">{results.linked_participants}</span> seotud osalejat
-                      </div>
-                      <div>
-                        <span className="text-orange-400 font-medium">{results.unlinked_participants}</span> sidumata osalejat
-                      </div>
-                      <div>
-                        <span className="text-blue-400 font-medium">{results.total_rounds}</span> etappi kokku
-                      </div>
-                      <div>
-                        <span className="text-purple-400 font-medium">{availableClasses.length}</span> erinevat klassi
-                      </div>
-                    </div>
+                <div className="mt-6 p-4 bg-slate-800/20 rounded-lg border border-slate-700/30">
+                  <h3 className="text-sm font-medium text-slate-300 mb-2">Meistrivõistluse kokkuvõte</h3>
+                  <div className="text-xs text-slate-400">
+                    {results.total_rounds} etappi • {results.participants.length} osalejat • {availableClasses.length} klassi
                   </div>
-                )}
+                </div>
               </div>
             )}
           </div>
