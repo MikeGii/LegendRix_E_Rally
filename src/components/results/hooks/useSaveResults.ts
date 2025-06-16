@@ -1,4 +1,4 @@
-// src/components/results/hooks/useSaveResults.ts - FIXED to save class_position
+// src/components/results/hooks/useSaveResults.ts - FIXED VERSION
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { resultsKeys } from '@/hooks/useResultsManagement'
@@ -18,12 +18,20 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
       console.log('🔄 Saving rally results...')
       
       const updates = Object.values(results).filter(result => 
-        result.classPosition !== null || result.totalPoints !== null // FIXED: Check class position instead of overall
+        result.classPosition !== null || result.totalPoints !== null
       )
 
       if (updates.length === 0) {
         throw new Error('Ei ole tulemusi salvestamiseks')
       }
+
+      // Get current user for tracking who entered results
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        throw new Error('User not authenticated')
+      }
+
+      const currentTime = new Date().toISOString()
 
       for (const result of updates) {
         const participant = participants.find(p => p.id === result.participantId)
@@ -52,9 +60,11 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                 .from('rally_results')
                 .update({
                   class_name: result.className,
-                  class_position: result.classPosition, // FIXED: Save class position
+                  class_position: result.classPosition,
                   total_points: result.totalPoints,
-                  updated_at: new Date().toISOString()
+                  results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
+                  results_entered_by: user.id,     // ✅ FIX: Track who entered
+                  updated_at: currentTime
                 })
                 .eq('id', existing.id)
 
@@ -72,9 +82,11 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                   registration_id: null,
                   participant_name: result.playerName,
                   class_name: result.className,
-                  class_position: result.classPosition, // FIXED: Save class position
+                  class_position: result.classPosition,
                   total_points: result.totalPoints,
-                  updated_at: new Date().toISOString()
+                  results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
+                  results_entered_by: user.id,     // ✅ FIX: Track who entered
+                  updated_at: currentTime
                 })
 
               if (error) {
@@ -100,9 +112,11 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
               const { error } = await supabase
                 .from('rally_results')
                 .update({
-                  class_position: result.classPosition, // FIXED: Save class position
+                  class_position: result.classPosition,
                   total_points: result.totalPoints,
-                  updated_at: new Date().toISOString()
+                  results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
+                  results_entered_by: user.id,     // ✅ FIX: Track who entered
+                  updated_at: currentTime
                 })
                 .eq('id', existing.id)
 
@@ -120,9 +134,11 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                   registration_id: participant.id,
                   participant_name: null,
                   class_name: null, // Class comes from registration for registered participants
-                  class_position: result.classPosition, // FIXED: Save class position
+                  class_position: result.classPosition,
                   total_points: result.totalPoints,
-                  updated_at: new Date().toISOString()
+                  results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
+                  results_entered_by: user.id,     // ✅ FIX: Track who entered
+                  updated_at: currentTime
                 })
 
               if (error) {
@@ -143,8 +159,9 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
         .upsert({
           rally_id: rallyId,
           results_completed: true,
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          results_completed_at: currentTime,  // ✅ FIX: Use consistent field name
+          results_entered_by: user.id,        // ✅ FIX: Track who completed
+          updated_at: currentTime
         })
 
       return updates.length
@@ -152,8 +169,9 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
       queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
+      queryClient.invalidateQueries({ queryKey: [...resultsKeys.rally_results(rallyId), 'status'] }) // ✅ FIX: Also invalidate status
       onSaveSuccess()
-      console.log(`✅ Saved results for ${count} participants including class positions`)
+      console.log(`✅ Saved results for ${count} participants with proper tracking`)
     },
     onError: (error) => {
       console.error('❌ Failed to save results:', error)
