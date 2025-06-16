@@ -1,4 +1,4 @@
-// src/components/landing/CompetitionsModal.tsx - ENHANCED with participant counts and events
+// src/components/landing/CompetitionsModal.tsx - ENHANCED with row layout and fixed participant counts
 'use client'
 
 import { useEffect } from 'react'
@@ -58,6 +58,16 @@ export function CompetitionsModal({ isOpen, onClose, rallies, isLoading }: Compe
     }
   }
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('et-EE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop with blur */}
@@ -67,174 +77,150 @@ export function CompetitionsModal({ isOpen, onClose, rallies, isLoading }: Compe
       />
       
       {/* Modal Content */}
-      <div className="relative bg-slate-800/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-slate-900/95 backdrop-blur-xl rounded-2xl border border-slate-700 shadow-2xl w-full max-w-6xl max-h-[85vh] mx-4 overflow-hidden">
+        
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-              <span className="text-blue-400 text-xl">🏁</span>
-            </div>
+        <div className="sticky top-0 bg-slate-900/90 backdrop-blur-xl border-b border-slate-700 p-6 z-10">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-white">Tulevased Võistlused</h2>
-              <p className="text-slate-400">Vaadake kõiki lähituleviku rallisid ja osalejaid</p>
+              <h2 className="text-3xl font-bold text-white">Eelseisvad Võistlused</h2>
+              <p className="text-slate-400 mt-1">
+                {isLoading ? 'Laadin võistlusi...' : `${sortedRallies.length} võistlust planeeritud`}
+              </p>
             </div>
+            <button
+              onClick={onClose}
+              className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-400 hover:text-white transition-all duration-200 flex items-center justify-center"
+              aria-label="Sulge modal"
+            >
+              <span className="text-xl">×</span>
+            </button>
           </div>
-          
-          <button
-            onClick={onClose}
-            className="w-10 h-10 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-all duration-200"
-          >
-            ✕
-          </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          {isLoading ? (
-            <div className="text-center py-12">
-              <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-slate-400">Laadin võistlusi...</p>
-            </div>
-          ) : sortedRallies.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-4xl text-slate-500">🏁</span>
+        <div className="overflow-y-auto max-h-[calc(85vh-140px)]">
+          <div className="p-6">
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-slate-400">Laadin võistlusi...</p>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">Eelseisvaid võistlusi pole</h3>
-              <p className="text-slate-400">
-                Hetkel pole planeeritud uusi rallisid. Kontrollige hiljem uuesti!
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {sortedRallies.map((rally) => (
-                <div
-                  key={rally.id}
-                  className="bg-slate-900/50 rounded-xl border border-slate-700/50 p-6 hover:bg-slate-800/50 transition-all duration-200"
-                >
-                  {/* Rally Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <span className="text-blue-400 text-lg">🏁</span>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-white text-lg leading-tight">
-                          {rally.name}
-                        </h3>
-                        <p className="text-sm text-slate-400">{rally.game_name}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Rally Status */}
-                  <div className="mb-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(rally.status)}`}>
-                      {getStatusText(rally.status)}
-                    </span>
-                  </div>
-
-                  {/* Rally Stats Grid - ENHANCED with real data */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    {/* Participants Count - FIXED */}
-                    <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                      <div className="text-lg font-bold text-green-400">
-                        {rally.registered_participants}
-                        {rally.max_participants && (
-                          <span className="text-slate-400 text-sm">/{rally.max_participants}</span>
-                        )}
-                      </div>
-                      <div className="text-xs text-slate-400">Osalejat</div>
-                    </div>
-
-                    {/* Events Count - FIXED */}
-                    <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                      <div className="text-lg font-bold text-blue-400">{rally.total_events}</div>
-                      <div className="text-xs text-slate-400">
-                        {rally.total_events === 1 ? 'Riik' : 'Riiki'}
-                      </div>
-                    </div>
-
-                    {/* Tracks Count */}
-                    <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                      <div className="text-lg font-bold text-yellow-400">{rally.total_tracks}</div>
-                      <div className="text-xs text-slate-400">
-                        {rally.total_tracks === 1 ? 'Rada' : 'Rada'}
-                      </div>
-                    </div>
-
-                    {/* Game Type */}
-                    <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                      <div className="text-lg font-bold text-purple-400">🎮</div>
-                      <div className="text-xs text-slate-400">{rally.game_type_name}</div>
-                    </div>
-                  </div>
-
-                  {/* Rally Dates */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center space-x-2 text-sm">
-                      <span className="text-slate-400">🏁</span>
-                      <span className="text-slate-300">
-                        {new Date(rally.competition_date).toLocaleDateString('et-EE', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 text-sm">
-                      <span className="text-slate-400">📝</span>
-                      <span className="text-slate-300">
-                        Registreerimine kuni {new Date(rally.registration_deadline).toLocaleDateString('et-EE', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Events List - Show first few events */}
-                  {rally.events && rally.events.length > 0 && (
-                    <div className="border-t border-slate-700/30 pt-4">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-slate-400 text-sm">🌍</span>
-                        <span className="text-slate-300 text-sm font-medium">Riigid:</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {rally.events.slice(0, 3).map((event, index) => (
-                          <span 
-                            key={event.event_id}
-                            className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs"
-                          >
-                            {event.event_name}
-                          </span>
-                        ))}
-                        {rally.events.length > 3 && (
-                          <span className="px-2 py-1 bg-slate-500/20 text-slate-400 rounded text-xs">
-                            +{rally.events.length - 3} veel
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Description */}
-                  {rally.description && (
-                    <div className="border-t border-slate-700/30 pt-4 mt-4">
-                      <p className="text-sm text-slate-400 line-clamp-2">
-                        {rally.description}
-                      </p>
-                    </div>
-                  )}
+            ) : sortedRallies.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <span className="text-4xl text-slate-500">🏁</span>
                 </div>
-              ))}
-            </div>
-          )}
+                <h3 className="text-xl font-semibold text-white mb-3">Eelseisvaid võistlusi pole</h3>
+                <p className="text-slate-400">
+                  Hetkel pole planeeritud uusi rallisid. Kontrollige hiljem uuesti!
+                </p>
+              </div>
+            ) : (
+              /* ROW LAYOUT - Each competition on separate row */
+              <div className="space-y-4">
+                {sortedRallies.map((rally) => (
+                  <div
+                    key={rally.id}
+                    className="bg-slate-900/50 rounded-xl border border-slate-700/50 p-6 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all duration-200"
+                  >
+                    {/* Rally Header Row */}
+                    <div className="flex items-start justify-between mb-4">
+                      {/* Left side - Rally info */}
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <span className="text-blue-400 text-xl">🏁</span>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-white text-xl leading-tight">
+                            {rally.name}
+                          </h3>
+                          <p className="text-slate-400">{rally.game_name} • {rally.game_type_name}</p>
+                          <p className="text-sm text-slate-500">
+                            Võistlus: {formatDate(rally.competition_date)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right side - Status */}
+                      <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(rally.status)}`}>
+                          {getStatusText(rally.status)}
+                        </span>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Registreerimine: {formatDate(rally.registration_deadline)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Rally Stats Row */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      {/* Participants Count - PROMINENT DISPLAY */}
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-green-400">
+                          {rally.registered_participants}
+                          {rally.max_participants && (
+                            <span className="text-slate-400 text-lg">/{rally.max_participants}</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-slate-400">Registreeritud</div>
+                      </div>
+
+                      {/* Events Count */}
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-blue-400">{rally.total_events}</div>
+                        <div className="text-sm text-slate-400">
+                          {rally.total_events === 1 ? 'Üritus' : 'Üritust'}
+                        </div>
+                      </div>
+
+                      {/* Tracks Count */}
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-purple-400">{rally.total_tracks}</div>
+                        <div className="text-sm text-slate-400">
+                          {rally.total_tracks === 1 ? 'Rada' : 'Rada'}
+                        </div>
+                      </div>
+
+                      {/* Max Participants */}
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-orange-400">
+                          {rally.max_participants ? rally.max_participants : '∞'}
+                        </div>
+                        <div className="text-sm text-slate-400">Max osalejat</div>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    {rally.description && (
+                      <div className="bg-slate-800/30 rounded-lg p-4">
+                        <p className="text-slate-300 text-sm leading-relaxed">
+                          {rally.description}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Events List - Collapsible */}
+                    {rally.events && rally.events.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-slate-700/50">
+                        <h4 className="text-sm font-semibold text-slate-300 mb-2">Üritused:</h4>
+                        <div className="grid md:grid-cols-2 gap-2">
+                          {rally.events.map((event) => (
+                            <div key={event.event_id} className="text-sm text-slate-400">
+                              <span className="text-slate-300">{event.event_name}</span>
+                              {event.tracks && event.tracks.length > 0 && (
+                                <span className="text-slate-500"> ({event.tracks.length} rada)</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
