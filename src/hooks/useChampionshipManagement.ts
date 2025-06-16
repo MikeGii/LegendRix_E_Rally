@@ -25,7 +25,7 @@ export interface ChampionshipRally {
   id: string
   championship_id: string
   rally_id: string
-  round_number: number
+  round_number: number  // Database value (may not match display order)
   round_name?: string
   is_active: boolean
   created_at: string
@@ -33,6 +33,8 @@ export interface ChampionshipRally {
   rally_name?: string
   rally_date?: string
   rally_status?: string
+  etapp_number?: number           // ✅ NEW: Date-based etapp number
+  display_round_number?: number   // ✅ NEW: What to show in UI
 }
 
 export interface ChampionshipResults {
@@ -159,7 +161,7 @@ export function useChampionshipRallies(championshipId: string) {
         `)
         .eq('championship_id', championshipId)
         .eq('is_active', true)
-        // Remove: .order('round_number', { ascending: true })
+        // ❌ REMOVED: .order('round_number', { ascending: true })
 
       if (error) {
         console.error('Error loading championship rallies:', error)
@@ -178,7 +180,8 @@ export function useChampionshipRallies(championshipId: string) {
         rally_name: (cr.rally as any)?.name || 'Unknown Rally',
         rally_date: (cr.rally as any)?.competition_date || null,
         rally_status: (cr.rally as any)?.status || 'unknown',
-        etapp_number: index + 1 // ✅ Assign etapp based on date order
+        etapp_number: index + 1, // ✅ Assign etapp based on date order
+        display_round_number: index + 1 // ✅ Display etapp number instead of database round_number
       }))
 
       console.log(`✅ Loaded ${rallies.length} championship rallies ordered by date`)
