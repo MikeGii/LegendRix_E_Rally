@@ -159,8 +159,8 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
         .upsert({
           rally_id: rallyId,
           results_completed: true,
-          results_completed_at: currentTime,  // ✅ FIX: Use consistent field name
-          results_entered_by: user.id,        // ✅ FIX: Track who completed
+          results_completed_at: currentTime,  // ✅ CORRECT: matches your DB schema
+          results_entered_by: user.id,        // ✅ CORRECT: matches your DB schema
           updated_at: currentTime
         })
 
