@@ -1,4 +1,4 @@
-// src/hooks/useExtendedUsers.ts
+// src/hooks/useExtendedUsers.ts - Enhanced User Action with Guaranteed Refresh
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
@@ -6,7 +6,7 @@ export interface ExtendedUser {
   id: string
   name: string
   email: string
-  player_name?: string | null  // Make it optional and nullable
+  player_name?: string | null
   role: 'user' | 'admin'
   created_at: string
   last_login?: string
@@ -36,7 +36,7 @@ export function useAllUsers() {
       
       const { data: users, error } = await supabase
         .from('users')
-        .select('id, name, email, player_name, role, created_at, last_login, email_verified, admin_approved, status')  // Include player_name
+        .select('id, name, email, player_name, role, created_at, last_login, email_verified, admin_approved, status')
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -50,7 +50,7 @@ export function useAllUsers() {
         id: user.id,
         name: user.name,
         email: user.email,
-        player_name: user.player_name || null,  // Handle null values properly
+        player_name: user.player_name || null,
         role: user.role,
         created_at: user.created_at,
         last_login: user.last_login,
@@ -59,11 +59,12 @@ export function useAllUsers() {
         status: user.status
       })) || []
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 30 * 1000, // Reduced to 30 seconds for faster updates
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   })
 }
 
-// User Action Mutation (Approve/Reject)
+// ENHANCED User Action Mutation with Guaranteed Refresh
 export function useUserAction() {
   const queryClient = useQueryClient()
 
@@ -98,12 +99,43 @@ export function useUserAction() {
         // Don't fail the operation if email fails
       })
 
-      return { userId, action, newStatus }
+      return { userId, action, newStatus, newAdminApproved }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log(`✅ User ${data.action} completed successfully`)
-      // Invalidate and refetch users data
+      
+      // ENHANCED: Multiple strategies to ensure immediate refresh
+      
+      // 1. Remove stale data from cache
+      queryClient.removeQueries({ queryKey: extendedUserKeys.all })
+      
+      // 2. Force immediate refetch
+      await queryClient.refetchQueries({ 
+        queryKey: extendedUserKeys.all,
+        type: 'all' // Refetch both active and inactive queries
+      })
+      
+      // 3. Invalidate all related user queries (including admin dashboard)
+      queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: extendedUserKeys.all })
+      
+      // 4. Update cache directly with optimistic update
+      queryClient.setQueryData(extendedUserKeys.lists(), (oldData: ExtendedUser[] | undefined) => {
+        if (!oldData) return oldData
+        
+        return oldData.map(user => {
+          if (user.id === data.userId) {
+            return {
+              ...user,
+              status: data.newStatus as ExtendedUser['status'],
+              admin_approved: data.newAdminApproved
+            }
+          }
+          return user
+        })
+      })
+      
+      console.log('🔄 Cache updated and queries refetched')
     },
     onError: (error) => {
       console.error('❌ User action error:', error)
@@ -111,7 +143,7 @@ export function useUserAction() {
   })
 }
 
-// Delete User Mutation
+// Enhanced Delete User Mutation
 export function useDeleteUser() {
   const queryClient = useQueryClient()
 
@@ -134,17 +166,27 @@ export function useDeleteUser() {
 
       const result = await response.json()
       console.log('✅ User deleted successfully:', result.deletedUser)
-      return result
+      return { ...result, deletedUserId: userId }
     },
-    onSuccess: (result) => {
-      console.log('🔄 Invalidating user queries after deletion')
-      // Force immediate refetch of user data
-      queryClient.invalidateQueries({ queryKey: extendedUserKeys.all })
-      queryClient.refetchQueries({ queryKey: extendedUserKeys.all })
+    onSuccess: async (result) => {
+      console.log('🔄 Refreshing data after user deletion')
       
-      // Also invalidate the regular users query from the admin dashboard
+      // Enhanced refresh for deletion
+      queryClient.removeQueries({ queryKey: extendedUserKeys.all })
+      
+      await queryClient.refetchQueries({ 
+        queryKey: extendedUserKeys.all,
+        type: 'all'
+      })
+      
+      // Remove from cache directly
+      queryClient.setQueryData(extendedUserKeys.lists(), (oldData: ExtendedUser[] | undefined) => {
+        if (!oldData) return oldData
+        return oldData.filter(user => user.id !== result.deletedUserId)
+      })
+      
+      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      queryClient.refetchQueries({ queryKey: ['users'] })
     },
     onError: (error) => {
       console.error('❌ Delete user error:', error)
@@ -152,7 +194,7 @@ export function useDeleteUser() {
   })
 }
 
-// Promote User to Admin Mutation
+// Enhanced Promote User Mutation
 export function usePromoteUser() {
   const queryClient = useQueryClient()
 
@@ -178,15 +220,36 @@ export function usePromoteUser() {
       console.log('✅ User promoted to admin successfully')
       return { userId }
     },
-    onSuccess: () => {
-      console.log('🔄 Invalidating user queries after promotion')
-      // Force immediate refetch of user data
-      queryClient.invalidateQueries({ queryKey: extendedUserKeys.all })
-      queryClient.refetchQueries({ queryKey: extendedUserKeys.all })
+    onSuccess: async (result) => {
+      console.log('🔄 Refreshing data after user promotion')
       
-      // Also invalidate the regular users query from the admin dashboard
+      // Enhanced refresh for promotion
+      queryClient.removeQueries({ queryKey: extendedUserKeys.all })
+      
+      await queryClient.refetchQueries({ 
+        queryKey: extendedUserKeys.all,
+        type: 'all'
+      })
+      
+      // Update cache directly
+      queryClient.setQueryData(extendedUserKeys.lists(), (oldData: ExtendedUser[] | undefined) => {
+        if (!oldData) return oldData
+        
+        return oldData.map(user => {
+          if (user.id === result.userId) {
+            return {
+              ...user,
+              role: 'admin' as const,
+              admin_approved: true,
+              status: 'approved' as const
+            }
+          }
+          return user
+        })
+      })
+      
+      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      queryClient.refetchQueries({ queryKey: ['users'] })
     },
     onError: (error) => {
       console.error('❌ Promote user error:', error)
