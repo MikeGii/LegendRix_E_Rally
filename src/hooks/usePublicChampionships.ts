@@ -1,4 +1,3 @@
-// src/hooks/usePublicChampionships.ts - FIXED VERSION
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
@@ -51,7 +50,7 @@ export function usePublicChampionships() {
         const participantNames = new Set()
         let totalRallies = 0
 
-        // FIXED: Properly access nested data structure
+        // Handle nested data structure
         if (championship.championship_rallies && Array.isArray(championship.championship_rallies)) {
           championship.championship_rallies.forEach((cr: any) => {
             totalRallies++
@@ -73,7 +72,7 @@ export function usePublicChampionships() {
           is_active: championship.is_active,
           total_rallies: totalRallies,
           total_participants: participantNames.size,
-          // FIXED: Access games and game_types as arrays (Supabase returns them as arrays)
+          // Access games and game_types as arrays (Supabase returns them as arrays)
           game_name: championship.games && Array.isArray(championship.games) && championship.games.length > 0 ? championship.games[0].name : null,
           game_type_name: championship.game_types && Array.isArray(championship.game_types) && championship.game_types.length > 0 ? championship.game_types[0].name : null
         }

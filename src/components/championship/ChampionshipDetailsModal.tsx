@@ -177,7 +177,7 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
                           <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
-                            {championshipRally.round_number}. ring
+                            {championshipRally.round_number}. etapp
                           </span>
                           <h4 className="font-medium text-white">{championshipRally.rally_name}</h4>
                         </div>
@@ -331,7 +331,7 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
                           </th>
                           {championshipRallies.map((rally) => (
                             <th key={rally.id} className="px-4 py-3 text-center text-xs font-medium text-slate-300 uppercase">
-                              {rally.round_number}. ring
+                              {rally.round_number}. etapp
                             </th>
                           ))}
                           <th className="px-4 py-3 text-center text-xs font-medium text-slate-300 uppercase">

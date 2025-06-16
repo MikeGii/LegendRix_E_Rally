@@ -149,7 +149,7 @@ export function useChampionshipRallies(championshipId: string) {
     queryFn: async (): Promise<ChampionshipRally[]> => {
       if (!championshipId) return []
 
-      console.log('🔄 Loading championship rallies for:', championshipId)
+      console.log('🔄 Loading championship rallies ordered by competition date...')
 
       const { data, error } = await supabase
         .from('championship_rallies')
@@ -159,21 +159,29 @@ export function useChampionshipRallies(championshipId: string) {
         `)
         .eq('championship_id', championshipId)
         .eq('is_active', true)
-        .order('round_number', { ascending: true })
+        // Remove: .order('round_number', { ascending: true })
 
       if (error) {
         console.error('Error loading championship rallies:', error)
         throw error
       }
 
-      const rallies = (data || []).map(cr => ({
+      // ✅ Sort by competition_date instead of round_number
+      const sortedRallies = (data || []).sort((a, b) => {
+        const dateA = new Date((a.rally as any)?.competition_date || '1970-01-01').getTime()
+        const dateB = new Date((b.rally as any)?.competition_date || '1970-01-01').getTime()
+        return dateA - dateB
+      })
+
+      const rallies = sortedRallies.map((cr, index) => ({
         ...cr,
-        rally_name: cr.rally?.name || 'Unknown Rally',
-        rally_date: cr.rally?.competition_date || null,
-        rally_status: cr.rally?.status || 'unknown'
+        rally_name: (cr.rally as any)?.name || 'Unknown Rally',
+        rally_date: (cr.rally as any)?.competition_date || null,
+        rally_status: (cr.rally as any)?.status || 'unknown',
+        etapp_number: index + 1 // ✅ Assign etapp based on date order
       }))
 
-      console.log(`✅ Loaded ${rallies.length} championship rallies`)
+      console.log(`✅ Loaded ${rallies.length} championship rallies ordered by date`)
       return rallies
     },
     enabled: !!championshipId,
