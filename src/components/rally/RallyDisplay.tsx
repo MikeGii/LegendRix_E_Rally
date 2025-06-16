@@ -1,3 +1,4 @@
+// src/components/rally/RallyDisplay.tsx - COMPLETE VERSION with Estonian Translation
 'use client'
 
 import { RealRally } from '@/hooks/useOptimizedRallies'
@@ -18,9 +19,9 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
         <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
           <span className="text-4xl text-slate-500">🏁</span>
         </div>
-        <h3 className="text-lg font-semibold text-white mb-2">No Upcoming Rallies</h3>
+        <h3 className="text-lg font-semibold text-white mb-2">Eelseisvaid rallisid ei ole</h3>
         <p className="text-slate-400">
-          Check back soon for new rally announcements!
+          Kontrolli varsti uute ralli teadaannete saamiseks!
         </p>
       </div>
     )
@@ -32,6 +33,17 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
       case 'registration_open': return 'bg-green-500/20 text-green-400 border-green-500/30'
       case 'registration_closed': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
       default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'upcoming': return 'Tulemas'
+      case 'registration_open': return 'Registreerimine avatud'
+      case 'registration_closed': return 'Registreerimine suletud'
+      case 'active': return 'Käimasolev'
+      case 'completed': return 'Lõppenud'
+      default: return status
     }
   }
 
@@ -56,14 +68,17 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
                 <span className="text-blue-400 text-xl">🏁</span>
               </div>
               <div>
-                <h3 className="font-semibold text-white">{rally.name}</h3>
+                <h3 className="font-semibold text-white text-lg leading-tight">
+                  {rally.name}
+                </h3>
                 <p className="text-sm text-slate-400">{rally.game_name}</p>
               </div>
             </div>
             
+            {/* Featured Badge */}
             {rally.is_featured && (
               <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full text-xs font-medium">
-                ⭐ FEATURED
+                ⭐ ESILETÕSTETUD
               </span>
             )}
           </div>
@@ -71,11 +86,11 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
           {/* Rally Status */}
           <div className="mb-4">
             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(rally.status)}`}>
-              {rally.status.replace('_', ' ').toUpperCase()}
+              {getStatusText(rally.status)}
             </span>
           </div>
 
-          {/* Rally Info - CLEANED (removed prize_pool, entry_fee) */}
+          {/* Rally Info - Complete with all original fields */}
           <div className="space-y-3 mb-6">
             <div className="flex items-center space-x-2 text-sm">
               <span className="text-slate-400">🎮</span>
@@ -85,7 +100,7 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
             <div className="flex items-center space-x-2 text-sm">
               <span className="text-slate-400">📅</span>
               <span className="text-slate-300">
-                {new Date(rally.competition_date).toLocaleDateString('en-US', {
+                {new Date(rally.rally_date || rally.competition_date).toLocaleDateString('et-EE', {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',
@@ -98,7 +113,7 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
             <div className="flex items-center space-x-2 text-sm">
               <span className="text-slate-400">⏰</span>
               <span className="text-slate-300">
-                Registration until {new Date(rally.registration_deadline).toLocaleDateString('en-US', {
+                Registreerimine kuni {new Date(rally.registration_ending_date || rally.registration_deadline).toLocaleDateString('et-EE', {
                   month: 'short',
                   day: 'numeric',
                   hour: '2-digit',
@@ -111,27 +126,47 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
               <div className="flex items-center space-x-2 text-sm">
                 <span className="text-slate-400">👥</span>
                 <span className="text-slate-300">
-                  Max {rally.max_participants} participants
+                  Max {rally.max_participants} osalejat
                 </span>
               </div>
             )}
 
-            {/* Events and Tracks Info - CLEANED (removed counts that don't exist) */}
+            {/* Events and Tracks Info - Support both data structures */}
             {rally.events && rally.events.length > 0 && (
               <div className="flex items-center space-x-2 text-sm">
                 <span className="text-slate-400">📍</span>
                 <span className="text-slate-300">
-                  {rally.events.length} {rally.events.length === 1 ? 'event' : 'events'}
+                  {rally.events.length} {rally.events.length === 1 ? 'riik' : 'riiki'}
+                </span>
+              </div>
+            )}
+
+            {/* Show total tracks if available */}
+            {rally.total_tracks && rally.total_tracks > 0 && (
+              <div className="flex items-center space-x-2 text-sm">
+                <span className="text-slate-400">🛣️</span>
+                <span className="text-slate-300">
+                  {rally.total_tracks} {rally.total_tracks === 1 ? 'rada' : 'rada'}
+                </span>
+              </div>
+            )}
+
+            {/* Show registered participants if available */}
+            {typeof rally.registered_participants === 'number' && (
+              <div className="flex items-center space-x-2 text-sm">
+                <span className="text-slate-400">🏃</span>
+                <span className="text-slate-300">
+                  {rally.registered_participants} registreerunud
                 </span>
               </div>
             )}
           </div>
 
           {/* Rally Description */}
-          {rally.description && (
+          {(rally.description || rally.optional_notes) && (
             <div className="mb-6">
               <p className="text-sm text-slate-400 line-clamp-2">
-                {rally.description}
+                {rally.description || rally.optional_notes}
               </p>
             </div>
           )}
@@ -144,20 +179,16 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
                   onClick={() => onRegister?.(rally)}
                   className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-200"
                 >
-                  Register Now
+                  Registreeru nüüd
                 </button>
               ) : (
                 <button
                   disabled
                   className="w-full px-4 py-2 bg-slate-600/50 text-slate-400 rounded-lg font-medium cursor-not-allowed"
                 >
-                  Registration Closed
+                  Registreerimine suletud
                 </button>
               )}
-              
-              <button className="w-full px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition-all duration-200">
-                View Details
-              </button>
             </div>
           )}
         </div>
