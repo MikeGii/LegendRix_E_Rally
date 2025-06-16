@@ -57,7 +57,7 @@ export function BigSponsorsCarousel() {
   if (loading) {
     return (
       <div className="relative overflow-hidden">
-        <div className="flex justify-center items-center space-x-8 md:space-x-12 h-32">
+        <div className="flex justify-center items-center space-x-8 md:space-x-12 h-48">
           <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
         </div>
       </div>
@@ -68,7 +68,7 @@ export function BigSponsorsCarousel() {
   if (sponsors.length === 0) {
     return (
       <div className="relative overflow-hidden">
-        <div className="flex justify-center items-center h-32">
+        <div className="flex justify-center items-center h-48">
           <p className="text-slate-400 text-center">Sponsoreid pole veel lisatud</p>
         </div>
       </div>
@@ -96,7 +96,7 @@ export function BigSponsorsCarousel() {
 
   return (
     <div className="relative overflow-hidden">
-      <div className="flex justify-center items-center space-x-8 md:space-x-12 h-32">
+      <div className="flex justify-center items-center space-x-8 md:space-x-12 h-48">
         {visibleSponsors.map((sponsor, index) => (
           <div
             key={`${sponsor.id}-${currentIndex}-${index}`}
@@ -109,7 +109,7 @@ export function BigSponsorsCarousel() {
               <img
                 src={sponsor.logo_url}
                 alt={sponsor.name}
-                className="h-16 md:h-20 w-auto object-contain filter brightness-90 group-hover:brightness-110 transition-all duration-300 group-hover:scale-105"
+                className="h-32 md:h-40 w-auto object-contain filter brightness-90 group-hover:brightness-110 transition-all duration-300 group-hover:scale-105"
                 onError={(e) => {
                   console.error(`Failed to load sponsor logo: ${sponsor.logo_url}`)
                   ;(e.target as HTMLImageElement).src = '/image/sponsor-placeholder.png'
