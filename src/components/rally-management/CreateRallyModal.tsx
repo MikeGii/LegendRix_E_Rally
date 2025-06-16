@@ -1,4 +1,4 @@
-// src/components/rally-management/CreateRallyModal.tsx - FIXED with Event/Track/Class Linking
+// src/components/rally-management/CreateRallyModal.tsx - UPDATED with separate date/time inputs
 import { useState, useEffect } from 'react'
 import { Rally, useCreateRally, useUpdateRally } from '@/hooks/useRallyManagement'
 import { useGames, useGameTypes, useGameEvents, useGameClasses } from '@/hooks/useGameManagement'
@@ -14,14 +14,16 @@ interface CreateRallyModalProps {
 export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModalProps) {
   const [currentStep, setCurrentStep] = useState(1)
   
-  // Clean form data
+  // Updated form data with separate date and time fields
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     game_id: '',
     game_type_id: '',
-    competition_date: '',
-    registration_deadline: '',
+    competition_date: '', // Date only (YYYY-MM-DD)
+    competition_time: '', // Time only (HH:MM)
+    registration_deadline_date: '', // Date only (YYYY-MM-DD)
+    registration_deadline_time: '', // Time only (HH:MM)
     max_participants: '',
     rules: '',
     is_featured: false
@@ -40,18 +42,50 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
   // Mutation hooks
   const createRallyMutation = useCreateRally()
   const updateRallyMutation = useUpdateRally()
-  const completeRallySetup = useCompleteRallySetup() // FIXED: Added for linking events/tracks/classes
+  const completeRallySetup = useCompleteRallySetup()
+
+  // Helper function to parse datetime into date and time components
+  const parseDateTimeToComponents = (dateTimeString: string) => {
+    if (!dateTimeString) return { date: '', time: '' }
+    
+    const date = new Date(dateTimeString)
+    // Use local date/time instead of UTC
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    
+    return {
+      date: `${year}-${month}-${day}`,
+      time: `${hours}:${minutes}`
+    }
+  }
+
+  // Helper function to combine date and time into ISO string (local time)
+  const combineDateTime = (date: string, time: string) => {
+    if (!date || !time) return ''
+    
+    // Create date in local timezone
+    const combinedDate = new Date(`${date}T${time}:00`)
+    return combinedDate.toISOString()
+  }
 
   // Pre-fill form when editing
   useEffect(() => {
     if (rally) {
+      const competitionDateTime = parseDateTimeToComponents(rally.competition_date)
+      const registrationDateTime = parseDateTimeToComponents(rally.registration_deadline)
+      
       setFormData({
         name: rally.name || '',
         description: rally.description || '',
         game_id: rally.game_id || '',
         game_type_id: rally.game_type_id || '',
-        competition_date: rally.competition_date ? new Date(rally.competition_date).toISOString().slice(0, 16) : '',
-        registration_deadline: rally.registration_deadline ? new Date(rally.registration_deadline).toISOString().slice(0, 16) : '',
+        competition_date: competitionDateTime.date,
+        competition_time: competitionDateTime.time,
+        registration_deadline_date: registrationDateTime.date,
+        registration_deadline_time: registrationDateTime.time,
         max_participants: rally.max_participants?.toString() || '',
         rules: rally.rules || '',
         is_featured: rally.is_featured || false
@@ -67,7 +101,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
     }))
   }
 
-  // FIXED: Prevent event handlers from causing form submission
+  // Prevent event handlers from causing form submission
   const handleEventToggle = (eventId: string) => {
     setSelectedEvents(prev => {
       const newEvents = prev.includes(eventId) 
@@ -104,19 +138,19 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
     )
   }
 
-  // FIXED: Complete implementation with event/track/class linking
+  // Complete implementation with event/track/class linking
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     try {
-      // Clean rally data
+      // Combine date and time fields into ISO strings (local time)
       const rallyData = {
         name: formData.name,
         description: formData.description,
         game_id: formData.game_id,
         game_type_id: formData.game_type_id,
-        competition_date: new Date(formData.competition_date).toISOString(),
-        registration_deadline: new Date(formData.registration_deadline).toISOString(),
+        competition_date: combineDateTime(formData.competition_date, formData.competition_time),
+        registration_deadline: combineDateTime(formData.registration_deadline_date, formData.registration_deadline_time),
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : undefined,
         rules: formData.rules,
         is_featured: formData.is_featured
@@ -125,9 +159,6 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
       if (rally) {
         // Update existing rally
         await updateRallyMutation.mutateAsync({ id: rally.id, ...rallyData })
-        
-        // For updates, we might want to handle events/tracks/classes separately
-        // This is more complex as it involves deleting existing and creating new ones
         console.log('Rally updated. Event/track/class updates not yet implemented for editing.')
         
       } else {
@@ -136,7 +167,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
         
         const createdRally = await createRallyMutation.mutateAsync(rallyData)
         
-        // FIXED: Link events, tracks, and classes to the created rally
+        // Link events, tracks, and classes to the created rally
         if (selectedEvents.length > 0 || selectedClasses.length > 0) {
           await completeRallySetup.mutateAsync({
             rallyId: createdRally.id,
@@ -160,7 +191,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
     }
   }
 
-  // FIXED: Prevent navigation functions from causing issues
+  // Prevent navigation functions from causing issues
   const nextStep = () => {
     setCurrentStep(prev => Math.min(prev + 1, 3))
   }
@@ -169,7 +200,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
     setCurrentStep(prev => Math.max(prev - 1, 1))
   }
 
-  // FIXED: Close handler to prevent event bubbling
+  // Close handler to prevent event bubbling
   const handleClose = (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault()
@@ -180,6 +211,11 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
 
   // Show loading state when any mutations are pending
   const isLoading = createRallyMutation.isPending || updateRallyMutation.isPending || completeRallySetup.isPending
+
+  // Validation check for required fields
+  const isStep1Valid = formData.name && 
+                      formData.competition_date && formData.competition_time && 
+                      formData.registration_deadline_date && formData.registration_deadline_time
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -231,7 +267,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
           </div>
         </div>
 
-        {/* FIXED: Separated form from EventSelector to prevent conflicts */}
+        {/* Separated form from EventSelector to prevent conflicts */}
         {currentStep < 3 ? (
           <form onSubmit={handleSubmit} className="p-6">
             {/* Step 1: Basic Information */}
@@ -286,15 +322,48 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
                   />
                 </div>
 
+                {/* UPDATED: Competition Date and Time - Separate inputs */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">
                       Võistluse kuupäev *
                     </label>
                     <input
-                      type="datetime-local"
+                      type="date"
                       name="competition_date"
                       value={formData.competition_date}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Võistluse kellaaeg *
+                    </label>
+                    <input
+                      type="time"
+                      name="competition_time"
+                      value={formData.competition_time}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="HH:MM"
+                    />
+                  </div>
+                </div>
+
+                {/* UPDATED: Registration Deadline Date and Time - Separate inputs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Registreerimise tähtpäev *
+                    </label>
+                    <input
+                      type="date"
+                      name="registration_deadline_date"
+                      value={formData.registration_deadline_date}
                       onChange={handleInputChange}
                       required
                       className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -306,12 +375,13 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
                       Registreerimise tähtaeg *
                     </label>
                     <input
-                      type="datetime-local"
-                      name="registration_deadline"
-                      value={formData.registration_deadline}
+                      type="time"
+                      name="registration_deadline_time"
+                      value={formData.registration_deadline_time}
                       onChange={handleInputChange}
                       required
                       className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="HH:MM"
                     />
                   </div>
                 </div>
@@ -423,7 +493,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
                 <button
                   type="button"
                   onClick={nextStep}
-                  disabled={!formData.name || !formData.competition_date || !formData.registration_deadline || isLoading}
+                  disabled={!isStep1Valid || isLoading}
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                 >
                   Edasi
@@ -432,7 +502,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
             </div>
           </form>
         ) : (
-          /* FIXED: Step 3 is outside the form to prevent conflicts */
+          /* Step 3 is outside the form to prevent conflicts */
           <div className="p-6">
             <div className="space-y-6">
               <h3 className="text-xl font-semibold text-white">Etapid ja klassid</h3>
@@ -533,7 +603,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
                   type="button"
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                  className="px-6 py-3 bg-green-600 hover:green-green-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
                 >
                   {isLoading ? (
                     <div className="flex items-center space-x-2">
