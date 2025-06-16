@@ -67,8 +67,9 @@ const getCurrentView = () => {
       '/user-management', 
       '/game-management',
       '/rally-management',
-      '/championships',     // ← ADD THIS NEW LINE
+      '/championships',
       '/results',
+      '/participant-linking',  // ← ADD THIS NEW LINE
       '/sponsors'
     ]
     
