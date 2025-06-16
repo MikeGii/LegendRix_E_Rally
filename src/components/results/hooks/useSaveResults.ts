@@ -61,6 +61,7 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                 .update({
                   class_name: result.className,
                   class_position: result.classPosition,
+                  overall_position: result.overallPosition || result.classPosition, // ✅ FIX: Set overall_position
                   total_points: result.totalPoints,
                   results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
                   results_entered_by: user.id,     // ✅ FIX: Track who entered
@@ -83,6 +84,7 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                   participant_name: result.playerName,
                   class_name: result.className,
                   class_position: result.classPosition,
+                  overall_position: result.overallPosition || result.classPosition, // ✅ FIX: Set overall_position
                   total_points: result.totalPoints,
                   results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
                   results_entered_by: user.id,     // ✅ FIX: Track who entered
@@ -113,6 +115,7 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                 .from('rally_results')
                 .update({
                   class_position: result.classPosition,
+                  overall_position: result.overallPosition || result.classPosition, // ✅ FIX: Set overall_position
                   total_points: result.totalPoints,
                   results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
                   results_entered_by: user.id,     // ✅ FIX: Track who entered
@@ -135,6 +138,7 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                   participant_name: null,
                   class_name: null, // Class comes from registration for registered participants
                   class_position: result.classPosition,
+                  overall_position: result.overallPosition || result.classPosition, // ✅ FIX: Set overall_position
                   total_points: result.totalPoints,
                   results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
                   results_entered_by: user.id,     // ✅ FIX: Track who entered
