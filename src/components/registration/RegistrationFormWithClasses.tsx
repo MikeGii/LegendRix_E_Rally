@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
+import { useRallyClasses } from '@/hooks/useRallyManagement'
 import { 
   useRallyAvailableClasses, 
   useCreateRegistration, 
@@ -31,7 +32,13 @@ export function RegistrationFormWithClasses({
 
   // Get user's registrations to check if already registered
   const { data: userRegistrations = [] } = useUserRallyRegistrations()
-  const { data: availableClasses = [], isLoading: isLoadingClasses } = useRallyAvailableClasses(rallyId)
+  const { data: rallyClasses = [], isLoading: isLoadingClasses } = useRallyClasses(rallyId)
+
+  // Transform rally classes to expected format
+  const availableClasses = rallyClasses.map(rallyClass => ({
+    id: rallyClass.class_id, // The actual game_class ID needed for registration
+    name: rallyClass.class_name || 'Unknown Class'
+  }))
   
   // Mutations
   const createRegistrationMutation = useCreateRegistration()
