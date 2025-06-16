@@ -26,7 +26,7 @@ export function HeroSection({ user, onOpenAuth, onDashboard }: HeroSectionProps)
         </span>
       </h2>
       <p className="text-xl md:text-2xl text-slate-300 mb-12 drop-shadow-lg max-w-4xl mx-auto leading-relaxed">
-        Kogege virtuaalse ralli põnevust. Võistlege sõitjatega üle maailma ja tõestage oma oskusi tipptasemel e-spordi keskkonnas.
+        Kogege virtuaalse ralli põnevust. Võistelge sõitjatega üle maailma ja tõestage oma oskusi tipptasemel e-spordi keskkonnas.
       </p>
       
       {/* Call to Action - Changes based on login status */}
