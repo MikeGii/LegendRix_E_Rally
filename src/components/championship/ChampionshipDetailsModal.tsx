@@ -1,3 +1,4 @@
+// src/components/championship/ChampionshipDetailsModal.tsx - FIXED VERSION
 'use client'
 
 import { useState } from 'react'
@@ -19,6 +20,7 @@ interface ChampionshipDetailsModalProps {
 export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }: ChampionshipDetailsModalProps) {
   const [activeTab, setActiveTab] = useState<'rallies' | 'results'>('rallies')
   const [showAddRally, setShowAddRally] = useState(false)
+  const [selectedClass, setSelectedClass] = useState<string>('all')
 
   // Data hooks
   const { data: championships = [] } = useChampionships()
@@ -36,16 +38,36 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
   const usedRallyIds = championshipRallies.map(cr => cr.rally_id)
   const unusedRallies = availableRallies.filter(rally => !usedRallyIds.includes(rally.id))
 
+  // Get unique classes for filter
+  const availableClasses = Array.from(
+    new Set(championshipResults?.participants?.map(p => p.class_name) || [])
+  ).sort()
+
+  // Filter participants by class
+  const filteredParticipants = selectedClass === 'all' 
+    ? championshipResults?.participants || []
+    : championshipResults?.participants?.filter(p => p.class_name === selectedClass) || []
+
+  // Sort participants by championship position
+  const sortedParticipants = [...filteredParticipants].sort((a, b) => {
+    if (selectedClass === 'all') {
+      // In multi-class view, sort by total points descending
+      return b.total_points - a.total_points
+    } else {
+      // In single class view, sort by championship position
+      return (a.championship_position || 999) - (b.championship_position || 999)
+    }
+  })
+
   const handleAddRally = async (rallyId: string) => {
     try {
-      // ✅ Use a temporary round_number (will be sorted by date anyway)
       const nextRoundNumber = Math.max(0, ...championshipRallies.map(cr => cr.round_number)) + 1
       
       await addRallyMutation.mutateAsync({
         championship_id: championshipId,
         rally_id: rallyId,
         round_number: nextRoundNumber,
-        round_name: `${nextRoundNumber}. etapp` // ✅ Use Estonian terminology
+        round_name: `${nextRoundNumber}. etapp`
       })
       
       setShowAddRally(false)
@@ -78,6 +100,24 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
     return new Date(dateString).toLocaleDateString('et-EE')
   }
 
+  const getPodiumIcon = (position: number): string => {
+    switch (position) {
+      case 1: return '🥇'
+      case 2: return '🥈'
+      case 3: return '🥉'
+      default: return ''
+    }
+  }
+
+  const getPositionColor = (position: number): string => {
+    switch (position) {
+      case 1: return 'text-yellow-400 font-bold'
+      case 2: return 'text-slate-300 font-bold'
+      case 3: return 'text-amber-600 font-bold'
+      default: return 'text-slate-400'
+    }
+  }
+
   if (!championship) {
     return null
   }
@@ -86,11 +126,12 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       
+      {/* ✅ FIXED: Proper modal sizing and scrolling */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-7xl bg-slate-800 rounded-xl border border-slate-700 shadow-2xl max-h-[90vh] overflow-hidden">
+        <div className="relative w-full max-w-7xl bg-slate-800 rounded-xl border border-slate-700 shadow-2xl max-h-[90vh] flex flex-col">
           
-          {/* Header */}
-          <div className="p-6 border-b border-slate-700">
+          {/* Header - Fixed */}
+          <div className="flex-shrink-0 p-6 border-b border-slate-700">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-white">{championship.name}</h2>
@@ -128,12 +169,12 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
                     : 'border-transparent text-slate-400 hover:text-slate-300'
                 }`}
               >
-                Tulemused
+                Tulemused ({championshipResults?.participants?.length || 0})
               </button>
             </div>
           </div>
 
-          {/* Content */}
+          {/* ✅ FIXED: Scrollable Content */}
           <div className="flex-1 overflow-y-auto p-6">
             
             {/* RALLIES TAB */}
@@ -192,7 +233,7 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
                   </div>
                 )}
 
-                {/* ✅ FIXED: Championship Rallies List - Sorted by Date */}
+                {/* Championship Rallies List */}
                 <div className="bg-slate-700/30 border border-slate-600 rounded-xl overflow-hidden">
                   <div className="p-4 border-b border-slate-600">
                     <h3 className="text-lg font-semibold text-white">Etappide nimekiri (kuupäeva järjekorras)</h3>
@@ -256,49 +297,45 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
               </div>
             )}
 
-            {/* RESULTS TAB */}
+            {/* ✅ RESULTS TAB - Original table structure with compact rows and alternating colors */}
             {activeTab === 'results' && championshipResults && (
-              <div className="space-y-6">
-                
-                {/* ✅ FIXED: Championship Results Table - Sorted by Points */}
+              <div>
+                {/* ✅ COMPACT CHAMPIONSHIP RESULTS TABLE - Class-separated with individual etapp columns */}
                 <div className="bg-slate-700/30 border border-slate-600 rounded-xl overflow-hidden">
-                  <div className="p-4 border-b border-slate-600">
+                  <div className="p-3 border-b border-slate-600">
                     <h3 className="text-lg font-semibold text-white">Koondtulemused klassiti</h3>
-                    <p className="text-sm text-slate-400 mt-1">
-                      Osalejad on järjestatud punkte arvestades, mitte tähestiku järjekorras
-                    </p>
                   </div>
                   
                   <div className="overflow-x-auto">
                     <table className="min-w-full">
                       <thead className="bg-slate-700/50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase">
-                            Koht klassis
+                          <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
+                            Koht
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
                             Osaleja
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
                             Klass
                           </th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-slate-300 uppercase">
-                            Osalenud etapid
+                          <th className="px-3 py-2 text-center text-xs font-medium text-slate-300 uppercase">
+                            Etapid
                           </th>
-                          {/* ✅ FIXED: Show etapp headers in date order */}
+                          {/* Individual etapp columns */}
                           {championshipRallies.map((rally) => (
-                            <th key={rally.id} className="px-4 py-3 text-center text-xs font-medium text-slate-300 uppercase">
+                            <th key={rally.id} className="px-2 py-2 text-center text-xs font-medium text-slate-300 uppercase">
                               {rally.etapp_number || rally.display_round_number}. etapp
                             </th>
                           ))}
-                          <th className="px-4 py-3 text-center text-xs font-medium text-slate-300 uppercase">
+                          <th className="px-3 py-2 text-center text-xs font-medium text-slate-300 uppercase">
                             Kokku
                           </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-700/50">
                         {(() => {
-                          // ✅ FIXED: Group participants by class and sort by championship position
+                          // Group participants by class and sort by championship position
                           const participantsByClass = championshipResults.participants.reduce((acc, participant) => {
                             const className = participant.class_name
                             if (!acc[className]) {
@@ -310,84 +347,91 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
 
                           const rows: JSX.Element[] = []
                           
-                          // ✅ Sort classes alphabetically
+                          // Sort classes alphabetically
                           Object.keys(participantsByClass)
                             .sort((a, b) => a.localeCompare(b))
                             .forEach((className) => {
                               // Add class header row
                               rows.push(
                                 <tr key={`class-header-${className}`} className="bg-slate-600/50">
-                                  <td colSpan={5 + championshipRallies.length} className="px-4 py-3">
-                                    <div className="font-bold text-white text-lg">
+                                  <td colSpan={5 + championshipRallies.length} className="px-3 py-2">
+                                    <div className="font-bold text-white text-base">
                                       🏆 {className}
                                     </div>
                                   </td>
                                 </tr>
                               )
 
-                              // ✅ FIXED: Sort participants by championship_position, NOT alphabetically
+                              // Sort participants by championship position
                               const sortedParticipants = participantsByClass[className].sort((a, b) => {
-                                // Primary: Sort by championship position
                                 const posA = a.championship_position || 999
                                 const posB = b.championship_position || 999
-                                if (posA !== posB) {
-                                  return posA - posB
-                                }
-                                // Secondary: Sort by total points (descending)
-                                if (a.total_points !== b.total_points) {
-                                  return b.total_points - a.total_points
-                                }
-                                // Tertiary: Sort by rounds participated
+                                if (posA !== posB) return posA - posB
+                                if (a.total_points !== b.total_points) return b.total_points - a.total_points
                                 return b.rounds_participated - a.rounds_participated
                               })
 
-                              // Add participants for this class
-                              sortedParticipants.forEach((result) => {
+                              // Add participants for this class with alternating row colors
+                              sortedParticipants.forEach((result, index) => {
+                                const isEven = index % 2 === 0
                                 rows.push(
-                                  <tr key={`${result.participant_name}-${result.class_name}`} className="hover:bg-slate-700/20">
-                                    <td className="px-4 py-3">
+                                  <tr 
+                                    key={`${result.participant_name}-${result.class_name}`} 
+                                    className={`hover:bg-slate-700/30 transition-colors ${
+                                      isEven ? 'bg-slate-800/20' : 'bg-slate-700/20'
+                                    }`}
+                                  >
+                                    {/* Position */}
+                                    <td className="px-3 py-1.5">
                                       <div className="flex items-center justify-center">
-                                        <span className="text-2xl">
+                                        <span className="text-lg">
                                           {result.championship_position === 1 && '🥇'}
                                           {result.championship_position === 2 && '🥈'}
                                           {result.championship_position === 3 && '🥉'}
                                           {result.championship_position > 3 && (
-                                            <span className="text-white font-bold text-lg">
+                                            <span className="text-white font-bold">
                                               {result.championship_position}.
                                             </span>
                                           )}
                                         </span>
                                       </div>
                                     </td>
-                                    <td className="px-4 py-3">
+                                    
+                                    {/* Participant Name */}
+                                    <td className="px-3 py-1.5">
                                       <div className="flex items-center space-x-2">
-                                        <span className="text-white">{result.participant_name}</span>
+                                        <span className="text-white font-medium">{result.participant_name}</span>
                                         {!result.is_linked && (
-                                          <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full">
+                                          <span className="px-1 py-0.5 bg-orange-500/20 text-orange-400 text-xs rounded">
                                             Sidumata
                                           </span>
                                         )}
                                         {result.participant_type === 'registered' && (
-                                          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">
-                                            Registreeritud
+                                          <span className="px-1 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded">
+                                            Reg
                                           </span>
                                         )}
                                       </div>
                                     </td>
-                                    <td className="px-4 py-3 text-slate-300 text-sm">
+                                    
+                                    {/* Class */}
+                                    <td className="px-3 py-1.5 text-slate-300 text-sm">
                                       {result.class_name}
                                     </td>
-                                    <td className="px-4 py-3 text-center text-slate-300">
+                                    
+                                    {/* Participated Etapps */}
+                                    <td className="px-3 py-1.5 text-center text-slate-300 text-sm">
                                       {result.rounds_participated}/{championshipRallies.length}
                                     </td>
-                                    {/* ✅ FIXED: Show rally scores in date order */}
+                                    
+                                    {/* Individual Rally Scores */}
                                     {championshipRallies.map((rally) => {
                                       const rallyScore = result.rally_scores.find(rs => rs.rally_id === rally.rally_id)
                                       return (
-                                        <td key={rally.id} className="px-4 py-3 text-center">
+                                        <td key={rally.id} className="px-2 py-1.5 text-center">
                                           {rallyScore?.participated ? (
                                             <div className="flex flex-col">
-                                              <span className="text-white font-medium">{rallyScore.points}</span>
+                                              <span className="text-white font-medium text-sm">{rallyScore.points}</span>
                                               {rallyScore.class_position && (
                                                 <span className="text-xs text-slate-400">({rallyScore.class_position}. koht)</span>
                                               )}
@@ -398,8 +442,10 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
                                         </td>
                                       )
                                     })}
-                                    <td className="px-4 py-3 text-center">
-                                      <span className="text-white font-bold text-lg">{result.total_points}</span>
+                                    
+                                    {/* Total Points */}
+                                    <td className="px-3 py-1.5 text-center">
+                                      <span className="text-white font-bold text-base">{result.total_points}</span>
                                     </td>
                                   </tr>
                                 )
@@ -410,26 +456,6 @@ export function ChampionshipDetailsModal({ championshipId, onClose, onSuccess }:
                         })()}
                       </tbody>
                     </table>
-                  </div>
-                </div>
-
-                {/* Championship Summary */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-blue-400">{championshipResults.participants.length}</div>
-                    <div className="text-blue-300 text-sm">Osalejaid kokku</div>
-                  </div>
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-green-400">{championshipResults.linked_participants}</div>
-                    <div className="text-green-300 text-sm">Seotud osalejat</div>
-                  </div>
-                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-orange-400">{championshipResults.unlinked_participants}</div>
-                    <div className="text-orange-300 text-sm">Sidumata osalejat</div>
-                  </div>
-                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-purple-400">{championshipRallies.length}</div>
-                    <div className="text-purple-300 text-sm">Etappi kokku</div>
                   </div>
                 </div>
               </div>
