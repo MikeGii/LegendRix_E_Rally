@@ -1,4 +1,4 @@
-// src/components/results/ResultsEntryInterface.tsx - REFACTORED VERSION
+// src/components/results/ResultsEntryInterface.tsx - UPDATED with class separation
 'use client'
 
 import { useRallyClasses } from '@/hooks/useRallyManagement'
@@ -6,10 +6,10 @@ import { useResultsState } from './hooks/useResultsState'
 import { useParticipantActions } from './hooks/useParticipantActions'
 import { useSaveResults } from './hooks/useSaveResults'
 import { useRallyResultsStatus } from './hooks/useRallyResultsStatus'
-import { calculatePositionsFromPoints, clearParticipantResults, sortParticipantsByResults } from './utils/resultCalculations'
+import { calculatePositionsFromPoints, clearParticipantResults } from './utils/resultCalculations'
 import { ResultsHeader } from './components/ResultsHeader'
 import { AddParticipantForm } from './components/AddParticipantForm'
-import { ParticipantsTable } from './components/ParticipantsTable'
+import { ClassSeparatedParticipantsTable } from './components/ClassSeparatedParticipantsTable'
 import { StatusMessages } from './components/StatusMessages'
 
 interface ResultsEntryInterfaceProps {
@@ -67,6 +67,7 @@ export function ResultsEntryInterface({
 
   // Event handlers
   const handleCalculatePositions = () => {
+    console.log('🔄 Calculating class-based positions...')
     calculatePositionsFromPoints(results, updateResult)
   }
 
@@ -81,9 +82,6 @@ export function ResultsEntryInterface({
   const handleAddParticipantSubmit = () => {
     handleAddParticipant(newParticipant)
   }
-
-  // Sort participants for display
-  const sortedParticipants = sortParticipantsByResults(participants, results)
 
   // Disable editing if results are approved
   const isEditingDisabled = resultsStatus?.results_approved || false
@@ -117,50 +115,39 @@ export function ResultsEntryInterface({
           isSaving={saveResultsMutation.isPending}
         />
 
-        <AddParticipantForm
-          show={showAddParticipant && !isEditingDisabled}
-          participant={newParticipant}
-          rallyClasses={rallyClasses}
-          isAdding={addManualParticipantMutation.isPending}
-          onParticipantChange={setNewParticipant}
-          onSubmit={handleAddParticipantSubmit}
-          onCancel={() => setShowAddParticipant(false)}
-        />
-
-        <ParticipantsTable
-          participants={sortedParticipants}
-          results={results}
-          editMode={editMode && !isEditingDisabled}
-          isRemoving={removeParticipantMutation.isPending}
-          onUpdateResult={updateResult}
-          onClearResults={handleClearResults}
-          onRemoveParticipant={handleRemoveParticipant}
-          onShowAddParticipant={() => !isEditingDisabled && setShowAddParticipant(true)}
-        />
+        {/* Add Participant Form */}
+        {showAddParticipant && !isEditingDisabled && (
+          <div className="mt-6 pt-6 border-t border-slate-700/50">
+            <AddParticipantForm
+              show={true}
+              participant={newParticipant}
+              rallyClasses={rallyClasses}
+              isAdding={addManualParticipantMutation.isPending}
+              onParticipantChange={setNewParticipant}
+              onSubmit={handleAddParticipantSubmit}
+              onCancel={() => setShowAddParticipant(false)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Status Messages */}
-      <StatusMessages
+      <StatusMessages 
         removeError={removeParticipantMutation.error?.message}
         saveError={saveResultsMutation.error?.message}
         saveSuccess={saveResultsMutation.isSuccess}
         isSaving={saveResultsMutation.isPending}
       />
 
-      {/* Approval Notice */}
-      {isEditingDisabled && (
-        <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-          <div className="flex items-start">
-            <span className="text-blue-400 text-lg mr-3">ℹ️</span>
-            <div>
-              <p className="text-blue-400 font-medium">Tulemused on kinnitatud</p>
-              <p className="text-blue-300 text-sm mt-1">
-                Selle ralli tulemused on kinnitatud ja avalikustatud. Muudatused pole enam võimalikud.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Class Separated Participants Tables */}
+      <ClassSeparatedParticipantsTable
+        participants={participants}
+        results={results}
+        editMode={editMode && !isEditingDisabled}
+        onUpdateResult={updateResult}
+        onRemoveParticipant={!isEditingDisabled ? handleRemoveParticipant : undefined}
+        onShowAddParticipant={() => !isEditingDisabled && setShowAddParticipant(true)}
+      />
     </div>
   )
 }

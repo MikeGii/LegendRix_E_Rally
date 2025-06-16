@@ -1,5 +1,4 @@
-// src/hooks/useApprovedRallies.ts - FIXED VERSION with class_position
-
+// src/hooks/useApprovedRallies.ts - FIXED to sort by class_position
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
@@ -23,7 +22,7 @@ export interface ApprovedRallyResult {
   user_id?: string
   class_name: string
   overall_position: number
-  class_position: number | null  // FIXED: Added class_position field
+  class_position: number | null
   total_points: number
   registration_date?: string
 }
@@ -74,7 +73,7 @@ export function useApprovedRallyResults(rallyId: string) {
         return []
       }
 
-      // FIXED: Get all results including class_position
+      // Get all results including class_position
       const { data: results, error } = await supabase
         .from('rally_results')
         .select(`
@@ -88,8 +87,9 @@ export function useApprovedRallyResults(rallyId: string) {
           rally_registrations(registration_date)
         `)
         .eq('rally_id', rallyId)
-        .not('overall_position', 'is', null)
-        .order('overall_position', { ascending: true })
+        .not('class_position', 'is', null) // FIXED: Only get results with class positions
+        .order('class_name', { ascending: true }) // FIXED: First sort by class
+        .order('class_position', { ascending: true }) // FIXED: Then by class position
 
       if (error) {
         console.error('Error loading approved rally results:', error)
@@ -102,13 +102,13 @@ export function useApprovedRallyResults(rallyId: string) {
         participant_name: result.participant_name || 'Registered User',
         user_id: result.user_id,
         class_name: result.class_name || 'Unknown Class',
-        overall_position: result.overall_position,
-        class_position: result.class_position ? parseInt(result.class_position.toString()) : null, // FIXED: Convert and handle type
+        overall_position: result.overall_position || 0,
+        class_position: result.class_position ? parseInt(result.class_position.toString()) : null,
         total_points: result.total_points || 0,
         registration_date: result.rally_registrations?.[0]?.registration_date
       }))
 
-      console.log(`✅ Loaded ${transformedResults.length} approved results`)
+      console.log(`✅ Loaded ${transformedResults.length} approved results sorted by class position`)
       return transformedResults
     },
     enabled: !!rallyId,

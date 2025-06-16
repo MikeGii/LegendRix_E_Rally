@@ -1,4 +1,4 @@
-// src/components/results/hooks/useSaveResults.ts
+// src/components/results/hooks/useSaveResults.ts - FIXED to save class_position
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { resultsKeys } from '@/hooks/useResultsManagement'
@@ -18,7 +18,7 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
       console.log('🔄 Saving rally results...')
       
       const updates = Object.values(results).filter(result => 
-        result.overallPosition !== null || result.totalPoints !== null
+        result.classPosition !== null || result.totalPoints !== null // FIXED: Check class position instead of overall
       )
 
       if (updates.length === 0) {
@@ -52,7 +52,7 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                 .from('rally_results')
                 .update({
                   class_name: result.className,
-                  overall_position: result.overallPosition,
+                  class_position: result.classPosition, // FIXED: Save class position
                   total_points: result.totalPoints,
                   updated_at: new Date().toISOString()
                 })
@@ -72,7 +72,7 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                   registration_id: null,
                   participant_name: result.playerName,
                   class_name: result.className,
-                  overall_position: result.overallPosition,
+                  class_position: result.classPosition, // FIXED: Save class position
                   total_points: result.totalPoints,
                   updated_at: new Date().toISOString()
                 })
@@ -100,7 +100,7 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
               const { error } = await supabase
                 .from('rally_results')
                 .update({
-                  overall_position: result.overallPosition,
+                  class_position: result.classPosition, // FIXED: Save class position
                   total_points: result.totalPoints,
                   updated_at: new Date().toISOString()
                 })
@@ -120,7 +120,7 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                   registration_id: participant.id,
                   participant_name: null,
                   class_name: null, // Class comes from registration for registered participants
-                  overall_position: result.overallPosition,
+                  class_position: result.classPosition, // FIXED: Save class position
                   total_points: result.totalPoints,
                   updated_at: new Date().toISOString()
                 })
@@ -153,7 +153,7 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
       queryClient.invalidateQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
       queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
       onSaveSuccess()
-      console.log(`✅ Saved results for ${count} participants`)
+      console.log(`✅ Saved results for ${count} participants including class positions`)
     },
     onError: (error) => {
       console.error('❌ Failed to save results:', error)
