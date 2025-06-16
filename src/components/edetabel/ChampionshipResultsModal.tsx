@@ -1,4 +1,3 @@
-// src/components/edetabel/ChampionshipResultsModal.tsx - SIMPLIFIED VERSION
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -115,7 +114,7 @@ export function ChampionshipResultsModal({
             <div className="grid grid-cols-3 gap-4 mt-4 mb-4">
               <div className="bg-slate-800/30 rounded-lg p-3 text-center">
                 <div className="text-xl font-bold text-white">{results?.total_rounds || 0}</div>
-                <div className="text-xs text-slate-400">Rallisid</div>
+                <div className="text-xs text-slate-400">Etappi kokku</div>
               </div>
               <div className="bg-slate-800/30 rounded-lg p-3 text-center">
                 <div className="text-xl font-bold text-blue-400">{results?.participants?.length || 0}</div>
@@ -182,22 +181,22 @@ export function ChampionshipResultsModal({
             ) : (
               <div className="p-6">
                 
-                {/* SIMPLIFIED RESULTS TABLE - EXACTLY LIKE STANDARD RALLY RESULTS */}
+                {/* SIMPLIFIED RESULTS TABLE */}
                 <div className="bg-slate-800/20 rounded-xl border border-slate-700/50 overflow-hidden">
                   
-                  {/* Table Header - Same as standard rally results */}
+                  {/* Table Header */}
                   <div className="sticky top-0 bg-slate-800/90 backdrop-blur border-b border-slate-700/50 text-xs font-medium text-slate-400 uppercase tracking-wide">
                     <div className="grid grid-cols-12 gap-2 py-3 px-4">
                       <div className="col-span-1 text-center">Koht</div>
                       <div className="col-span-4">Osaleja</div>
                       <div className="col-span-2">Klass</div>
-                      <div className="col-span-2 text-center">Osales</div>
+                      <div className="col-span-2 text-center">Etapid</div>
                       <div className="col-span-2 text-right">Punktid</div>
                       <div className="col-span-1 text-center">🏆</div>
                     </div>
                   </div>
 
-                  {/* Results Rows - Same theme as standard rally results */}
+                  {/* Results Rows */}
                   <div className="divide-y divide-slate-700/30 max-h-[60vh] overflow-y-auto">
                     {sortedParticipants.map((participant, index) => {
                       const position = selectedClass === 'all' ? index + 1 : participant.championship_position
@@ -234,10 +233,10 @@ export function ChampionshipResultsModal({
                             </span>
                           </div>
 
-                          {/* Rounds Participated */}
+                          {/* Etapps Participated */}
                           <div className="col-span-2 text-center">
                             <span className="text-slate-400 text-xs">
-                              {participant.rounds_participated}/{results?.total_rounds || 0}
+                              {participant.rounds_participated}/{results?.total_rounds || 0} etappi
                             </span>
                           </div>
 
@@ -272,7 +271,7 @@ export function ChampionshipResultsModal({
                         <span className="text-orange-400 font-medium">{results.unlinked_participants}</span> sidumata osalejat
                       </div>
                       <div>
-                        <span className="text-blue-400 font-medium">{results.total_rounds}</span> ralli kokku
+                        <span className="text-blue-400 font-medium">{results.total_rounds}</span> etappi kokku
                       </div>
                       <div>
                         <span className="text-purple-400 font-medium">{availableClasses.length}</span> erinevat klassi

@@ -1,4 +1,3 @@
-// src/components/landing/EdetabelModal.tsx - COMPLETE VERSION WITH CHAMPIONSHIPS
 'use client'
 
 import { useState } from 'react'
@@ -306,7 +305,7 @@ export function EdetabelModal({ isOpen, onClose }: EdetabelModalProps) {
                             <div className="flex items-center gap-6 text-center">
                               <div>
                                 <div className="text-2xl font-bold text-white">{championship.total_rallies}</div>
-                                <div className="text-xs text-slate-400">Rallisid</div>
+                                <div className="text-xs text-slate-400">Etappi</div>
                               </div>
                               <div>
                                 <div className="text-2xl font-bold text-blue-400">{championship.total_participants}</div>
