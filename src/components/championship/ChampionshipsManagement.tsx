@@ -3,14 +3,13 @@
 
 import { useState } from 'react'
 import { useChampionships, useCreateChampionship, useActivateChampionship } from '@/hooks/useChampionshipManagement'
-import { useApprovedRallies } from '@/hooks/useApprovedRallies'
-import { useGames, useGameTypes } from '@/hooks/useGameManagement'
+import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 
 export function ChampionshipsManagement() {
   const [isCreating, setIsCreating] = useState(false)
   const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null)
 
-  const { data: championships = [], isLoading } = useChampionships()
+  const { data: championships = [], isLoading, refetch } = useChampionships()
   const createChampionshipMutation = useCreateChampionship()
   const activateChampionshipMutation = useActivateChampionship()
 
@@ -47,212 +46,169 @@ export function ChampionshipsManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
-      <div className="max-w-7xl mx-auto p-6">
-        
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Meistrivõistlused</h1>
-              <p className="text-slate-400">
-                Halda meistrivõistlusi ja nende tulemusi
-              </p>
-            </div>
-            
-            <button
-              onClick={handleCreateChampionship}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-            >
-              <span>➕</span>
-              Loo meistrivõistlus
-            </button>
-          </div>
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      
+      {/* Unified Admin Header */}
+      <AdminPageHeader
+        title="Meistrivõistlused"
+        description="Halda meistrivõistlusi ja nende tulemusi"
+        icon="🏆"
+        stats={[
+          { label: 'Kokku meistrivõistlusi', value: championships.length, color: 'blue' },
+          { label: 'Aktiivseid', value: championships.filter(c => c.is_active).length, color: 'green' },
+          { label: 'Ootab kinnitust', value: championships.filter(c => !c.is_active).length, color: 'yellow' }
+        ]}
+        actions={[
+          {
+            label: 'Loo meistrivõistlus',
+            onClick: handleCreateChampionship,
+            variant: 'primary',
+            icon: '➕'
+          }
+        ]}
+        onRefresh={refetch}
+        isLoading={isLoading}
+      />
+
+      {/* Championships Table */}
+      <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700 overflow-hidden">
+        <div className="p-6 border-b border-slate-700">
+          <h2 className="text-xl font-bold text-white">Meistrivõistluste nimekiri</h2>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl border border-slate-700 p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">🏆</span>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-white">{championships.length}</div>
-                <div className="text-sm text-slate-400">Kokku meistrivõistlusi</div>
-              </div>
+        <div className="overflow-x-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
+              <span className="ml-3 text-slate-400">Laen meistrivõistlusi...</span>
             </div>
-          </div>
-
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl border border-slate-700 p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">✅</span>
+          ) : championships.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🏆</span>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-green-400">
-                  {championships.filter(c => c.is_active).length}
-                </div>
-                <div className="text-sm text-slate-400">Aktiivseid</div>
-              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Pole veel meistrivõistlusi</h3>
+              <p className="text-slate-400 mb-4">Loo esimene meistrivõistlus, et alustada</p>
+              <button
+                onClick={handleCreateChampionship}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Loo meistrivõistlus
+              </button>
             </div>
-          </div>
-
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl border border-slate-700 p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">⏳</span>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-orange-400">
-                  {championships.filter(c => !c.is_active).length}
-                </div>
-                <div className="text-sm text-slate-400">Ootel</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Championships Table */}
-        <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700 overflow-hidden">
-          <div className="p-6 border-b border-slate-700">
-            <h2 className="text-xl font-bold text-white">Meistrivõistluste nimekiri</h2>
-          </div>
-
-          <div className="overflow-x-auto">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
-                <span className="ml-3 text-slate-400">Laen meistrivõistlusi...</span>
-              </div>
-            ) : championships.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🏆</span>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Pole veel meistrivõistlusi</h3>
-                <p className="text-slate-400 mb-4">Loo esimene meistrivõistlus, et alustada</p>
-                <button
-                  onClick={handleCreateChampionship}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Loo meistrivõistlus
-                </button>
-              </div>
-            ) : (
-              <table className="w-full">
-                <thead className="bg-slate-800/50">
-                  <tr className="text-left">
-                    <th className="px-6 py-4 text-slate-400 font-medium">Nimi</th>
-                    <th className="px-6 py-4 text-slate-400 font-medium">Hooaeg</th>
-                    <th className="px-6 py-4 text-slate-400 font-medium">Mäng</th>
-                    <th className="px-6 py-4 text-slate-400 font-medium">Rallisid</th>
-                    <th className="px-6 py-4 text-slate-400 font-medium">Staatus</th>
-                    <th className="px-6 py-4 text-slate-400 font-medium">Loodud</th>
-                    <th className="px-6 py-4 text-slate-400 font-medium">Tegevused</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/30">
-                  {championships.map((championship) => (
-                    <tr 
-                      key={championship.id}
-                      className="hover:bg-slate-800/30 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="font-medium text-white">{championship.name}</div>
-                          {championship.description && (
-                            <div className="text-sm text-slate-400 mt-1 line-clamp-2">
-                              {championship.description}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      
-                      <td className="px-6 py-4">
-                        <span className="text-slate-300">{championship.season_year}</span>
-                      </td>
-                      
-                      <td className="px-6 py-4">
-                        <div className="text-sm">
-                          <div className="text-white">{championship.game_name || '-'}</div>
-                          {championship.game_type_name && (
-                            <div className="text-slate-400">{championship.game_type_name}</div>
-                          )}
-                        </div>
-                      </td>
-                      
-                      <td className="px-6 py-4">
-                        <span className="text-slate-300">{championship.total_rallies || 0}</span>
-                      </td>
-                      
-                      <td className="px-6 py-4">
-                        {championship.is_active ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
-                            ✅ Aktiivne
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                            ⏳ Ootel
-                          </span>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-slate-800/50">
+                <tr className="text-left">
+                  <th className="px-6 py-4 text-slate-400 font-medium">Nimi</th>
+                  <th className="px-6 py-4 text-slate-400 font-medium">Hooaeg</th>
+                  <th className="px-6 py-4 text-slate-400 font-medium">Mäng</th>
+                  <th className="px-6 py-4 text-slate-400 font-medium">Rallisid</th>
+                  <th className="px-6 py-4 text-slate-400 font-medium">Staatus</th>
+                  <th className="px-6 py-4 text-slate-400 font-medium">Loodud</th>
+                  <th className="px-6 py-4 text-slate-400 font-medium">Tegevused</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/30">
+                {championships.map((championship) => (
+                  <tr 
+                    key={championship.id}
+                    className="hover:bg-slate-800/30 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-medium text-white">{championship.name}</div>
+                        {championship.description && (
+                          <div className="text-sm text-slate-400 mt-1 line-clamp-2">
+                            {championship.description}
+                          </div>
                         )}
-                      </td>
-                      
-                      <td className="px-6 py-4">
-                        <span className="text-slate-400 text-sm">
-                          {formatDate(championship.created_at)}
+                      </div>
+                    </td>
+                    
+                    <td className="px-6 py-4">
+                      <span className="text-slate-300">{championship.season_year}</span>
+                    </td>
+                    
+                    <td className="px-6 py-4">
+                      <div className="text-sm">
+                        <div className="text-white">{championship.game_name || '-'}</div>
+                        {championship.game_type_name && (
+                          <div className="text-slate-400">{championship.game_type_name}</div>
+                        )}
+                      </div>
+                    </td>
+                    
+                    <td className="px-6 py-4">
+                      <span className="text-slate-300">{championship.total_rallies || 0}</span>
+                    </td>
+                    
+                    <td className="px-6 py-4">
+                      {championship.is_active ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                          ✅ Aktiivne
                         </span>
-                      </td>
-                      
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                          ⏳ Ootab kinnitust
+                        </span>
+                      )}
+                    </td>
+                    
+                    <td className="px-6 py-4">
+                      <span className="text-slate-400 text-sm">
+                        {formatDate(championship.created_at)}
+                      </span>
+                    </td>
+                    
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setSelectedChampionship(championship.id)}
+                          className="px-3 py-1 text-sm bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded hover:bg-blue-600/30 transition-colors"
+                        >
+                          Halda
+                        </button>
+                        
+                        {!championship.is_active && (
                           <button
-                            onClick={() => setSelectedChampionship(championship.id)}
-                            className="px-3 py-1 text-sm bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded hover:bg-blue-600/30 transition-colors"
+                            onClick={() => handleActivateChampionship(championship.id, championship.name)}
+                            disabled={activateChampionshipMutation.isPending}
+                            className="px-3 py-1 text-sm bg-green-600/20 text-green-400 border border-green-600/30 rounded hover:bg-green-600/30 transition-colors disabled:opacity-50"
                           >
-                            Halda
+                            {activateChampionshipMutation.isPending ? 'Kinnitab...' : 'Kinnita'}
                           </button>
-                          
-                          {!championship.is_active && (
-                            <button
-                              onClick={() => handleActivateChampionship(championship.id, championship.name)}
-                              disabled={activateChampionshipMutation.isPending}
-                              className="px-3 py-1 text-sm bg-green-600/20 text-green-400 border border-green-600/30 rounded hover:bg-green-600/30 transition-colors disabled:opacity-50"
-                            >
-                              {activateChampionshipMutation.isPending ? 'Kinnitab...' : 'Kinnita'}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-
-        {/* Create Championship Modal */}
-        {isCreating && (
-          <CreateChampionshipModal
-            onClose={() => setIsCreating(false)}
-            onSuccess={() => setIsCreating(false)}
-          />
-        )}
-
-        {/* Championship Details Modal */}
-        {selectedChampionship && (
-          <ChampionshipDetailsModal
-            championshipId={selectedChampionship}
-            onClose={() => setSelectedChampionship(null)}
-          />
-        )}
       </div>
+
+      {/* Create Championship Modal */}
+      {isCreating && (
+        <CreateChampionshipModal
+          onClose={() => setIsCreating(false)}
+          onSuccess={() => setIsCreating(false)}
+        />
+      )}
+
+      {/* Championship Details Modal */}
+      {selectedChampionship && (
+        <ChampionshipDetailsModal
+          championshipId={selectedChampionship}
+          onClose={() => setSelectedChampionship(null)}
+        />
+      )}
     </div>
   )
 }
 
-// Simple Create Championship Modal (placeholder)
+// Create Championship Modal Component
 function CreateChampionshipModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -345,7 +301,7 @@ function CreateChampionshipModal({ onClose, onSuccess }: { onClose: () => void, 
   )
 }
 
-// Championship Details Modal (placeholder)
+// Championship Details Modal Component (placeholder)
 function ChampionshipDetailsModal({ championshipId, onClose }: { championshipId: string, onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
