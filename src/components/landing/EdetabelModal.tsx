@@ -278,7 +278,6 @@ export function EdetabelModal({ isOpen, onClose }: EdetabelModalProps) {
                 {/* Quick Stats for Rallies */}
                 {viewType === 'rallies' && (
                   <div className="flex items-center gap-6 text-sm text-slate-400">
-                    <span>{totalParticipants} osalejat kokku</span>
                     <span>{availableGames.length} mängu</span>
                   </div>
                 )}
