@@ -1,4 +1,4 @@
-// src/components/edetabel/ChampionshipResultsModal.tsx - DETAILED VERSION LIKE ADMIN
+// src/components/edetabel/ChampionshipResultsModal.tsx - REMOVED ETAPID COLUMN FOR MORE SPACE
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -104,40 +104,33 @@ export function ChampionshipResultsModal({
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedClass === 'all'
                     ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                    : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
                 }`}
               >
                 Kõik klassid ({results?.participants?.length || 0})
               </button>
-              
-              {availableClasses.map(className => {
-                const classCount = results?.participants?.filter(p => p.class_name === className).length || 0
-                return (
-                  <button
-                    key={className}
-                    onClick={() => setSelectedClass(className)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedClass === className
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    {className} ({classCount})
-                  </button>
-                )
-              })}
+              {availableClasses.map(className => (
+                <button
+                  key={className}
+                  onClick={() => setSelectedClass(className)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    selectedClass === className
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                  }`}
+                >
+                  {className} ({results?.participants?.filter(p => p.class_name === className)?.length || 0})
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Content - Scrollable */}
+          {/* Content */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
-              <div className="p-8">
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="animate-pulse bg-slate-700/30 rounded h-16"></div>
-                  ))}
-                </div>
+              <div className="p-8 text-center">
+                <div className="w-8 h-8 border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-slate-400">Laen tulemusi...</p>
               </div>
             ) : error ? (
               <div className="p-8 text-center">
@@ -152,7 +145,7 @@ export function ChampionshipResultsModal({
             ) : (
               <div className="p-6">
                 
-                {/* ✅ DETAILED CHAMPIONSHIP RESULTS TABLE - Same as Admin View */}
+                {/* DETAILED CHAMPIONSHIP RESULTS TABLE - WITHOUT ETAPID COLUMN */}
                 <div className="bg-slate-700/30 border border-slate-600 rounded-xl overflow-hidden">
                   <div className="p-3 border-b border-slate-600">
                     <h3 className="text-lg font-semibold text-white">Koondtulemused klassiti</h3>
@@ -171,10 +164,7 @@ export function ChampionshipResultsModal({
                           <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
                             Klass
                           </th>
-                          <th className="px-3 py-2 text-center text-xs font-medium text-slate-300 uppercase">
-                            Etapid
-                          </th>
-                          {/* Individual etapp columns */}
+                          {/* Individual etapp columns - MORE SPACE NOW */}
                           {sortedRallies.map((rally) => (
                             <th key={rally.rally_id} className="px-2 py-2 text-center text-xs font-medium text-slate-300 uppercase">
                               {rally.etapp_number || rally.round_number}. etapp
@@ -212,7 +202,7 @@ export function ChampionshipResultsModal({
                                 // Add class header row
                                 rows.push(
                                   <tr key={`class-header-${className}`} className="bg-slate-600/50">
-                                    <td colSpan={5 + sortedRallies.length} className="px-3 py-2">
+                                    <td colSpan={4 + sortedRallies.length} className="px-3 py-2">
                                       <div className="font-bold text-white text-base">
                                         🏆 {className}
                                       </div>
@@ -265,12 +255,7 @@ export function ChampionshipResultsModal({
                                         {participant.class_name}
                                       </td>
                                       
-                                      {/* Participated Etapps */}
-                                      <td className="px-3 py-1.5 text-center text-slate-300 text-sm">
-                                        {participant.rounds_participated}/{results.total_rounds}
-                                      </td>
-                                      
-                                      {/* Individual Rally Scores */}
+                                      {/* Individual Rally Scores - NO ETAPID COLUMN ANYMORE */}
                                       {sortedRallies.map((rally) => {
                                         const rallyScore = participant.rally_scores.find(rs => rs.rally_id === rally.rally_id)
                                         return (
@@ -344,12 +329,7 @@ export function ChampionshipResultsModal({
                                     {participant.class_name}
                                   </td>
                                   
-                                  {/* Participated Etapps */}
-                                  <td className="px-3 py-1.5 text-center text-slate-300 text-sm">
-                                    {participant.rounds_participated}/{results.total_rounds}
-                                  </td>
-                                  
-                                  {/* Individual Rally Scores */}
+                                  {/* Individual Rally Scores - NO ETAPID COLUMN */}
                                   {sortedRallies.map((rally) => {
                                     const rallyScore = participant.rally_scores.find(rs => rs.rally_id === rally.rally_id)
                                     return (
@@ -379,14 +359,6 @@ export function ChampionshipResultsModal({
                         })()}
                       </tbody>
                     </table>
-                  </div>
-                </div>
-
-                {/* Championship Summary */}
-                <div className="mt-6 p-4 bg-slate-800/20 rounded-lg border border-slate-700/30">
-                  <h3 className="text-sm font-medium text-slate-300 mb-2">Meistrivõistluse kokkuvõte</h3>
-                  <div className="text-xs text-slate-400">
-                    {results.total_rounds} etappi • {results.participants.length} osalejat • {availableClasses.length} klassi
                   </div>
                 </div>
               </div>
