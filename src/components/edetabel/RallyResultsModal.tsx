@@ -316,10 +316,10 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                                     isTopPerformer ? 'bg-slate-800/20' : 'bg-slate-700/10'
                                   }`}
                                 >
-                                  {/* Overall Position */}
+                                  {/* Class Position (Main Position Column) */}
                                   <div className="col-span-1 text-center">
-                                    <span className={`font-bold ${getPositionColor(result.overall_position)}`}>
-                                      {result.overall_position || '-'}
+                                    <span className={`font-bold ${getPositionColor(classPosition)}`}>
+                                      {classPosition || '-'}
                                     </span>
                                   </div>
 
@@ -393,10 +393,10 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                               isTopPerformer ? 'bg-slate-800/20' : ''
                             }`}
                           >
-                            {/* Overall Position */}
+                            {/* Class Position (Main Position Column) */}
                             <div className="col-span-1 text-center">
-                              <span className={`font-bold ${getPositionColor(result.overall_position)}`}>
-                                {result.overall_position || '-'}
+                              <span className={`font-bold ${getPositionColor(position)}`}>
+                                {position || '-'}
                               </span>
                             </div>
 
