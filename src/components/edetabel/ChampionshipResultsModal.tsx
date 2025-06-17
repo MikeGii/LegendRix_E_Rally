@@ -155,19 +155,20 @@ export function ChampionshipResultsModal({
                     <table className="min-w-full">
                       <thead className="bg-slate-700/50">
                         <tr>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
+                          {/* Sticky columns for participant info */}
+                          <th className="sticky left-0 z-10 bg-slate-700/50 px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase border-r border-slate-600">
                             Koht
                           </th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
+                          <th className="sticky left-[60px] z-10 bg-slate-700/50 px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase border-r border-slate-600 min-w-[160px]">
                             Osaleja
                           </th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
+                          <th className="sticky left-[220px] z-10 bg-slate-700/50 px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase border-r border-slate-600 min-w-[100px]">
                             Klass
                           </th>
                           {/* Individual etapp columns - MORE SPACE NOW */}
-                          {sortedRallies.map((rally) => (
-                            <th key={rally.rally_id} className="px-2 py-2 text-center text-xs font-medium text-slate-300 uppercase">
-                              {rally.etapp_number || rally.round_number}. etapp
+                          {sortedRallies.map((rally, index) => (
+                            <th key={rally.rally_id} className="px-2 py-2 text-center text-xs font-medium text-slate-300 uppercase min-w-[60px]">
+                              E{index + 1}
                             </th>
                           ))}
                           <th className="px-3 py-2 text-center text-xs font-medium text-slate-300 uppercase">
@@ -202,7 +203,7 @@ export function ChampionshipResultsModal({
                                 // Add class header row
                                 rows.push(
                                   <tr key={`class-header-${className}`} className="bg-slate-600/50">
-                                    <td colSpan={4 + sortedRallies.length} className="px-3 py-2">
+                                    <td colSpan={4 + sortedRallies.length} className="px-3 py-2 sticky left-0 z-10 bg-slate-600/50">
                                       <div className="font-bold text-white text-base">
                                         🏆 {className}
                                       </div>
@@ -229,8 +230,8 @@ export function ChampionshipResultsModal({
                                         isEven ? 'bg-slate-800/20' : 'bg-slate-700/20'
                                       }`}
                                     >
-                                      {/* Position */}
-                                      <td className="px-3 py-1.5">
+                                      {/* Position - Sticky */}
+                                      <td className="sticky left-0 z-10 bg-slate-800/20 px-3 py-1.5 border-r border-slate-600">
                                         <div className="flex items-center justify-center">
                                           <span className="text-lg">
                                             {participant.championship_position === 1 && '🥇'}
@@ -245,13 +246,13 @@ export function ChampionshipResultsModal({
                                         </div>
                                       </td>
                                       
-                                      {/* Participant Name */}
-                                      <td className="px-3 py-1.5">
+                                      {/* Participant Name - Sticky */}
+                                      <td className="sticky left-[60px] z-10 bg-slate-800/20 px-3 py-1.5 border-r border-slate-600">
                                         <span className="text-white font-medium">{participant.participant_name}</span>
                                       </td>
                                       
-                                      {/* Class */}
-                                      <td className="px-3 py-1.5 text-slate-300 text-sm">
+                                      {/* Class - Sticky */}
+                                      <td className="sticky left-[220px] z-10 bg-slate-800/20 px-3 py-1.5 text-slate-300 text-sm border-r border-slate-600">
                                         {participant.class_name}
                                       </td>
                                       
@@ -264,7 +265,7 @@ export function ChampionshipResultsModal({
                                               <div className="flex flex-col">
                                                 <span className="text-white font-medium text-sm">{rallyScore.points}</span>
                                                 {rallyScore.class_position && (
-                                                  <span className="text-xs text-slate-400">({rallyScore.class_position}. koht)</span>
+                                                  <span className="text-xs text-slate-400">{rallyScore.class_position}.</span>
                                                 )}
                                               </div>
                                             ) : (
@@ -303,8 +304,8 @@ export function ChampionshipResultsModal({
                                     isEven ? 'bg-slate-800/20' : 'bg-slate-700/20'
                                   }`}
                                 >
-                                  {/* Position */}
-                                  <td className="px-3 py-1.5">
+                                  {/* Position - Sticky */}
+                                  <td className="sticky left-0 z-10 bg-slate-800/20 px-3 py-1.5 border-r border-slate-600">
                                     <div className="flex items-center justify-center">
                                       <span className="text-lg">
                                         {participant.championship_position === 1 && '🥇'}
@@ -319,13 +320,13 @@ export function ChampionshipResultsModal({
                                     </div>
                                   </td>
                                   
-                                  {/* Participant Name */}
-                                  <td className="px-3 py-1.5">
+                                  {/* Participant Name - Sticky */}
+                                  <td className="sticky left-[60px] z-10 bg-slate-800/20 px-3 py-1.5 border-r border-slate-600">
                                     <span className="text-white font-medium">{participant.participant_name}</span>
                                   </td>
                                   
-                                  {/* Class */}
-                                  <td className="px-3 py-1.5 text-slate-300 text-sm">
+                                  {/* Class - Sticky */}
+                                  <td className="sticky left-[220px] z-10 bg-slate-800/20 px-3 py-1.5 text-slate-300 text-sm border-r border-slate-600">
                                     {participant.class_name}
                                   </td>
                                   
@@ -338,7 +339,7 @@ export function ChampionshipResultsModal({
                                           <div className="flex flex-col">
                                             <span className="text-white font-medium text-sm">{rallyScore.points}</span>
                                             {rallyScore.class_position && (
-                                              <span className="text-xs text-slate-400">({rallyScore.class_position}. koht)</span>
+                                              <span className="text-xs text-slate-400">{rallyScore.class_position}.</span>
                                             )}
                                           </div>
                                         ) : (
