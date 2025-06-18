@@ -6,7 +6,6 @@ import { useAllNewsArticles, useDeleteNews } from '@/hooks/useNewsManagement'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { NewsFormModal } from './news-management/NewsFormModal'
-import { NewsFlowTester } from '@/components/testing/NewsFlowTester'
 import { NewsArticle } from '@/types/news'
 
 export function NewsManagement() {
@@ -109,13 +108,6 @@ export function NewsManagement() {
           isLoading={isLoading}
         />
 
-        {/* Development Testing Helper - Remove in production */}
-        {process.env.NODE_ENV === 'development' && allNews.length === 0 && (
-          <div className="mt-6">
-            <NewsFlowTester />
-          </div>
-        )}
-
         {/* News Table */}
         <div className="mt-8">
           <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
@@ -126,91 +118,88 @@ export function NewsManagement() {
               </div>
             ) : allNews.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-16 h-16 bg-slate-700/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">📰</span>
+                <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">📰</span>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Ühtegi uudist ei ole</h3>
-                <p className="text-slate-400 mb-6">Alusta esimese uudise loomisega</p>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Uudiseid pole veel loodud
+                </h3>
+                <p className="text-slate-400 mb-6">
+                  Alusta oma esimese uudise loomisega
+                </p>
                 <button
                   onClick={handleCreateNews}
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
                 >
-                  Lisa Esimene Uudis
+                  ➕ Lisa Esimene Uudis
                 </button>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-900/50 border-b border-slate-700/50">
+                  <thead className="bg-slate-700/30">
                     <tr>
-                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-300">Pealkiri</th>
-                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-300">Staatus</th>
-                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-300">Autor</th>
-                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-300">Kuupäev</th>
-                      <th className="text-right px-6 py-4 text-sm font-medium text-slate-300">Tegevused</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                        Uudis
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                        Staatus
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                        Kuupäev
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                        Autor
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-medium text-slate-300 uppercase tracking-wider">
+                        Tegevused
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/30">
+                  <tbody className="divide-y divide-slate-700/50">
                     {allNews.map((news) => (
-                      <tr key={news.id} className="hover:bg-slate-800/20 transition-colors">
+                      <tr key={news.id} className="hover:bg-slate-700/20 transition-colors">
                         <td className="px-6 py-4">
-                          <div className="flex items-start space-x-3">
-                            {news.cover_image_url ? (
-                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-700/50 flex-shrink-0">
-                                <img
-                                  src={news.cover_image_url}
-                                  alt={news.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-12 h-12 bg-slate-700/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <span className="text-slate-400">📰</span>
-                              </div>
+                          <div className="flex items-center space-x-4">
+                            {news.cover_image_url && (
+                              <img
+                                src={news.cover_image_url}
+                                alt={news.cover_image_alt || ''}
+                                className="w-12 h-12 rounded-lg object-cover"
+                              />
                             )}
-                            <div className="min-w-0 flex-1">
-                              <h3 className="text-white font-medium truncate">{news.title}</h3>
-                              <p className="text-slate-400 text-sm mt-1 line-clamp-2">
-                                {news.content.substring(0, 100)}...
-                              </p>
+                            <div>
+                              <div className="text-sm font-medium text-white">
+                                {news.title}
+                              </div>
+                              <div className="text-sm text-slate-400 line-clamp-1">
+                                {news.content.substring(0, 80)}...
+                              </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           {getStatusBadge(news)}
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="text-slate-300 text-sm">
-                            {news.author_name || 'Tundmatu'}
-                          </span>
+                        <td className="px-6 py-4 text-sm text-slate-300">
+                          {formatDate(news.created_at)}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm">
-                            <div className="text-slate-300">
-                              {formatDate(news.created_at)}
-                            </div>
-                            {news.published_at && news.published_at !== news.created_at && (
-                              <div className="text-slate-500 text-xs">
-                                Avaldatud: {formatDate(news.published_at)}
-                              </div>
-                            )}
-                          </div>
+                        <td className="px-6 py-4 text-sm text-slate-300">
+                          {news.author_name || 'Tundmatu'}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end space-x-2">
                             <button
                               onClick={() => handleEditNews(news)}
-                              className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
-                              title="Muuda"
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors"
                             >
-                              ✏️
+                              ✏️ Muuda
                             </button>
                             <button
                               onClick={() => handleDeleteNews(news.id)}
-                              className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                              title="Kustuta"
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors"
                             >
-                              🗑️
+                              🗑️ Kustuta
                             </button>
                           </div>
                         </td>
@@ -222,27 +211,27 @@ export function NewsManagement() {
             )}
           </div>
         </div>
-
-        {/* Create/Edit Modal */}
-        <NewsFormModal
-          isOpen={isCreateModalOpen}
-          onClose={handleCloseModal}
-          editingNews={editingNews}
-        />
-
-        {/* Delete Confirmation Modal */}
-        <ConfirmModal
-          isOpen={!!deletingNewsId}
-          onClose={() => setDeletingNewsId(null)}
-          onConfirm={confirmDeleteNews}
-          title="Kustuta Uudis"
-          message="Kas oled kindel, et soovid selle uudise kustutada? Seda tegevust ei saa tagasi võtta."
-          confirmText="Jah, Kustuta"
-          cancelText="Tühista"
-          confirmColor="red"
-          isLoading={deleteNewsMutation.isPending}
-        />
       </div>
+
+      {/* News Form Modal */}
+      <NewsFormModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseModal}
+        editingNews={editingNews}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deletingNewsId}
+        onClose={() => setDeletingNewsId(null)}
+        onConfirm={confirmDeleteNews}
+        title="Kustuta uudis"
+        message="Kas oled kindel, et soovid selle uudise kustutada? Seda tegevust ei saa tagasi võtta."
+        confirmText="Jah, kustuta"
+        cancelText="Tühista"
+        confirmColor="red"
+        isLoading={deleteNewsMutation.isPending}
+      />
     </div>
   )
 }
