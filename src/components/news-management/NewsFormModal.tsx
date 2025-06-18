@@ -3,10 +3,9 @@
 
 import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/Modal'
-import { Input, TextArea, FormGrid, FormActions } from '@/components/shared/FormComponents'
+import { Input, Textarea, FormGrid, FormActions } from '@/components/shared/FormComponents'
 import { useCreateNews, useUpdateNews } from '@/hooks/useNewsManagement'
 import { NewsArticle, CreateNewsInput, UpdateNewsInput } from '@/types/news'
-import Image from 'next/image'
 
 interface NewsFormModalProps {
   isOpen: boolean
@@ -184,12 +183,10 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
         {/* Image */}
         <div className="relative h-48 overflow-hidden">
           {formData.cover_image_url ? (
-            <Image
+            <img
               src={formData.cover_image_url}
               alt={formData.cover_image_alt || formData.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 400px"
+              className="w-full h-full object-cover"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center">
@@ -312,7 +309,7 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
               />
 
               {/* Content */}
-              <TextArea
+              <Textarea
                 label="Sisu"
                 value={formData.content}
                 onChange={(e) => handleInputChange('content', e.target.value)}
@@ -376,11 +373,9 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
                 {/* Image Preview */}
                 {formData.cover_image_url && (
                   <div className="w-full h-32 bg-slate-700/50 rounded-lg overflow-hidden">
-                    <Image
+                    <img
                       src={formData.cover_image_url}
                       alt={formData.cover_image_alt || 'Preview'}
-                      width={200}
-                      height={128}
                       className="w-full h-full object-cover"
                     />
                   </div>

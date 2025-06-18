@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { useAllNewsArticles, useDeleteNews } from '@/hooks/useNewsManagement'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
-import { NewsFormModal } from '@/components/news-management/NewsFormModal'
+import { NewsFormModal } from './news-management/NewsFormModal'
+import { NewsFlowTester } from '@/components/testing/NewsFlowTester'
 import { NewsArticle } from '@/types/news'
 
 export function NewsManagement() {
@@ -94,7 +95,7 @@ export function NewsManagement() {
           stats={[
             { label: 'Avaldatud uudised', value: publishedCount, color: 'green' },
             { label: 'Mustandid', value: draftCount, color: 'yellow' },
-            { label: 'Esiletõstetud', value: featuredCount, color: 'purple' }
+            { label: 'Esiletõstetud', value: featuredCount, color: 'blue' }
           ]}
           actions={[
             {
@@ -107,6 +108,13 @@ export function NewsManagement() {
           onRefresh={refetch}
           isLoading={isLoading}
         />
+
+        {/* Development Testing Helper - Remove in production */}
+        {process.env.NODE_ENV === 'development' && allNews.length === 0 && (
+          <div className="mt-6">
+            <NewsFlowTester />
+          </div>
+        )}
 
         {/* News Table */}
         <div className="mt-8">
@@ -232,7 +240,7 @@ export function NewsManagement() {
           confirmText="Jah, Kustuta"
           cancelText="Tühista"
           confirmColor="red"
-          loading={deleteNewsMutation.isPending}
+          isLoading={deleteNewsMutation.isPending}
         />
       </div>
     </div>

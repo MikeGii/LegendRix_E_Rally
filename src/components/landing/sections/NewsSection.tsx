@@ -2,21 +2,18 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import { usePublicLatestNews, useNewsArticle } from '@/hooks/useNewsManagement'
 import { Modal } from '@/components/ui/Modal'
 
-// Simple time ago function to replace date-fns
+// Simple time ago function
 function timeAgo(date: Date): string {
   const now = new Date()
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
   
-  if (diffInSeconds < 60) return 'just now'
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutit tagasi`
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} tundi tagasi`
-  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} päeva tagasi`
-  if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} kuud tagasi`
-  return `${Math.floor(diffInSeconds / 31536000)} aastat tagasi`
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}min`
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`
+  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}p`
+  return `${Math.floor(diffInSeconds / 2592000)}k`
 }
 
 interface NewsModalProps {
@@ -45,20 +42,16 @@ function NewsArticleModal({ isOpen, onClose, articleId }: NewsModalProps) {
           </div>
         ) : article ? (
           <div className="space-y-6">
-            {/* Cover Image */}
             {article.cover_image_url && (
               <div className="relative w-full h-64 rounded-xl overflow-hidden">
-                <Image
+                <img
                   src={article.cover_image_url}
                   alt={article.cover_image_alt || article.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 672px"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}
 
-            {/* Article Meta */}
             <div className="flex items-center space-x-4 text-sm text-slate-400">
               <span>📅 {new Date(article.published_at || article.created_at).toLocaleDateString('et-EE')}</span>
               {article.author_name && (
@@ -66,7 +59,6 @@ function NewsArticleModal({ isOpen, onClose, articleId }: NewsModalProps) {
               )}
             </div>
 
-            {/* Article Content */}
             <div className="prose prose-invert max-w-none">
               <div 
                 className="text-slate-300 leading-relaxed whitespace-pre-wrap"
@@ -84,7 +76,7 @@ function NewsArticleModal({ isOpen, onClose, articleId }: NewsModalProps) {
   )
 }
 
-interface NewsCardProps {
+interface CompactNewsCardProps {
   article: {
     id: string
     title: string
@@ -95,10 +87,9 @@ interface NewsCardProps {
   onClick: () => void
 }
 
-function NewsCard({ article, onClick }: NewsCardProps) {
-  // Create excerpt from content (first 100 characters)
-  const excerpt = article.content.length > 100 
-    ? article.content.substring(0, 100) + '...'
+function CompactNewsCard({ article, onClick }: CompactNewsCardProps) {
+  const excerpt = article.content.length > 80 
+    ? article.content.substring(0, 80) + '...'
     : article.content
 
   const timeAgoText = timeAgo(new Date(article.created_at))
@@ -106,126 +97,86 @@ function NewsCard({ article, onClick }: NewsCardProps) {
   return (
     <div
       onClick={onClick}
-      className="group cursor-pointer bg-slate-900/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden hover:bg-slate-800/40 hover:border-slate-600/50 transition-all duration-300 hover:transform hover:scale-[1.02]"
+      className="group cursor-pointer bg-slate-900/30 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-4 hover:border-slate-700/50 transition-all duration-300"
     >
-      {/* Image */}
-      <div className="relative h-48 overflow-hidden">
-        {article.cover_image_url ? (
-          <Image
-            src={article.cover_image_url}
-            alt={article.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center">
-            <span className="text-6xl opacity-50">📰</span>
-          </div>
-        )}
-        
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        
-        {/* Date Badge */}
-        <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-white border border-white/20">
-          {timeAgoText}
+      <div className="flex space-x-3">
+        {/* Small image */}
+        <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-700/50">
+          {article.cover_image_url ? (
+            <img
+              src={article.cover_image_url}
+              alt={article.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center">
+              <span className="text-lg opacity-60">📰</span>
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="p-6">
-        <h3 className="text-xl font-semibold text-white mb-3 line-clamp-2 group-hover:text-blue-400 transition-colors">
-          {article.title}
-        </h3>
-        
-        <p className="text-slate-400 text-sm line-clamp-3 leading-relaxed">
-          {excerpt}
-        </p>
-
-        {/* Read More Indicator */}
-        <div className="mt-4 flex items-center text-blue-400 text-sm font-medium group-hover:text-blue-300 transition-colors">
-          <span>Loe edasi</span>
-          <svg 
-            className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between mb-2">
+            <h4 className="text-sm font-medium text-white line-clamp-1 group-hover:text-blue-400 transition-colors">
+              {article.title}
+            </h4>
+            <span className="text-xs text-slate-500 ml-2 flex-shrink-0">
+              {timeAgoText}
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+            {excerpt}
+          </p>
         </div>
       </div>
     </div>
   )
 }
 
-export function NewsSection() {
+export function CompactNewsSection() {
   const { data: latestNews = [], isLoading } = usePublicLatestNews(3)
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
 
-  if (isLoading) {
-    return (
-      <section className="py-24 bg-gradient-to-b from-slate-900 to-black">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">Uudised</h2>
-            <p className="text-slate-400 text-lg">Värskeid uudiseid ja teateid</p>
-          </div>
-          
-          <div className="flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
-            <span className="ml-3 text-slate-400">Laen uudiseid...</span>
-          </div>
-        </div>
-      </section>
-    )
-  }
-
-  // Don't render section if no news
-  if (latestNews.length === 0) {
+  // Don't render if no news or loading
+  if (isLoading || latestNews.length === 0) {
     return null
   }
 
   return (
     <>
-      <section className="py-24 bg-gradient-to-b from-slate-900 to-black">
-        <div className="container mx-auto px-6">
-          {/* Section Header */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-6 py-2 mb-6">
-              <span className="text-blue-400">📰</span>
-              <span className="text-blue-400 font-medium">Uudised</span>
-            </div>
-            
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              Värskeid Uudiseid
-            </h2>
-            
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Jälgi kõiki olulisi teateid ja uudiseid meie rallimaailmast
-            </p>
-          </div>
+      {/* Compact News Section - matches your "Toeta meid" styling */}
+      <div className="text-center">
+        <h3 className="text-2xl font-semibold text-white mb-6">Teated</h3>
+        <div className="max-w-md mx-auto">
+          <div className="bg-slate-900/30 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6 hover:border-slate-700/50 transition-all duration-300 group">
+            {/* News icon header */}
+            <div className="relative mb-6">
 
-          {/* News Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {latestNews.map((article) => (
-              <NewsCard
-                key={article.id}
-                article={article}
-                onClick={() => setSelectedArticleId(article.id)}
-              />
-            ))}
-          </div>
-
-          {/* Call to Action - if there are more articles */}
-          {latestNews.length === 3 && (
-            <div className="text-center mt-12">
-              <p className="text-slate-400 mb-4">Rohkem uudiseid tulekul...</p>
+              {/* Decorative glow effect - matching your QR section */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-green-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></div>
             </div>
-          )}
+
+            {/* Compact news list */}
+            <div className="space-y-3">
+              {latestNews.map((article, index) => (
+                <CompactNewsCard
+                  key={article.id}
+                  article={article}
+                  onClick={() => setSelectedArticleId(article.id)}
+                />
+              ))}
+            </div>
+
+            {/* Footer text */}
+            <div className="mt-4 pt-4 border-t border-slate-700/50">
+              <p className="text-slate-300 text-sm leading-relaxed">
+                Jälgi meie uusimaid uudiseid ja teateid kogukonnast.
+              </p>
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* Article Modal */}
       {selectedArticleId && (

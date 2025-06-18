@@ -1,4 +1,4 @@
-// src/app/page.tsx - PROPERLY INTEGRATED with all original features preserved
+// src/app/page.tsx - YOUR ACTUAL VERSION with ONLY NewsSection added
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -15,6 +15,7 @@ import { usePublicUpcomingRallies } from '@/hooks/usePublicRallies'
 // Import modular landing page components
 import { HeroSection } from '@/components/landing/sections/HeroSection'
 import { FeaturesSection } from '@/components/landing/sections/FeaturesSection'
+import { CompactNewsSection } from '@/components/landing/sections/NewsSection'
 import { SupportersSection } from '@/components/landing/supporters/SupportersSection'
 import { SocialMediaSection } from '@/components/landing/sections/SocialMediaSection'
 import { WelcomeMessage } from '@/components/landing/WelcomeMessage'
@@ -125,7 +126,7 @@ function HomeContent() {
             {/* Enhanced Logo with Rally Cover Image */}
             <div className="flex items-center space-x-4">
               <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/20 bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-sm p-1">
-                <div className="w-full h-full rounded-xl overflow-hidden">
+                <div className="w-full h-full rounded-xl overflow-hidden relative">
                   <Image
                     src="/image/rally-cover.png"
                     alt="LegendRix Rally"
@@ -238,7 +239,7 @@ function HomeContent() {
             showEdetabelModal={true} // Käsitseb modali ise
           />
 
-          {/* Supporters Section */}
+          {/* Supporters Section - NOW WITH INTEGRATED NEWS */}
           <SupportersSection />
 
           {/* Social Media Section */}
