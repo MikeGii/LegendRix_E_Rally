@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "build-check": "next build --no-lint"
+    "build-check": "next build --no-lint",
+    "setup-dirs": "node scripts/setup-upload-dirs.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",
