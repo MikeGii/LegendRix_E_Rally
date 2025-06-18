@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useCreateNews, useUpdateNews } from '@/hooks/useNewsManagement'
 import { Modal } from '@/components/ui/Modal'
-import { Input, Textarea, FormGrid } from '@/components/shared/Form'
+import { Input, Textarea, FormGrid } from '@/components/shared/FormComponents'
 import { CreateNewsInput, UpdateNewsInput, NewsArticle } from '@/types/news'
 
 interface NewsFormModalProps {
@@ -145,8 +145,8 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
     if (!file) return
 
     // Validate file type
-    if (!file.type.match(/^image\/(png|jpg|jpeg)$/)) {
-      setErrors({ cover_image_url: 'Palun vali PNG, JPG või JPEG faili' })
+    if (!file.type.match(/^image\/(png|jpg|jpeg|webp)$/)) {
+      setErrors({ cover_image_url: 'Palun vali PNG, JPG, JPEG või WebP faili' })
       return
     }
 
@@ -159,6 +159,7 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
     setImageUploadLoading(true)
     
     try {
+      // First, read the file for cropping preview
       const reader = new FileReader()
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string
@@ -166,12 +167,12 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
         setShowImageCropper(true)
         // Reset crop to center of image
         setCropData({ x: 25, y: 25, width: 50, height: 30 })
+        setImageUploadLoading(false)
       }
       reader.readAsDataURL(file)
     } catch (error) {
-      console.error('Image upload failed:', error)
-      setErrors({ cover_image_url: 'Pildi üleslaadimine ebaõnnestus' })
-    } finally {
+      console.error('Image processing failed:', error)
+      setErrors({ cover_image_url: 'Pildi töötlemine ebaõnnestus' })
       setImageUploadLoading(false)
     }
   }
@@ -228,7 +229,6 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
       if (!ctx) return
 
       const img = imageRef.current
-      const imgAspectRatio = img.naturalWidth / img.naturalHeight
       
       // Calculate actual crop dimensions
       const cropX = (cropData.x / 100) * img.naturalWidth
@@ -247,13 +247,36 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
         0, 0, cropWidth, cropHeight
       )
 
-      // Convert to blob and create URL
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const croppedImageUrl = URL.createObjectURL(blob)
-          handleInputChange('cover_image_url', croppedImageUrl)
-          handleInputChange('cover_image_alt', formData.title || 'Uudise pilt')
-          setShowImageCropper(false)
+      // Convert canvas to blob
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          setErrors({ cover_image_url: 'Pildi lõikamine ebaõnnestus' })
+          return
+        }
+
+        try {
+          // Upload the cropped image
+          const uploadFormData = new FormData()
+          uploadFormData.append('file', blob, 'cropped_news_image.jpg')
+
+          const response = await fetch('/api/upload/image', {
+            method: 'POST',
+            body: uploadFormData,
+          })
+
+          const result = await response.json()
+
+          if (response.ok) {
+            // Use the uploaded image URL
+            handleInputChange('cover_image_url', result.url)
+            handleInputChange('cover_image_alt', formData.title || 'Uudise pilt')
+            setShowImageCropper(false)
+          } else {
+            setErrors({ cover_image_url: result.error || 'Pildi üleslaadimine ebaõnnestus' })
+          }
+        } catch (uploadError) {
+          console.error('Upload failed:', uploadError)
+          setErrors({ cover_image_url: 'Pildi üleslaadimine serverisse ebaõnnestus' })
         }
       }, 'image/jpeg', 0.9)
 
@@ -492,7 +515,7 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
                         imageUploadLoading ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
-                      {imageUploadLoading ? 'Laen üles...' : '📁 Vali & Lõika Pilt'}
+                      {imageUploadLoading ? 'Töötlemine...' : '📁 Vali & Lõika Pilt'}
                     </label>
                     <span className="text-sm text-slate-400">
                       PNG, JPG või JPEG, max 5MB
