@@ -1,4 +1,4 @@
-// src/app/api/upload/image/route.ts - PRODUCTION VERSION
+// src/app/api/upload/image/route.ts - CLEAN FROM SCRATCH
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
@@ -8,9 +8,11 @@ export async function POST(request: NextRequest) {
   console.log('🔄 Image upload API called')
   
   try {
+    // Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File
 
+    // Validate file exists
     if (!file) {
       console.log('❌ No file provided')
       return NextResponse.json(
@@ -41,22 +43,20 @@ export async function POST(request: NextRequest) {
 
     // Generate unique filename
     const timestamp = Date.now()
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-    const fileName = `news_${timestamp}_${originalName}`
-
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const fileName = `news_${timestamp}_${sanitizedName}`
     console.log('📝 Generated filename:', fileName)
 
     // Convert file to buffer
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-
     console.log('🔄 File converted to buffer, size:', buffer.length)
 
-    // Try Supabase Storage first (production recommended)
+    // Try Supabase Storage first
     if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      console.log('🔄 Attempting Supabase Storage upload...')
+      
       try {
-        console.log('🔄 Attempting Supabase Storage upload...')
-        
         const { data, error } = await supabase.storage
           .from('images')
           .upload(`news/${fileName}`, buffer, {
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
           })
 
         if (error) {
-          console.log('⚠️ Supabase upload failed, falling back to local:', error.message)
+          console.log('⚠️ Supabase upload failed:', error.message)
         } else {
           console.log('✅ Supabase upload successful:', data.path)
           
@@ -81,30 +81,39 @@ export async function POST(request: NextRequest) {
           })
         }
       } catch (supabaseError) {
-        console.log('⚠️ Supabase storage error, falling back to local:', supabaseError)
+        console.log('⚠️ Supabase error:', supabaseError)
       }
     }
 
-    // Fallback to local storage (development/small deployments)
+    // If production and Supabase failed, return error
+    if (process.env.NODE_ENV === 'production') {
+      console.log('❌ Production: No cloud storage available')
+      return NextResponse.json(
+        { 
+          error: 'Pildi üleslaadimine ebaõnnestus',
+          details: 'Cloud storage not available',
+          suggestion: 'Check Supabase Storage configuration'
+        },
+        { status: 500 }
+      )
+    }
+
+    // Development: Try local storage
+    console.log('🔄 Development: Using local file storage...')
+    
     try {
-      console.log('🔄 Using local file storage...')
-      
-      // Create upload directory path
       const uploadDir = join(process.cwd(), 'public', 'images', 'news')
       console.log('📁 Upload directory:', uploadDir)
       
-      // Ensure directory exists
       await mkdir(uploadDir, { recursive: true })
       console.log('✅ Directory verified/created')
 
-      // Write file
       const filePath = join(uploadDir, fileName)
       console.log('💾 Writing file to:', filePath)
       
       await writeFile(filePath, buffer)
       console.log('✅ File written successfully to local storage')
 
-      // Return the public URL path
       const publicUrl = `/images/news/${fileName}`
       console.log('🌐 Public URL:', publicUrl)
 
@@ -140,7 +149,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Health check endpoint
 export async function GET() {
   return NextResponse.json({
     message: 'Image upload API is ready',
