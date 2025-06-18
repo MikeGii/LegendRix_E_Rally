@@ -99,6 +99,13 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
   }
 
   const isValidUrl = (url: string): boolean => {
+    // Allow empty URLs
+    if (!url) return true
+    
+    // Allow relative paths (our uploaded images)
+    if (url.startsWith('/')) return true
+    
+    // Validate full URLs
     try {
       new URL(url)
       return true
@@ -259,23 +266,28 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
           const uploadFormData = new FormData()
           uploadFormData.append('file', blob, 'cropped_news_image.jpg')
 
+          console.log('🔄 Uploading cropped image...')
           const response = await fetch('/api/upload/image', {
             method: 'POST',
             body: uploadFormData,
           })
 
+          console.log('📨 Upload response status:', response.status)
           const result = await response.json()
+          console.log('📄 Upload response data:', result)
 
           if (response.ok) {
+            console.log('✅ Upload successful, URL:', result.url)
             // Use the uploaded image URL
             handleInputChange('cover_image_url', result.url)
             handleInputChange('cover_image_alt', formData.title || 'Uudise pilt')
             setShowImageCropper(false)
           } else {
+            console.error('❌ Upload failed:', result)
             setErrors({ cover_image_url: result.error || 'Pildi üleslaadimine ebaõnnestus' })
           }
         } catch (uploadError) {
-          console.error('Upload failed:', uploadError)
+          console.error('❌ Upload request failed:', uploadError)
           setErrors({ cover_image_url: 'Pildi üleslaadimine serverisse ebaõnnestus' })
         }
       }, 'image/jpeg', 0.9)

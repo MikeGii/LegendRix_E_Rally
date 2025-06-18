@@ -1,23 +1,29 @@
-// src/app/api/upload/image/route.ts
+// src/app/api/upload/image/route.ts - PRODUCTION VERSION
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
+  console.log('🔄 Image upload API called')
+  
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
 
     if (!file) {
+      console.log('❌ No file provided')
       return NextResponse.json(
         { error: 'Faili pole valitud' },
         { status: 400 }
       )
     }
 
+    console.log('📁 File received:', file.name, file.type, file.size)
+
     // Validate file type
     if (!file.type.match(/^image\/(png|jpg|jpeg|webp)$/)) {
+      console.log('❌ Invalid file type:', file.type)
       return NextResponse.json(
         { error: 'Palun vali PNG, JPG, JPEG või WebP faili' },
         { status: 400 }
@@ -26,6 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
+      console.log('❌ File too large:', file.size)
       return NextResponse.json(
         { error: 'Faili suurus ei tohi olla suurem kui 5MB' },
         { status: 400 }
@@ -37,13 +44,19 @@ export async function POST(request: NextRequest) {
     const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
     const fileName = `news_${timestamp}_${originalName}`
 
+    console.log('📝 Generated filename:', fileName)
+
     // Convert file to buffer
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Option 1: Upload to Supabase Storage (recommended for production)
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NODE_ENV === 'production') {
+    console.log('🔄 File converted to buffer, size:', buffer.length)
+
+    // Try Supabase Storage first (production recommended)
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
       try {
+        console.log('🔄 Attempting Supabase Storage upload...')
+        
         const { data, error } = await supabase.storage
           .from('images')
           .upload(`news/${fileName}`, buffer, {
@@ -52,84 +65,88 @@ export async function POST(request: NextRequest) {
           })
 
         if (error) {
-          console.error('Supabase upload error:', error)
-          // Fall back to local storage
+          console.log('⚠️ Supabase upload failed, falling back to local:', error.message)
         } else {
+          console.log('✅ Supabase upload successful:', data.path)
+          
           const { data: publicUrlData } = supabase.storage
             .from('images')
             .getPublicUrl(`news/${fileName}`)
 
           return NextResponse.json({
-            message: 'Pilt laeti edukalt üles',
+            message: 'Pilt laeti edukalt üles (Supabase)',
             url: publicUrlData.publicUrl,
-            fileName: fileName
+            fileName: fileName,
+            storage: 'supabase'
           })
         }
       } catch (supabaseError) {
-        console.error('Supabase storage error:', supabaseError)
-        // Continue to local storage fallback
+        console.log('⚠️ Supabase storage error, falling back to local:', supabaseError)
       }
     }
 
-    // Option 2: Save to local public/images folder (development/fallback)
+    // Fallback to local storage (development/small deployments)
     try {
-      // Ensure the directory exists
-      const uploadDir = join(process.cwd(), 'public', 'images', 'news')
+      console.log('🔄 Using local file storage...')
       
-      try {
-        await mkdir(uploadDir, { recursive: true })
-      } catch (dirError) {
-        // Directory might already exist, continue
-      }
+      // Create upload directory path
+      const uploadDir = join(process.cwd(), 'public', 'images', 'news')
+      console.log('📁 Upload directory:', uploadDir)
+      
+      // Ensure directory exists
+      await mkdir(uploadDir, { recursive: true })
+      console.log('✅ Directory verified/created')
 
-      // Write file to public/images/news/
+      // Write file
       const filePath = join(uploadDir, fileName)
+      console.log('💾 Writing file to:', filePath)
+      
       await writeFile(filePath, buffer)
+      console.log('✅ File written successfully to local storage')
 
       // Return the public URL path
       const publicUrl = `/images/news/${fileName}`
+      console.log('🌐 Public URL:', publicUrl)
 
       return NextResponse.json({
-        message: 'Pilt laeti edukalt üles',
+        message: 'Pilt laeti edukalt üles (Local)',
         url: publicUrl,
-        fileName: fileName
+        fileName: fileName,
+        storage: 'local'
       })
 
     } catch (localError) {
-      console.error('Local file write error:', localError)
+      console.error('❌ Local file write error:', localError)
+      
       return NextResponse.json(
-        { error: 'Pildi salvestamine ebaõnnestus' },
+        { 
+          error: 'Pildi salvestamine ebaõnnestus',
+          details: localError instanceof Error ? localError.message : 'Unknown error',
+          fileName: fileName
+        },
         { status: 500 }
       )
     }
 
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error('❌ General upload error:', error)
     return NextResponse.json(
-      { error: 'Pildi üleslaadimine ebaõnnestus' },
+      { 
+        error: 'Pildi üleslaadimine ebaõnnestus',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
 }
 
-// Handle other HTTP methods
+// Health check endpoint
 export async function GET() {
-  return NextResponse.json(
-    { error: 'Meetod pole lubatud' },
-    { status: 405 }
-  )
-}
-
-export async function PUT() {
-  return NextResponse.json(
-    { error: 'Meetod pole lubatud' },
-    { status: 405 }
-  )
-}
-
-export async function DELETE() {
-  return NextResponse.json(
-    { error: 'Meetod pole lubatud' },
-    { status: 405 }
-  )
+  return NextResponse.json({
+    message: 'Image upload API is ready',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    supabaseConfigured: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    version: '1.0.0'
+  })
 }
