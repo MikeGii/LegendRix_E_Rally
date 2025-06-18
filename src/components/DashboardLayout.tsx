@@ -57,32 +57,33 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   // FIXED: Determine current view based on current URL with proper defaults
-const getCurrentView = () => {
-  if (typeof window !== 'undefined') {
-    const pathname = window.location.pathname
-    
-    // List of all admin pages that should show "Admin" in the view switcher
-    const adminPages = [
-      '/admin-dashboard',
-      '/user-management', 
-      '/game-management',
-      '/rally-management',
-      '/championships',
-      '/results',
-      '/participant-linking',  // ← ADD THIS NEW LINE
-      '/sponsors'
-    ]
-    
-    // Check if current path is any admin page
-    if (adminPages.some(page => pathname.includes(page))) {
-      return 'admin'
-    } else {
-      // Default to 'user' for user-dashboard and other pages
-      return 'user'
+  const getCurrentView = () => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname
+      
+      // List of all admin pages that should show "Admin" in the view switcher
+      const adminPages = [
+        '/admin-dashboard',
+        '/user-management', 
+        '/game-management',
+        '/rally-management',
+        '/news-management', // ← ADD NEWS MANAGEMENT PAGE
+        '/championships',
+        '/results',
+        '/participant-linking',
+        '/sponsors'
+      ]
+      
+      // Check if current path is any admin page
+      if (adminPages.some(page => pathname.includes(page))) {
+        return 'admin'
+      } else {
+        // Default to 'user' for user-dashboard and other pages
+        return 'user'
+      }
     }
+    return 'user' // Default to user view
   }
-  return 'user' // Default to user view
-}
 
   const actualCurrentView = getCurrentView()
 
