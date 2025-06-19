@@ -70,7 +70,7 @@ export function useUserAchievements(userId: string) {
 
       console.log('🔄 Calculating user achievements...', { userId, statistics })
 
-      // Get championship wins (only completed championships)
+      // ✅ FIXED: Get championship WINS (1st place only) from completed championships
       const { data: championshipWins, error: championshipError } = await supabase
         .from('user_championship_titles')
         .select(`
@@ -82,12 +82,13 @@ export function useUserAchievements(userId: string) {
         `)
         .eq('user_id', userId)
         .eq('is_completed', true)
+        .eq('final_position', 1)  // ✅ ADDED: Only 1st place wins
 
       if (championshipError) {
         console.error('Error fetching championship wins:', championshipError)
       }
 
-      // Filter only completed championships
+      // ✅ FIXED: Filter only completed championships
       const completedChampionshipWins = (championshipWins || []).filter(title => 
         (title.championships as any)?.status === 'completed'
       )
@@ -142,6 +143,7 @@ export function useUserAchievements(userId: string) {
             break
 
           case 'champion':
+            // ✅ FIXED: Now correctly counts only championship WINS from completed championships
             earned = completedChampionshipWins.length >= 1
             if (earned && completedChampionshipWins.length > 0) {
               earnedAt = completedChampionshipWins[0].awarded_at
