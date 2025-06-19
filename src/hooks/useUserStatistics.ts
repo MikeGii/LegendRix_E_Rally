@@ -203,13 +203,21 @@ async function calculateManualStatistics(userId: string): Promise<UserStatistics
   let championshipTitles: any[] = []
   try {
     const { data: titles } = await supabase
-      .from('user_championship_titles')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_completed', true)
-      .lte('final_position', 3)
+    .from('user_championship_titles')
+    .select(`
+        *,
+        championships!inner(status)
+    `)
+    .eq('user_id', userId)
+    .eq('is_completed', true)
+    .eq('final_position', 1)  // ✅ FIXED: Only 1st place wins
 
-    championshipTitles = titles || []
+    // ✅ FIXED: Filter only completed championships
+    const completedChampionshipWins = (titles || []).filter(title => 
+    (title.championships as any)?.status === 'completed'
+    )
+
+    championshipTitles = completedChampionshipWins
   } catch (error) {
     console.log('Championship titles table not available yet')
   }
