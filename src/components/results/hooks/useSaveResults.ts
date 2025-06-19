@@ -1,4 +1,4 @@
-// src/components/results/hooks/useSaveResults.ts - FIXED VERSION
+// src/components/results/hooks/useSaveResults.ts - COMPLETE VERSION WITH PARTICIPATION
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { resultsKeys } from '@/hooks/useResultsManagement'
@@ -61,10 +61,10 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                 .update({
                   class_name: result.className,
                   class_position: result.classPosition,
-                  overall_position: result.overallPosition || result.classPosition, // ✅ FIX: Set overall_position
+                  overall_position: result.overallPosition || result.classPosition,
                   total_points: result.totalPoints,
-                  results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
-                  results_entered_by: user.id,     // ✅ FIX: Track who entered
+                  results_entered_at: currentTime,
+                  results_entered_by: user.id,
                   updated_at: currentTime
                 })
                 .eq('id', existing.id)
@@ -84,10 +84,10 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                   participant_name: result.playerName,
                   class_name: result.className,
                   class_position: result.classPosition,
-                  overall_position: result.overallPosition || result.classPosition, // ✅ FIX: Set overall_position
+                  overall_position: result.overallPosition || result.classPosition,
                   total_points: result.totalPoints,
-                  results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
-                  results_entered_by: user.id,     // ✅ FIX: Track who entered
+                  results_entered_at: currentTime,
+                  results_entered_by: user.id,
                   updated_at: currentTime
                 })
 
@@ -115,10 +115,10 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                 .from('rally_results')
                 .update({
                   class_position: result.classPosition,
-                  overall_position: result.overallPosition || result.classPosition, // ✅ FIX: Set overall_position
+                  overall_position: result.overallPosition || result.classPosition,
                   total_points: result.totalPoints,
-                  results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
-                  results_entered_by: user.id,     // ✅ FIX: Track who entered
+                  results_entered_at: currentTime,
+                  results_entered_by: user.id,
                   updated_at: currentTime
                 })
                 .eq('id', existing.id)
@@ -138,16 +138,36 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
                   participant_name: null,
                   class_name: null, // Class comes from registration for registered participants
                   class_position: result.classPosition,
-                  overall_position: result.overallPosition || result.classPosition, // ✅ FIX: Set overall_position
+                  overall_position: result.overallPosition || result.classPosition,
                   total_points: result.totalPoints,
-                  results_entered_at: currentTime, // ✅ FIX: Set results_entered_at
-                  results_entered_by: user.id,     // ✅ FIX: Track who entered
+                  results_entered_at: currentTime,
+                  results_entered_by: user.id,
                   updated_at: currentTime
                 })
 
               if (error) {
                 console.error('Error inserting registered participant result:', result.playerName, error)
                 throw error
+              }
+            }
+
+            // NEW: Update participation status for registered participants
+            if (participant.user_id && participant.user_id !== 'manual-participant') {
+              const { error: participationError } = await supabase
+                .from('rally_registrations')
+                .update({
+                  participated: result.participated,
+                  updated_at: currentTime
+                })
+                .eq('rally_id', rallyId)
+                .eq('user_id', participant.user_id)
+
+              if (participationError) {
+                console.error('Error updating participation status:', result.playerName, participationError)
+                // Don't throw here - just log the error and continue
+                console.warn('Participation status update failed, but results were saved')
+              } else {
+                console.log(`✅ Updated participation status for ${result.playerName}: ${result.participated}`)
               }
             }
           }
@@ -163,8 +183,8 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
         .upsert({
           rally_id: rallyId,
           results_completed: true,
-          results_completed_at: currentTime,  // ✅ CORRECT: matches your DB schema
-          results_entered_by: user.id,        // ✅ CORRECT: matches your DB schema
+          results_completed_at: currentTime,
+          results_entered_by: user.id,
           updated_at: currentTime
         })
 
@@ -173,7 +193,9 @@ export function useSaveResults({ rallyId, participants, onSaveSuccess }: UseSave
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
       queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
-      queryClient.invalidateQueries({ queryKey: [...resultsKeys.rally_results(rallyId), 'status'] }) // ✅ FIX: Also invalidate status
+      queryClient.invalidateQueries({ queryKey: [...resultsKeys.rally_results(rallyId), 'status'] })
+      // NEW: Invalidate user statistics as they might have changed due to participation updates
+      queryClient.invalidateQueries({ queryKey: ['user-statistics'] })
       onSaveSuccess()
       console.log(`✅ Saved results for ${count} participants with proper tracking`)
     },

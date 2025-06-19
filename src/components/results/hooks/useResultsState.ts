@@ -6,10 +6,11 @@ export interface ParticipantResult {
   playerName: string
   className: string
   overallPosition: number | null
-  classPosition: number | null  // NEW: Position within class
+  classPosition: number | null
   totalPoints: number | null
+  participated: boolean  // NEW: Participation checkbox state
   eventResults: Record<string, number>
-  isModified: boolean  // NEW: Track modifications for save optimization
+  isModified: boolean
 }
 
 export interface ManualParticipant {
@@ -41,10 +42,11 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
         playerName: participant.player_name || participant.user_name || 'Unknown',
         className: participant.class_name || 'Unknown Class',
         overallPosition: participant.overall_position,
-        classPosition: participant.class_position, // NEW: Include class position
+        classPosition: participant.class_position,
         totalPoints: participant.total_points,
+        participated: participant.participated || false, // NEW: Load existing participation status
         eventResults: {},
-        isModified: false // NEW: Initialize as not modified
+        isModified: false
       }
     })
     
@@ -67,7 +69,7 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
       [participantId]: {
         ...prev[participantId],
         [field]: value,
-        isModified: true // Mark as modified when any field changes
+        isModified: true
       }
     }))
   }
