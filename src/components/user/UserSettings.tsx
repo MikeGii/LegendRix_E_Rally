@@ -10,7 +10,7 @@ import { PasswordTab } from './settings/PasswordTab'
 type SettingsSection = 'profile' | 'account' | 'password'
 
 interface Message {
-  type: 'success' | 'error'
+  type: 'success' | 'error' | 'warning'
   text: string
 }
 
@@ -138,11 +138,16 @@ export function UserSettings() {
                   mb-6 p-4 rounded-xl border
                   ${message.type === 'success'
                     ? 'bg-green-900/50 border-green-700/50 text-green-300'
+                    : message.type === 'warning'
+                    ? 'bg-yellow-900/50 border-yellow-700/50 text-yellow-300'
                     : 'bg-red-900/50 border-red-700/50 text-red-300'
                   }
                 `}>
                   <div className="flex items-center space-x-2">
-                    <span>{message.type === 'success' ? '✅' : '❌'}</span>
+                    <span>
+                      {message.type === 'success' ? '✅' : 
+                       message.type === 'warning' ? '⚠️' : '❌'}
+                    </span>
                     <span>{message.text}</span>
                   </div>
                 </div>
