@@ -10,9 +10,10 @@ import type { ApprovedRally } from '@/hooks/useApprovedRallies'
 interface EdetabelModalProps {
   isOpen: boolean
   onClose: () => void
+  onChampionshipModalToggle?: (isOpen: boolean) => void // ADD THIS
 }
 
-export function EdetabelModal({ isOpen, onClose }: EdetabelModalProps) {
+export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: EdetabelModalProps) {
   // Rally states
   const [selectedRallyId, setSelectedRallyId] = useState<string | null>(null)
   const [gameFilter, setGameFilter] = useState<string>('')
@@ -92,11 +93,30 @@ export function EdetabelModal({ isOpen, onClose }: EdetabelModalProps) {
     }
   }
 
-  // Championship click handler
+  // Update championship click handler:
   const handleChampionshipClick = (championship: PublicChampionship) => {
     setSelectedChampionship(championship)
     setIsChampionshipModalOpen(true)
+    onChampionshipModalToggle?.(true) // ADD THIS LINE
   }
+
+
+  // Create championship close handler:
+  const handleChampionshipModalClose = () => {
+    setIsChampionshipModalOpen(false)
+    setSelectedChampionship(null)
+    onChampionshipModalToggle?.(false) // NOTIFY PARENT
+  }
+
+  // Use the new close handler:
+  {isChampionshipModalOpen && selectedChampionship && (
+    <ChampionshipResultsModal
+      isOpen={isChampionshipModalOpen}
+      onClose={handleChampionshipModalClose} // USE NEW HANDLER
+      championshipId={selectedChampionship.id}
+      championshipName={selectedChampionship.name}
+    />
+  )}
 
   // Format date function
   const formatDate = (dateString: string) => {
@@ -492,6 +512,7 @@ export function EdetabelModal({ isOpen, onClose }: EdetabelModalProps) {
           onClose={() => {
             setIsChampionshipModalOpen(false)
             setSelectedChampionship(null)
+            onChampionshipModalToggle?.(false) // ADD THIS LINE
           }}
           championshipId={selectedChampionship.id}
           championshipName={selectedChampionship.name}
