@@ -1,8 +1,6 @@
-// src/hooks/usePublicPlayerProfile.ts
+// src/hooks/usePublicPlayerProfile.ts - SECURE VERSION
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { useUserStatistics } from './useUserStatistics'
-import { useUserAchievements } from './useUserAchievements'
 
 export interface PublicPlayerProfile {
   id: string
@@ -11,19 +9,20 @@ export interface PublicPlayerProfile {
   // Note: We DON'T include sensitive fields like email, name, etc.
 }
 
-export function usePublicPlayerProfile(playerName: string) {
+// SECURITY: Load profile by userId instead of playerName
+export function usePublicPlayerProfile(userId: string) {
   return useQuery({
-    queryKey: ['public-player-profile', playerName],
+    queryKey: ['public-player-profile', userId],
     queryFn: async (): Promise<PublicPlayerProfile | null> => {
-      if (!playerName) return null
+      if (!userId) return null
 
-      console.log('🔄 Loading public player profile for:', playerName)
+      console.log('🔄 Loading public player profile for userId:', userId)
 
-      // Get user by player_name (public data only)
+      // Get user by ID (secure - no name collision possible)
       const { data: user, error } = await supabase
         .from('users')
         .select('id, player_name, created_at')
-        .eq('player_name', playerName)
+        .eq('id', userId)
         .single()
 
       if (error) {
@@ -36,7 +35,7 @@ export function usePublicPlayerProfile(playerName: string) {
       console.log('✅ Public player profile loaded:', user.player_name)
       return user
     },
-    enabled: !!playerName,
+    enabled: !!userId,
     staleTime: 10 * 60 * 1000, // 10 minutes - public profiles don't change often
   })
 }

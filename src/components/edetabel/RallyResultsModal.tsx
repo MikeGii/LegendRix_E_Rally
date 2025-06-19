@@ -57,6 +57,7 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
   const { data: rallyEvents = [], isLoading: eventsLoading } = useRallyEvents(rally.id)
   const [selectedClass, setSelectedClass] = useState<string>('all')
   const [showEvents, setShowEvents] = useState(false)
+  const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false)
 
   if (!isOpen) return null
 
@@ -155,6 +156,36 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
   const handleModalClick = (e: React.MouseEvent) => {
     e.stopPropagation()
   }
+
+  const renderParticipantName = (result: any) => {
+  // SECURITY FIX: Differentiate between registered users and manual participants
+  console.log('Debug result:', result);
+  const isRegisteredUser = result.user_id && result.user_id !== 'manual-participant'
+  const isManualParticipant = !result.user_id || result.user_id === 'manual-participant'
+
+  if (isRegisteredUser) {
+    // Registered user - secure clickable profile
+    return (
+      <ClickablePlayerName
+        userId={result.user_id}
+        playerName={result.participant_name}
+        participantType="registered"
+        className="font-medium text-white hover:text-blue-400"
+        onModalOpen={() => setIsPlayerModalOpen(true)}
+        onModalClose={() => setIsPlayerModalOpen(false)}
+      />
+    )
+  } else {
+    // Manual participant - not clickable, gray text to indicate difference
+    return (
+      <ClickablePlayerName
+        playerName={result.participant_name}
+        participantType="manual"
+        className="font-medium text-gray-400"
+      />
+    )
+  }
+}
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -326,10 +357,7 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
 
                                   {/* Participant Name */}
                                   <div className="col-span-4">
-                                      <ClickablePlayerName 
-                                      playerName={result.participant_name}
-                                      className="text-white font-medium hover:text-blue-400"
-                                    />
+                                    {renderParticipantName(result)}
                                   </div>
 
                                   {/* Class */}
@@ -406,7 +434,7 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
 
                             {/* Participant Name */}
                             <div className="col-span-4">
-                              <span className="text-white font-medium truncate">{result.participant_name}</span>
+                              {renderParticipantName(result)}
                             </div>
 
                             {/* Class */}

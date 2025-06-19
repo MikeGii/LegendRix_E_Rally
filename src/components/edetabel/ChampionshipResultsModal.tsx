@@ -1,4 +1,4 @@
-// src/components/edetabel/ChampionshipResultsModal.tsx
+// src/components/edetabel/ChampionshipResultsModal.tsx - COMPLETE WITH SECURE CLICKABLE NAMES
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -74,11 +74,42 @@ export function ChampionshipResultsModal({
     return 3
   }
 
+  const renderParticipantName = (participant: ChampionshipParticipant) => {
+    // SECURITY FIX: Differentiate between registered users and manual participants
+    const isRegisteredUser = participant.user_id && participant.user_id !== 'manual-participant'
+    const isManualParticipant = !participant.user_id || participant.user_id === 'manual-participant'
+
+    if (isRegisteredUser) {
+      // Registered user - secure clickable profile
+      return (
+        <ClickablePlayerName
+          userId={participant.user_id}
+          playerName={participant.participant_name}
+          participantType="registered"
+          className="text-white font-medium hover:text-blue-400"
+          onModalOpen={() => setIsPlayerModalOpen(true)}
+          onModalClose={() => setIsPlayerModalOpen(false)}
+        />
+      )
+    } else {
+      // Manual participant - not clickable, gray text to indicate difference
+      return (
+        <ClickablePlayerName
+          playerName={participant.participant_name}
+          participantType="manual"
+          className="font-medium text-gray-400"
+        />
+      )
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto" onClick={handleBackdropClick}>
       <div className="flex min-h-full items-center justify-center p-4">
         <div 
-          className="relative w-full max-w-6xl bg-slate-900/95 backdrop-blur-xl rounded-2xl border border-slate-700 shadow-2xl max-h-[95vh] flex flex-col"
+          className={`relative w-full max-w-6xl bg-slate-900/95 backdrop-blur-xl rounded-2xl border border-slate-700 shadow-2xl max-h-[95vh] flex flex-col ${
+            isPlayerModalOpen ? 'z-30' : 'z-50'
+          }`}
           onClick={handleModalClick}
         >
           
@@ -149,6 +180,28 @@ export function ChampionshipResultsModal({
               </div>
             ) : (
               <div className="bg-slate-900/50">
+                {/* Summary Statistics */}
+                <div className="bg-slate-800/30 backdrop-blur-sm border-b border-slate-700/30 p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-400">{results.total_rounds}</div>
+                      <div className="text-sm text-slate-400">Etappi</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-400">{results.participants.length}</div>
+                      <div className="text-sm text-slate-400">Osalejat</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-purple-400">{results.linked_participants}</div>
+                      <div className="text-sm text-slate-400">Seotud</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-yellow-400">{results.unlinked_participants}</div>
+                      <div className="text-sm text-slate-400">Sidumata</div>
+                    </div>
+                  </div>
+                </div>
+
                 {selectedClass === 'all' ? (
                   // ALL CLASSES VIEW - EXACT COPY of RallyResultsModal structure
                   <div>
@@ -190,40 +243,22 @@ export function ChampionshipResultsModal({
 
                       // Sort classes by priority (Pro first, then Semi-Pro, then others)
                       const sortedClasses = Object.keys(resultsByClass).sort((a, b) => {
-                        const aPriority = getClassPriority(a)
-                        const bPriority = getClassPriority(b)
-                        return aPriority - bPriority
+                        return getClassPriority(a) - getClassPriority(b)
                       })
 
-                      return sortedClasses.map((className, classIndex) => {
-                        const classResults = resultsByClass[className]
-                        const classPriority = getClassPriority(className)
+                      return sortedClasses.map(className => {
+                        const classParticipants = resultsByClass[className]
                         
                         return (
                           <div key={className}>
-                            {/* Class Separator Header - EXACT copy from RallyResultsModal */}
-                            <div className="sticky top-[32px] bg-slate-800/90 backdrop-blur border-y border-slate-600/30 px-3 py-2">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className={`font-bold text-sm ${
-                                    classPriority === 1 ? 'text-yellow-400' : 
-                                    classPriority === 2 ? 'text-blue-400' : 'text-white'
-                                  }`}>
-                                    📊 {className.toUpperCase()}
-                                    {classPriority === 1 && ' (PRO)'}
-                                    {classPriority === 2 && ' (SEMI-PRO)'}
-                                  </span>
-                                  <span className="text-slate-400 text-xs">({classResults.length} osalejat)</span>
-                                </div>
-                                <div className="text-slate-400 text-xs">
-                                  Parim: {classResults[0]?.total_points || '0'} punkti
-                                </div>
-                              </div>
+                            {/* Class Header */}
+                            <div className="bg-slate-800/50 border-b border-slate-600/30 px-3 py-2">
+                              <h3 className="text-sm font-semibold text-white">{className}</h3>
                             </div>
-
+                            
                             {/* Class Results */}
-                            <div className="divide-y divide-slate-700/20">
-                              {classResults.map((participant, index) => {
+                            <div className="divide-y divide-slate-700/30">
+                              {classParticipants.map((participant, index) => {
                                 const position = participant.championship_position || (index + 1)
                                 const isTopPerformer = position <= 3
                                 
@@ -231,7 +266,7 @@ export function ChampionshipResultsModal({
                                   <div 
                                     key={participant.participant_key}
                                     className={`grid gap-1 py-2 px-3 text-sm hover:bg-slate-800/30 transition-colors ${
-                                      isTopPerformer ? 'bg-slate-800/20' : 'bg-slate-700/10'
+                                      isTopPerformer ? 'bg-slate-800/20' : ''
                                     }`}
                                     style={{gridTemplateColumns: sortedRallies.length <= 15 ? `1fr 2fr 1fr ${sortedRallies.map(() => '1fr').join(' ')} 1fr` : `60px 1fr 80px ${sortedRallies.map(() => '40px').join(' ')} 60px`}}
                                   >
@@ -244,12 +279,7 @@ export function ChampionshipResultsModal({
 
                                     {/* Participant Name - Using ClickablePlayerName component */}
                                     <div className="justify-self-start w-full flex items-center">
-                                      <ClickablePlayerName 
-                                        playerName={participant.participant_name} 
-                                        className="text-white font-medium hover:text-blue-400" 
-                                        onModalOpen={() => setIsPlayerModalOpen(true)} 
-                                        onModalClose={() => setIsPlayerModalOpen(false)} 
-                                      />
+                                      {renderParticipantName(participant)}
                                     </div>
 
                                     {/* Class */}
@@ -325,7 +355,7 @@ export function ChampionshipResultsModal({
                             <div 
                               key={participant.participant_key}
                               className={`grid gap-1 py-2 px-3 text-sm hover:bg-slate-800/30 transition-colors ${
-                                isTopPerformer ? 'bg-slate-800/20' : ''
+                                isTopPerformer ? 'bg-slate-800/20' : 'bg-slate-700/10'
                               }`}
                               style={{gridTemplateColumns: sortedRallies.length <= 15 ? `1fr 2fr 1fr ${sortedRallies.map(() => '1fr').join(' ')} 1fr` : `60px 1fr 80px ${sortedRallies.map(() => '40px').join(' ')} 60px`}}
                             >
@@ -338,12 +368,7 @@ export function ChampionshipResultsModal({
 
                               {/* Participant Name - Using ClickablePlayerName component */}
                               <div className="justify-self-start w-full flex items-center">
-                                <ClickablePlayerName 
-                                  playerName={participant.participant_name} 
-                                  className="text-white font-medium hover:text-blue-400" 
-                                  onModalOpen={() => setIsPlayerModalOpen(true)} 
-                                  onModalClose={() => setIsPlayerModalOpen(false)} 
-                                />
+                                {renderParticipantName(participant)}
                               </div>
 
                               {/* Class */}
@@ -383,12 +408,25 @@ export function ChampionshipResultsModal({
                     </div>
                   </div>
                 )}
+
+                {/* Warnings */}
+                {results.warnings && results.warnings.length > 0 && (
+                  <div className="bg-yellow-500/10 border-t border-yellow-500/30 p-4">
+                    <h4 className="text-yellow-400 font-medium mb-2">Hoiatused</h4>
+                    <ul className="space-y-1">
+                      {results.warnings.map((warning, index) => (
+                        <li key={index} className="text-yellow-300 text-sm">
+                          • {warning}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
-
     </div>
   )
 }

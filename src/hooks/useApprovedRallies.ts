@@ -1,4 +1,4 @@
-// src/hooks/useApprovedRallies.ts - FIXED to sort by class_position
+// src/hooks/useApprovedRallies.ts - PARANDATUD klassi ja osaleja nimede loogikas
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
@@ -32,7 +32,7 @@ export function useApprovedRallies() {
   return useQuery({
     queryKey: ['approved-rallies'],
     queryFn: async (): Promise<ApprovedRally[]> => {
-      console.log('🔄 Loading approved rallies for public view...')
+      console.log('🔄 Laadin heakskiidetud rallyeid avalikuks vaatamiseks...')
 
       const { data, error } = await supabase
         .from('approved_rallies')
@@ -40,14 +40,14 @@ export function useApprovedRallies() {
         .order('competition_date', { ascending: false })
 
       if (error) {
-        console.error('Error loading approved rallies:', error)
+        console.error('Viga heakskiidetud rallyede laadimisel:', error)
         throw error
       }
 
-      console.log(`✅ Loaded ${data?.length || 0} approved rallies`)
+      console.log(`✅ Laaditud ${data?.length || 0} heakskiidetud rallyeid`)
       return data || []
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes - public data can be cached longer
+    staleTime: 5 * 60 * 1000, // 5 minutit - avalikud andmed võivad kauem vahemälus olla
   })
 }
 
@@ -58,9 +58,9 @@ export function useApprovedRallyResults(rallyId: string) {
     queryFn: async (): Promise<ApprovedRallyResult[]> => {
       if (!rallyId) return []
 
-      console.log('🔄 Loading approved rally results for:', rallyId)
+      console.log('🔄 Laadin heakskiidetud rally tulemusi:', rallyId)
 
-      // First verify this rally is actually approved
+      // Kõigepealt kontrollin, et rally on tõesti heakskiidetud
       const { data: rallyStatus, error: statusError } = await supabase
         .from('rally_results_status')
         .select('results_approved')
@@ -69,50 +69,146 @@ export function useApprovedRallyResults(rallyId: string) {
         .single()
 
       if (statusError || !rallyStatus) {
-        console.warn('Rally results not approved or not found:', rallyId)
+        console.warn('Rally tulemused pole heakskiidetud või rallyeid ei leitud:', rallyId)
         return []
       }
 
-      // Get all results including class_position
+      // Laadin kõik tulemused
       const { data: results, error } = await supabase
         .from('rally_results')
         .select(`
           id,
           participant_name,
           user_id,
+          registration_id,
           class_name,
           overall_position,
           class_position,
-          total_points,
-          rally_registrations(registration_date)
+          total_points
         `)
         .eq('rally_id', rallyId)
-        .not('class_position', 'is', null) // FIXED: Only get results with class positions
-        .order('class_name', { ascending: true }) // FIXED: First sort by class
-        .order('class_position', { ascending: true }) // FIXED: Then by class position
+        .not('class_position', 'is', null)
+        .order('class_name', { ascending: true })
+        .order('class_position', { ascending: true })
 
       if (error) {
-        console.error('Error loading approved rally results:', error)
+        console.error('Viga heakskiidetud rally tulemuste laadimisel:', error)
         throw error
       }
 
-      // Transform data for public view
-      const transformedResults: ApprovedRallyResult[] = (results || []).map(result => ({
-        id: result.id,
-        participant_name: result.participant_name || 'Registered User',
-        user_id: result.user_id,
-        class_name: result.class_name || 'Unknown Class',
-        overall_position: result.overall_position || 0,
-        class_position: result.class_position ? parseInt(result.class_position.toString()) : null,
-        total_points: result.total_points || 0,
-        registration_date: result.rally_registrations?.[0]?.registration_date
-      }))
+      if (!results || results.length === 0) {
+        console.log('Tulemusi ei leitud')
+        return []
+      }
 
-      console.log(`✅ Loaded ${transformedResults.length} approved results sorted by class position`)
+      // Laadin registreeritud osaliste andmed eraldi päringuga
+      const registrationIds = results
+        .filter(r => r.registration_id)
+        .map(r => r.registration_id)
+
+      let registrationsMap = new Map()
+      let usersMap = new Map()
+      let classesMap = new Map()
+
+      if (registrationIds.length > 0) {
+        // Laadin registreeringud koos user_id ja class_id-ga
+        const { data: registrations } = await supabase
+          .from('rally_registrations')
+          .select(`
+            id,
+            user_id,
+            class_id,
+            registration_date
+          `)
+          .in('id', registrationIds)
+
+        if (registrations) {
+          registrations.forEach(reg => {
+            registrationsMap.set(reg.id, reg)
+          })
+
+          // Laadin kasutajate andmed
+          const userIds = registrations
+            .map(r => r.user_id)
+            .filter(Boolean)
+
+          if (userIds.length > 0) {
+            const { data: users } = await supabase
+              .from('users')
+              .select('id, player_name')
+              .in('id', userIds)
+
+            if (users) {
+              users.forEach(user => {
+                usersMap.set(user.id, user)
+              })
+            }
+          }
+
+          // Laadin klasside andmed
+          const classIds = registrations
+            .map(r => r.class_id)
+            .filter(Boolean)
+
+          if (classIds.length > 0) {
+            const { data: classes } = await supabase
+              .from('game_classes')
+              .select('id, name')
+              .in('id', classIds)
+
+            if (classes) {
+              classes.forEach(gameClass => {
+                classesMap.set(gameClass.id, gameClass)
+              })
+            }
+          }
+        }
+      }
+
+      // Teisendan tulemused avalikuks vaatamiseks
+      const transformedResults: ApprovedRallyResult[] = results.map(result => {
+        let participantName: string
+        let className: string
+        let registrationDate: string | undefined
+
+        if (result.registration_id) {
+          // REGISTREERITUD OSALEJA - kasutan rally_registrations tabeli andmeid
+          const registration = registrationsMap.get(result.registration_id)
+          if (registration) {
+            const user = usersMap.get(registration.user_id)
+            const gameClass = classesMap.get(registration.class_id)
+            
+            participantName = user?.player_name || `Kasutaja-${registration.user_id?.slice(-8)}` || 'Tundmatu mängija'
+            className = gameClass?.name || 'Tundmatu klass'
+            registrationDate = registration.registration_date
+          } else {
+            // Fallback kui registreeringu andmeid ei leitud
+            participantName = result.participant_name || 'Tundmatu mängija'
+            className = result.class_name || 'Tundmatu klass'
+          }
+        } else {
+          // MANUAALSELT LISATUD OSALEJA - kasutan rally_results tabeli andmeid
+          participantName = result.participant_name || 'Tundmatu mängija'
+          className = result.class_name || 'Tundmatu klass'
+        }
+
+        return {
+          id: result.id,
+          participant_name: participantName,
+          user_id: result.user_id,
+          class_name: className,
+          overall_position: result.overall_position || 0,
+          class_position: result.class_position ? parseInt(result.class_position.toString()) : null,
+          total_points: result.total_points || 0,
+          registration_date: registrationDate
+        }
+      })
+
+      console.log(`✅ Laaditud ${transformedResults.length} heakskiidetud tulemust sorteeritud klassi positsiooni järgi`)
       return transformedResults
     },
     enabled: !!rallyId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutit
   })
 }
 
@@ -123,9 +219,9 @@ export function useApprovedRallyClasses(rallyId: string) {
     queryFn: async (): Promise<string[]> => {
       if (!rallyId) return []
 
-      console.log('🔄 Loading classes for approved rally:', rallyId)
+      console.log('🔄 Laadin klasse heakskiidetud rally jaoks:', rallyId)
 
-      // First verify this rally is approved
+      // Kõigepealt kontrollin, et rally on heakskiidetud
       const { data: rallyStatus } = await supabase
         .from('rally_results_status')
         .select('results_approved')
@@ -135,7 +231,7 @@ export function useApprovedRallyClasses(rallyId: string) {
 
       if (!rallyStatus) return []
 
-      // Get unique classes from results
+      // Laadin unikaalsed klassid tulemustest
       const { data: results, error } = await supabase
         .from('rally_results')
         .select('class_name')
@@ -143,16 +239,16 @@ export function useApprovedRallyClasses(rallyId: string) {
         .not('class_name', 'is', null)
 
       if (error) {
-        console.error('Error loading rally classes:', error)
+        console.error('Viga rally klasside laadimisel:', error)
         return []
       }
 
       const uniqueClasses = Array.from(new Set((results || []).map(r => r.class_name).filter(Boolean)))
-      console.log(`✅ Found ${uniqueClasses.length} classes`)
+      console.log(`✅ Leitud ${uniqueClasses.length} klassi`)
       return uniqueClasses
     },
     enabled: !!rallyId,
-    staleTime: 10 * 60 * 1000, // 10 minutes - classes don't change often
+    staleTime: 10 * 60 * 1000, // 10 minutit - klassid ei muutu tihti
   })
 }
 
@@ -161,14 +257,14 @@ export function useLeaderboardStats() {
   return useQuery({
     queryKey: ['leaderboard-stats'],
     queryFn: async () => {
-      console.log('🔄 Loading leaderboard statistics...')
+      console.log('🔄 Laadin edetabeli statistikat...')
 
       const { data: stats, error } = await supabase
         .rpc('get_leaderboard_stats')
 
       if (error) {
-        console.error('Error loading leaderboard stats:', error)
-        // Return default stats if function doesn't exist
+        console.error('Viga edetabeli statistika laadimisel:', error)
+        // Tagastan vaikimisi statistika kui funktsioon ei eksisteeri
         return {
           total_approved_rallies: 0,
           total_participants: 0,
@@ -178,6 +274,6 @@ export function useLeaderboardStats() {
 
       return stats
     },
-    staleTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutit
   })
 }
