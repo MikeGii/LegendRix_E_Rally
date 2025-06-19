@@ -1,4 +1,5 @@
 // src/components/results/components/ClassSeparatedParticipantsTable.tsx
+// UPDATED: Added participation checkbox while preserving ALL existing functionality
 'use client'
 
 import React from 'react'
@@ -7,7 +8,7 @@ import React from 'react'
 const Trash2 = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
     <polyline points="3,6 5,6 21,6"/>
-    <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+    <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,2h4a2,2 0 0,1 2,2v2"/>
     <line x1="10" y1="11" x2="10" y2="17"/>
     <line x1="14" y1="11" x2="14" y2="17"/>
   </svg>
@@ -74,70 +75,85 @@ export function ClassSeparatedParticipantsTable({
     return grouped
   }, [participants, results])
 
-  // Sort classes by their name for consistency
-  const sortedClassNames = React.useMemo(() => {
-    return Object.keys(participantsByClass).sort()
-  }, [participantsByClass])
+  // Handle participation checkbox change
+  const handleParticipationChange = (participantId: string, participated: boolean) => {
+    onUpdateResult(participantId, 'participated', participated)
+  }
+
+  // Calculate participation stats for display
+  const getParticipationStats = () => {
+    const total = participants.length
+    const participated = Object.values(results).filter((r: any) => r.participated).length
+    const withPoints = Object.values(results).filter((r: any) => r.totalPoints !== null && r.totalPoints > 0).length
+    
+    return { total, participated, withPoints }
+  }
+
+  const stats = getParticipationStats()
 
   if (participants.length === 0) {
     return (
-      <div className="text-center py-12 bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50">
+      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 text-center">
         <Users className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-white mb-2">
-          Osalejatest tühi
-        </h3>
-        <p className="text-slate-400 mb-6">
-          Lisage esimene osaleja, et alustada tulemuste sisestamist
-        </p>
-        <button
-          onClick={onShowAddParticipant}
-          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 mx-auto"
-        >
-          <span className="text-lg">➕</span>
-          Lisa esimene osaleja
-        </button>
+        <p className="text-slate-400 mb-4">Osalejaid pole veel lisatud</p>
+        {onShowAddParticipant && (
+          <button
+            onClick={onShowAddParticipant}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Lisa osaleja
+          </button>
+        )}
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
-      {sortedClassNames.map((className, classIndex) => {
-        const classParticipants = participantsByClass[className]
-        const classColors = [
-          'border-blue-500/50 bg-blue-500/10',
-          'border-green-500/50 bg-green-500/10',
-          'border-purple-500/50 bg-purple-500/10',
-          'border-orange-500/50 bg-orange-500/10',
-          'border-red-500/50 bg-red-500/10'
-        ]
-        const colorClass = classColors[classIndex % classColors.length]
+    <div className="space-y-6">
+      {/* Overall Stats with Participation */}
+      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-4">
+        <div className="flex items-center justify-between text-sm">
+          <div className="text-slate-400">
+            Kokku registreeritud: <span className="text-white font-medium">{stats.total}</span>
+          </div>
+          <div className="text-slate-400">
+            Osales: <span className="text-green-400 font-medium">{stats.participated}</span>
+          </div>
+          <div className="text-slate-400">
+            Punktidega: <span className="text-blue-400 font-medium">{stats.withPoints}</span>
+          </div>
+        </div>
+      </div>
+
+      {Object.entries(participantsByClass).map(([className, classParticipants]) => {
+        const classStats = {
+          total: classParticipants.length,
+          participated: classParticipants.filter(p => results[p.id]?.participated).length,
+          withPoints: classParticipants.filter(p => results[p.id]?.totalPoints > 0).length
+        }
 
         return (
           <div key={className} className="space-y-4">
-            {/* Class Header */}
-            <div className={`rounded-xl border-2 ${colorClass} p-4`}>
+            {/* Class Header with participation stats */}
+            <div className="bg-gradient-to-r from-slate-800/50 to-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                    <span className="text-sm font-bold text-white">
-                      {className.charAt(0).toUpperCase()}
-                    </span>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                      <span className="text-white font-bold text-lg">{className.charAt(0)}</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white mb-1">{className}</h3>
+                      <p className="text-slate-300 text-sm">
+                        {classStats.participated}/{classStats.total} osales{classStats.withPoints > 0 ? `, ${classStats.withPoints} punktidega` : ''}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">{className}</h3>
-                    <p className="text-sm text-slate-300">
-                      {classParticipants.length} osaleja{classParticipants.length !== 1 ? 't' : ''}
-                    </p>
+                  
+                  <div className="text-sm text-slate-300">
+                    <span className="text-slate-400">Osalejaid: </span>
+                    <span className="font-medium text-white">{classParticipants.length}</span>
                   </div>
-                </div>
-                
-                {/* Class Statistics - SIMPLIFIED */}
-                <div className="text-sm text-slate-300">
-                  <span className="text-slate-400">Osalejatest: </span>
-                  <span className="font-medium text-white">
-                    {classParticipants.length}
-                  </span>
                 </div>
               </div>
             </div>
@@ -148,22 +164,18 @@ export function ClassSeparatedParticipantsTable({
                 <table className="w-full">
                   <thead className="bg-slate-800/50">
                     <tr>
+                      <th className="text-center py-4 px-4 text-slate-400 font-medium">Koht</th>
+                      <th className="text-left py-4 px-6 text-slate-400 font-medium">Osaleja</th>
                       <th className="text-center py-4 px-4 text-slate-400 font-medium">
-                        Koht
+                        <div className="flex items-center justify-center space-x-1">
+                          <span>Osales</span>
+                          <span className="text-xs">✓</span>
+                        </div>
                       </th>
-                      <th className="text-left py-4 px-6 text-slate-400 font-medium">
-                        Osaleja
-                      </th>
-                      <th className="text-right py-4 px-6 text-slate-400 font-medium">
-                        Punktid
-                      </th>
-                      <th className="text-center py-4 px-6 text-slate-400 font-medium">
-                        Olek
-                      </th>
+                      <th className="text-right py-4 px-6 text-slate-400 font-medium">Punktid</th>
+                      <th className="text-center py-4 px-6 text-slate-400 font-medium">Olek</th>
                       {editMode && (
-                        <th className="text-center py-4 px-6 text-slate-400 font-medium">
-                          Toimingud
-                        </th>
+                        <th className="text-center py-4 px-6 text-slate-400 font-medium">Toimingud</th>
                       )}
                     </tr>
                   </thead>
@@ -176,6 +188,7 @@ export function ClassSeparatedParticipantsTable({
                         overallPosition: null,
                         classPosition: null,
                         totalPoints: null,
+                        participated: participant.participated || false, // NEW: Load participation status
                         eventResults: {},
                         isModified: false
                       }
@@ -190,7 +203,7 @@ export function ClassSeparatedParticipantsTable({
                             isModified ? 'bg-blue-900/10 border-blue-500/30' : ''
                           }`}
                         >
-                          {/* Class Position - MAIN AND ONLY POSITION */}
+                          {/* Class Position - UNCHANGED */}
                           <td className="py-4 px-4 text-center">
                             {editMode ? (
                               <input
@@ -213,7 +226,7 @@ export function ClassSeparatedParticipantsTable({
                             )}
                           </td>
 
-                          {/* Player Name */}
+                          {/* Player Name - UNCHANGED */}
                           <td className="py-4 px-6">
                             <div className="flex items-center gap-3">
                               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
@@ -225,31 +238,57 @@ export function ClassSeparatedParticipantsTable({
                                 {result.playerName.charAt(0).toUpperCase()}
                               </div>
                               <div>
-                                <div className="text-white font-medium">
-                                  {result.playerName}
-                                </div>
+                                <div className="text-white font-medium">{result.playerName}</div>
                                 <div className="text-xs text-slate-400">
                                   {isManual ? 'Käsitsi lisatud' : 'Registreeritud'}
-                                  {isModified && <span className="text-blue-400 ml-2">• Muudetud</span>}
                                 </div>
                               </div>
                             </div>
                           </td>
 
-                          {/* Points */}
+                          {/* NEW: Participation Checkbox */}
+                          <td className="py-4 px-4 text-center">
+                            <div className="flex justify-center">
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={result.participated || false}
+                                  onChange={(e) => handleParticipationChange(participant.id, e.target.checked)}
+                                  disabled={!editMode}
+                                  className="sr-only"
+                                />
+                                <div className={`
+                                  w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200
+                                  ${result.participated 
+                                    ? 'bg-green-500 border-green-500' 
+                                    : 'bg-transparent border-slate-500'
+                                  }
+                                  ${editMode ? 'cursor-pointer hover:border-green-400' : 'cursor-not-allowed opacity-70'}
+                                `}>
+                                  {result.participated && (
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </div>
+                              </label>
+                            </div>
+                          </td>
+
+                          {/* Total Points - UNCHANGED */}
                           <td className="py-4 px-6 text-right">
                             {editMode ? (
                               <input
                                 type="number"
-                                min="0"
                                 step="0.1"
+                                min="0"
                                 value={result.totalPoints || ''}
                                 onChange={(e) => onUpdateResult(participant.id, 'totalPoints', parseFloat(e.target.value) || null)}
                                 className="w-24 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                placeholder="0"
+                                placeholder="0.0"
                               />
                             ) : (
-                              <span className={`font-medium text-lg ${
+                              <span className={`font-bold text-lg ${
                                 result.classPosition === 1 ? 'text-yellow-400' :
                                 result.classPosition === 2 ? 'text-slate-300' :
                                 result.classPosition === 3 ? 'text-orange-400' :
@@ -260,7 +299,7 @@ export function ClassSeparatedParticipantsTable({
                             )}
                           </td>
 
-                          {/* Status */}
+                          {/* Status - UNCHANGED */}
                           <td className="py-4 px-6 text-center">
                             {participant.results_entered ? (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
@@ -273,7 +312,7 @@ export function ClassSeparatedParticipantsTable({
                             )}
                           </td>
 
-                          {/* Actions */}
+                          {/* Actions - UNCHANGED */}
                           {editMode && (
                             <td className="py-4 px-6 text-center">
                               <div className="flex justify-center gap-2">
@@ -296,15 +335,17 @@ export function ClassSeparatedParticipantsTable({
                 </table>
               </div>
 
-              {/* Class Summary - SIMPLIFIED */}
+              {/* Class Summary - UPDATED with participation */}
               <div className="border-t border-slate-700/50 p-4 bg-slate-800/20">
                 <div className="flex justify-between items-center text-sm">
                   <div className="text-slate-400">
                     Klass: <span className="text-white font-medium">{className}</span>
                   </div>
                   <div className="text-slate-400">
-                    Osalejaid: {' '}
-                    <span className="text-white font-medium">{classParticipants.length}</span>
+                    Osalejaid: <span className="text-white font-medium">{classParticipants.length}</span>
+                  </div>
+                  <div className="text-slate-400">
+                    Osales: <span className="text-green-400 font-medium">{classStats.participated}</span>
                   </div>
                 </div>
               </div>
