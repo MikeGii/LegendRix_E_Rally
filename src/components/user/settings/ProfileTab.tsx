@@ -1,11 +1,12 @@
-// src/components/user/settings/ProfileTab.tsx
+// src/components/user/settings/ProfileTab.tsx - Updated version
 'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { UserStatistics } from '../statistics/UserStatistics'
+import { UserAchievements } from '../achievements/UserAchievements'
 
-type ProfileSection = 'statistics' | 'achievements' | 'favorites'
+type ProfileSection = 'statistics' | 'achievements'
 
 export function ProfileTab() {
   const { user } = useAuth()
@@ -18,30 +19,20 @@ export function ProfileTab() {
       title: 'Statistika',
       description: 'Osalemise andmed'
     },
-    // Future sections (commented out for now)
-    // {
-    //   id: 'achievements' as ProfileSection,
-    //   icon: '🏆',
-    //   title: 'Saavutused',
-    //   description: 'Märgid ja auhinnad'
-    // },
-    // {
-    //   id: 'favorites' as ProfileSection,
-    //   icon: '⭐',
-    //   title: 'Lemmikud',
-    //   description: 'Lemmik üritused ja rajad'
-    // }
+    {
+      id: 'achievements' as ProfileSection,
+      icon: '🏆',
+      title: 'Saavutused',
+      description: 'Märgid ja auhinnad'
+    }
   ]
 
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'statistics':
         return <UserStatistics />
-      // Future sections
-      // case 'achievements':
-      //   return <UserAchievements />
-      // case 'favorites':
-      //   return <UserFavorites />
+      case 'achievements':
+        return <UserAchievements />
       default:
         return <UserStatistics />
     }
@@ -103,7 +94,7 @@ export function ProfileTab() {
       </div>
 
       {/* Active Section Content */}
-      <div className="bg-slate-900/20 backdrop-blur-xl border border-slate-700/30 rounded-2xl p-4 mb-6">
+      <div className="bg-slate-900/20 backdrop-blur-xl border border-slate-700/30 rounded-2xl p-4">
         <div className="flex items-center space-x-3 mb-4">
           <div className="w-6 h-6 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg flex items-center justify-center">
             <span className="text-blue-300 text-xs">
@@ -116,17 +107,6 @@ export function ProfileTab() {
         </div>
         
         {renderActiveSection()}
-      </div>
-      
-      {/* Future Features Card - Minimal glassmorphism */}
-      <div className="bg-slate-800/20 backdrop-blur-xl border border-slate-700/30 rounded-2xl p-4 text-center">
-        <div className="w-8 h-8 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg flex items-center justify-center mx-auto mb-2">
-          <span className="text-sm text-blue-300">🚀</span>
-        </div>
-        <h5 className="text-base font-medium text-white mb-1">Rohkem tulekul</h5>
-        <p className="text-slate-400 text-xs">
-          Saavutused, lemmikud ja muud funktsioonid lisatakse peagi.
-        </p>
       </div>
     </div>
   )

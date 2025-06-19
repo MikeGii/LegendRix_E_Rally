@@ -10,6 +10,9 @@ export interface Championship {
   game_id?: string
   game_type_id?: string
   is_active: boolean
+  status: 'ongoing' | 'completed'  // ✅ ADDED
+  completed_at?: string            // ✅ ADDED
+  completed_by?: string            // ✅ ADDED
   created_at: string
   created_by?: string
   updated_at: string
@@ -94,7 +97,9 @@ export function useChampionships() {
         ...championship,
         game_name: championship.game?.name || null,
         game_type_name: championship.game_type?.name || null,
-        total_rallies: championship.championship_rallies?.length || 0
+        total_rallies: championship.championship_rallies?.length || 0,
+        // ✅ ADDED: Ensure status has default value
+        status: championship.status || 'ongoing'
       }))
 
       console.log(`✅ Loaded ${championships.length} championships`)
@@ -122,6 +127,7 @@ export function useCreateChampionship() {
         .insert([{
           ...data,
           season_year: data.season_year || new Date().getFullYear(),
+          status: 'ongoing', // ✅ ADDED: Set default status
           created_by: (await supabase.auth.getUser()).data.user?.id
         }])
         .select()
@@ -263,7 +269,7 @@ export function useRemoveRallyFromChampionship() {
 
 export function useActivateChampionship() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: async (championshipId: string) => {
       console.log('🔄 Activating championship:', championshipId)
@@ -418,5 +424,81 @@ export function useChampionshipResults(championshipId: string) {
     },
     enabled: !!championshipId,
     staleTime: 2 * 60 * 1000, // 2 minutes - results change less frequently
+  })
+}
+
+// ============================================================================
+// CHAMPIONSHIP STATUS MANAGEMENT HOOKS
+// ============================================================================
+
+export function useCompleteChampionship() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (championshipId: string) => {
+      console.log('🔄 Completing championship:', championshipId)
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        throw new Error('Authentication required')
+      }
+
+      const { data, error } = await supabase.rpc('complete_championship', {
+        championship_id: championshipId,
+        admin_user_id: user.id
+      })
+
+      if (error) {
+        console.error('Error completing championship:', error)
+        throw error
+      }
+
+      console.log('✅ Championship completion result:', data)
+      return data
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: championshipKeys.lists() })
+        queryClient.invalidateQueries({ queryKey: ['user-statistics'] })
+        queryClient.invalidateQueries({ queryKey: ['user-achievements'] })
+        console.log('🏆 Championship completed and caches invalidated')
+      }
+    }
+  })
+}
+
+export function useReopenChampionship() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (championshipId: string) => {
+      console.log('🔄 Reopening championship:', championshipId)
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        throw new Error('Authentication required')
+      }
+
+      const { data, error } = await supabase.rpc('reopen_championship', {
+        championship_id: championshipId,
+        admin_user_id: user.id
+      })
+
+      if (error) {
+        console.error('Error reopening championship:', error)
+        throw error
+      }
+
+      console.log('✅ Championship reopen result:', data)
+      return data
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: championshipKeys.lists() })
+        queryClient.invalidateQueries({ queryKey: ['user-statistics'] })
+        queryClient.invalidateQueries({ queryKey: ['user-achievements'] })
+        console.log('🔄 Championship reopened and caches invalidated')
+      }
+    }
   })
 }
