@@ -6,6 +6,7 @@ import { useApprovedRallyResults } from '@/hooks/useApprovedRallies'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { ApprovedRally } from '@/hooks/useApprovedRallies'
+import { ClickablePlayerName } from '../player/ClickablePlayerName'
 
 interface RallyResultsModalProps {
   rally: ApprovedRally
@@ -325,7 +326,10 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
 
                                   {/* Participant Name */}
                                   <div className="col-span-4">
-                                    <span className="text-white font-medium truncate">{result.participant_name}</span>
+                                      <ClickablePlayerName 
+                                      playerName={result.participant_name}
+                                      className="text-white font-medium hover:text-blue-400"
+                                    />
                                   </div>
 
                                   {/* Class */}
