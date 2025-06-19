@@ -1,4 +1,4 @@
-// src/app/page.tsx - YOUR ACTUAL VERSION with ONLY NewsSection added
+// src/app/page.tsx - YOUR ACTUAL VERSION with ONLY Header Blur Fix Added
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -30,6 +30,9 @@ function HomeContent() {
   const [isCompetitionsModalOpen, setIsCompetitionsModalOpen] = useState(false)
   const [isEdetabelModalOpen, setIsEdetabelModalOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+
+  // Check if any modal is open for header blur effect
+  const isAnyModalOpen = isCompetitionsModalOpen || isEdetabelModalOpen || showAuthModal
 
   // Load upcoming rallies for competitions modal
   const { data: upcomingRallies = [], isLoading: isLoadingRallies } = usePublicUpcomingRallies(10)
@@ -116,8 +119,8 @@ function HomeContent() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
-      {/* Elegant Glassmorphism Header */}
-      <header className="absolute top-0 left-0 right-0 z-30">
+      {/* Elegant Glassmorphism Header - CONDITIONALLY DISABLED WHEN MODALS ARE OPEN */}
+      <header className={`absolute top-0 left-0 right-0 z-30 ${isAnyModalOpen ? 'pointer-events-none opacity-75 blur-sm transition-all duration-300' : ''}`}>
         {/* Background with gradient and blur */}
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-900/80 to-transparent backdrop-blur-2xl border-b border-white/5 shadow-2xl"></div>
         
@@ -186,8 +189,8 @@ function HomeContent() {
         </div>
       </header>
 
-      {/* Enhanced Cover Photo Section with Better Positioning and Smooth Transition */}
-      <div className="relative w-full" style={{ height: '35vh', marginTop: '100px' }}>
+      {/* Enhanced Cover Photo Section with Better Positioning and Smooth Transition - CONDITIONALLY DISABLED WHEN MODALS ARE OPEN */}
+      <div className={`relative w-full ${isAnyModalOpen ? 'pointer-events-none opacity-75 blur-sm transition-all duration-300' : ''}`} style={{ height: '35vh', marginTop: '100px' }}>
         <div className="absolute inset-0 overflow-hidden">
           <Image
             src="/cover-photo.png"
@@ -210,8 +213,8 @@ function HomeContent() {
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 to-transparent"></div>
       </div>
 
-      {/* Main Content */}
-      <main className="relative z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
+      {/* Main Content - CONDITIONALLY DISABLED WHEN MODALS ARE OPEN */}
+      <main className={`relative z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950 ${isAnyModalOpen ? 'pointer-events-none opacity-75 blur-sm transition-all duration-300' : ''}`}>
         <div className="max-w-7xl mx-auto px-6 py-20">
           {/* Welcome Message for Logged In Users */}
           {user && (

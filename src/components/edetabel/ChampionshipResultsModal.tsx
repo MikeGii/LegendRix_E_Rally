@@ -154,16 +154,16 @@ export function ChampionshipResultsModal({
                   <div>
                     {/* Table Header - More compact columns with even distribution */}
                     <div className="sticky top-0 bg-slate-800/90 backdrop-blur border-b border-slate-700/50 text-xs font-medium text-slate-400 uppercase tracking-wide">
-                      <div className="grid gap-1 py-2 px-3 justify-items-center" style={{gridTemplateColumns: `60px 1fr 80px ${sortedRallies.map(() => '40px').join(' ')} 60px`}}>
-                        <div className="text-center">Koht</div>
-                        <div className="text-left">Osaleja</div>
-                        <div className="text-center">Klass</div>
+                      <div className="grid gap-1 py-2 px-3" style={{gridTemplateColumns: sortedRallies.length <= 15 ? `1fr 2fr 1fr ${sortedRallies.map(() => '1fr').join(' ')} 1fr` : `60px 1fr 80px ${sortedRallies.map(() => '40px').join(' ')} 60px`}}>
+                        <div className="text-center flex items-center justify-center">Koht</div>
+                        <div className="text-left flex items-center">Osaleja</div>
+                        <div className="text-center flex items-center justify-center">Klass</div>
                         {sortedRallies.map((rally, index) => (
-                          <div key={rally.rally_id} className="text-center">
+                          <div key={rally.rally_id} className="text-center flex items-center justify-center">
                             E{index + 1}
                           </div>
                         ))}
-                        <div className="text-center">Punktid</div>
+                        <div className="text-center flex items-center justify-center">Punktid</div>
                       </div>
                     </div>
 
