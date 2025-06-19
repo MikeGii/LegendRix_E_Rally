@@ -30,9 +30,10 @@ function HomeContent() {
   const [isCompetitionsModalOpen, setIsCompetitionsModalOpen] = useState(false)
   const [isEdetabelModalOpen, setIsEdetabelModalOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [isChampionshipModalOpen, setIsChampionshipModalOpen] = useState(false)
 
   // Check if any modal is open for header blur effect
-  const isAnyModalOpen = isCompetitionsModalOpen || isEdetabelModalOpen || showAuthModal
+  const isAnyModalOpen = isCompetitionsModalOpen || isEdetabelModalOpen || showAuthModal || isChampionshipModalOpen
 
   // Load upcoming rallies for competitions modal
   const { data: upcomingRallies = [], isLoading: isLoadingRallies } = usePublicUpcomingRallies(10)
@@ -317,10 +318,11 @@ function HomeContent() {
       />
 
       {/* NEW: Edetabel Modal */}
-      <EdetabelModal
-        isOpen={isEdetabelModalOpen}
-        onClose={() => setIsEdetabelModalOpen(false)}
-      />
+        <EdetabelModal
+          isOpen={isEdetabelModalOpen}
+          onClose={() => setIsEdetabelModalOpen(false)}
+          onChampionshipModalToggle={setIsChampionshipModalOpen} // ADD THIS
+        />
     </div>
   )
 }
