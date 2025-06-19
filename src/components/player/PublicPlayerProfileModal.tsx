@@ -1,4 +1,4 @@
-// src/components/player/PublicPlayerProfileModal.tsx - FIXED Z-INDEX
+// src/components/player/PublicPlayerProfileModal.tsx - SECURE VERSION
 'use client'
 
 import { useState } from 'react'
@@ -11,17 +11,23 @@ import { UserAchievements } from '@/components/user/achievements/UserAchievement
 type ProfileSection = 'statistics' | 'achievements'
 
 interface PublicPlayerProfileModalProps {
-  playerName: string
+  // SECURITY: Use userId instead of playerName for identification
+  userId: string
   isOpen: boolean
   onClose: () => void
 }
 
-export function PublicPlayerProfileModal({ playerName, isOpen, onClose }: PublicPlayerProfileModalProps) {
+export function PublicPlayerProfileModal({ 
+  userId, 
+  isOpen, 
+  onClose 
+}: PublicPlayerProfileModalProps) {
   const [activeSection, setActiveSection] = useState<ProfileSection>('statistics')
 
-  const { data: player, isLoading: playerLoading } = usePublicPlayerProfile(playerName)
-  const { data: statistics, isLoading: statsLoading } = useUserStatistics(player?.id || '', { useCache: true })
-  const { data: achievements, isLoading: achievementsLoading } = useUserAchievements(player?.id || '')
+  // Load profile by userId (secure)
+  const { data: player, isLoading: playerLoading } = usePublicPlayerProfile(userId)
+  const { data: statistics, isLoading: statsLoading } = useUserStatistics(userId, { useCache: true })
+  const { data: achievements, isLoading: achievementsLoading } = useUserAchievements(userId)
 
   const profileSections = [
     {
@@ -69,16 +75,15 @@ export function PublicPlayerProfileModal({ playerName, isOpen, onClose }: Public
   }
 
   return (
-    // ✅ FIXED: Ultra-high z-index to override sticky table elements
     <div 
       className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[9999] flex items-center justify-center p-4"
       onClick={handleBackdropClick}
-      style={{ zIndex: 9999 }} // Force highest priority
+      style={{ zIndex: 9999 }}
     >
       <div 
         className="bg-slate-900 rounded-2xl border border-slate-700 max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative z-[10000]"
         onClick={(e) => e.stopPropagation()}
-        style={{ zIndex: 10000 }} // Ensure modal content is above everything
+        style={{ zIndex: 10000 }}
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 border-b border-slate-700">
@@ -120,7 +125,7 @@ export function PublicPlayerProfileModal({ playerName, isOpen, onClose }: Public
             <div className="p-8 text-center">
               <div className="text-4xl mb-4">❌</div>
               <h3 className="text-lg font-medium text-white mb-2">Mängijat ei leitud</h3>
-              <p className="text-slate-400">Mängija nimega "{playerName}" ei ole registreeritud.</p>
+              <p className="text-slate-400">Kasutaja ID-ga "{userId}" ei ole leitud.</p>
             </div>
           ) : (
             <div className="p-6 space-y-6">

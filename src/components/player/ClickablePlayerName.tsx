@@ -1,38 +1,61 @@
-// src/components/player/ClickablePlayerName.tsx - Updated with modal state tracking
+// src/components/player/ClickablePlayerName.tsx - SECURE VERSION
 'use client'
 
 import { useState } from 'react'
 import { PublicPlayerProfileModal } from './PublicPlayerProfileModal'
 
 interface ClickablePlayerNameProps {
+  // For registered users - use userId for security
+  userId?: string
+  // For manual participants - just display name, no profile
   playerName: string
   className?: string
   children?: React.ReactNode
   onModalOpen?: () => void
   onModalClose?: () => void
+  // New prop to indicate participant type
+  participantType?: 'registered' | 'manual'
 }
 
 export function ClickablePlayerName({ 
+  userId,
   playerName, 
   className = '', 
   children,
   onModalOpen,
-  onModalClose 
+  onModalClose,
+  participantType = 'registered' // Default to registered for backward compatibility
 }: ClickablePlayerNameProps) {
   const [showProfile, setShowProfile] = useState(false)
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setShowProfile(true)
-    onModalOpen?.() // Notify parent that modal is opening
+    
+    // Only open profile for registered users with userId
+    if (participantType === 'registered' && userId) {
+      setShowProfile(true)
+      onModalOpen?.()
+    }
+    // For manual participants, do nothing (no clickable action)
   }
 
   const handleClose = () => {
     setShowProfile(false)
-    onModalClose?.() // Notify parent that modal is closing
+    onModalClose?.()
   }
 
+  // Render based on participant type
+  if (participantType === 'manual' || !userId) {
+    // Manual participant - just display name, not clickable
+    return (
+      <span className={`text-gray-400 ${className}`} title="Manuaalselt lisatud osaleja">
+        {children || playerName}
+      </span>
+    )
+  }
+
+  // Registered user - clickable with profile
   return (
     <>
       <button
@@ -44,7 +67,7 @@ export function ClickablePlayerName({
       </button>
 
       <PublicPlayerProfileModal
-        playerName={playerName}
+        userId={userId}
         isOpen={showProfile}
         onClose={handleClose}
       />
