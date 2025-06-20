@@ -1,4 +1,4 @@
-// src/components/user/UpcomingRalliesSection.tsx - CORRECTLY FIXED VERSION
+// src/components/user/UpcomingRalliesSection.tsx - COMPLETE VERSION - All Features Preserved
 'use client'
 
 import { useState } from 'react'
@@ -7,7 +7,7 @@ import { TransformedRally, useUserRallyRegistrations } from '@/hooks/useOptimize
 import { useDeleteRegistration } from '@/hooks/useRallyRegistrations'
 import { RallyDetailModal } from '@/components/rally/RallyDetailModal'
 
-// FIXED: Import the helper functions for proper status checking
+// Import helper functions for proper status checking
 import { 
   canRegisterToRally, 
   getRallyStatus, 
@@ -33,12 +33,12 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
 
   if (!canAccessRallies) return null
 
-  // FIXED: Use the 1-hour rule instead of 24-hour rule
+  // Helper function to check if rally is in the past (1-hour rule)
   const isRallyPast = (competitionDate: string) => {
     return isRallyInPast({ competition_date: competitionDate })
   }
 
-  // Split rallies by date only (ignore status completely)
+  // Split rallies by date (ignore status, use only time)
   const upcomingRallies = rallies.filter(rally => !isRallyPast(rally.competition_date))
   const pastRallies = rallies.filter(rally => isRallyPast(rally.competition_date))
 
@@ -55,12 +55,15 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
   const limitedRallies = isExpanded ? displayRallies : displayRallies.slice(0, 5)
   const hasMore = displayRallies.length > 5
 
+  // Helper functions for status display
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'upcoming': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
       case 'registration_open': return 'bg-green-500/20 text-green-400 border-green-500/30'
       case 'registration_closed': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+      case 'active': return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
       case 'completed': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+      case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30'
       default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
     }
   }
@@ -73,17 +76,17 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
       case 'active': return 'Käimasolev'
       case 'completed': return 'Lõppenud'
       case 'cancelled': return 'Tühistatud'
-      default: return status
+      default: return status.charAt(0).toUpperCase() + status.slice(1)
     }
   }
 
-  // FIXED: Use proper status checking instead of manual logic
+  // Use proper status checking instead of manual logic
   const canRegister = (rally: TransformedRally) => {
     if (showPastRallies) return false // No registration for past rallies
     return canRegisterToRally(rally)
   }
 
-  // FIXED: Add safety check for userRegistrations being undefined
+  // Safety check for userRegistrations
   const getUserRegistration = (rallyId: string) => {
     if (!userRegistrations || !Array.isArray(userRegistrations)) {
       return undefined
@@ -95,6 +98,7 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
   }
 
   const handleRegister = (rally: TransformedRally) => {
+    console.log('🔄 Navigating to registration for rally:', rally.name)
     router.push(`/registration?rallyId=${rally.id}`)
   }
 
@@ -107,15 +111,20 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
         await deleteRegistrationMutation.mutateAsync(registration.id)
         alert('Registreering edukalt tühistatud!')
       } catch (error) {
+        console.error('Error unregistering:', error)
         alert('Registreeringu tühistamine ebaõnnestus. Palun proovige uuesti.')
       }
     }
   }
 
+  const handleViewDetails = (rally: TransformedRally) => {
+    setSelectedRally(rally)
+  }
+
   return (
     <>
       <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-        {/* Header with toggle */}
+        {/* Header with toggle and counts */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white flex items-center space-x-3">
             <span>{showPastRallies ? '🏆' : '🏁'}</span>
@@ -123,10 +132,13 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
           </h2>
           
           <div className="flex items-center space-x-3">
-            {/* Toggle buttons */}
+            {/* Toggle buttons with counts */}
             <div className="flex bg-slate-700/50 rounded-lg p-1">
               <button
-                onClick={() => setShowPastRallies(false)}
+                onClick={() => {
+                  setShowPastRallies(false)
+                  setIsExpanded(false) // Reset expansion when switching
+                }}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   !showPastRallies 
                     ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
@@ -136,7 +148,10 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
                 Tulevased ({sortedUpcoming.length})
               </button>
               <button
-                onClick={() => setShowPastRallies(true)}
+                onClick={() => {
+                  setShowPastRallies(true)
+                  setIsExpanded(false) // Reset expansion when switching
+                }}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   showPastRallies 
                     ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
@@ -149,14 +164,16 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
           </div>
         </div>
         
+        {/* Loading state */}
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="text-center">
               <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-slate-400">Laadin rallit...</p>
+              <p className="text-slate-400">Laadin rallisid...</p>
             </div>
           </div>
         ) : displayRallies.length === 0 ? (
+          /* Empty state */
           <div className="text-center py-12">
             <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl text-slate-500">
@@ -174,13 +191,15 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
             </p>
           </div>
         ) : (
+          /* Rally list */
           <>
             <div className="space-y-4">
               {limitedRallies.map((rally) => {
                 const userRegistration = getUserRegistration(rally.id)
                 const isUserRegistered = !!userRegistration
-                // FIXED: Use proper registration checking and show proper status
                 const registrationAllowed = canRegister(rally) && !isUserRegistered
+                
+                // Use real-time status calculation
                 const currentStatus = getRallyStatus(rally)
 
                 return (
@@ -197,10 +216,20 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-1">
                             <h3 className="text-lg font-semibold text-white">{rally.name}</h3>
-                            {/* FIXED: Use real-time status instead of database status */}
+                            
+                            {/* Real-time status badge */}
                             <span className={`text-xs px-2 py-1 rounded-full border ${getStatusColor(currentStatus)}`}>
                               {getStatusText(currentStatus)}
                             </span>
+                            
+                            {/* Featured badge */}
+                            {rally.is_featured && (
+                              <span className="text-xs px-2 py-1 rounded-full border bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                                ⭐ ESILETÕSTETUD
+                              </span>
+                            )}
+                            
+                            {/* User registration status */}
                             {isUserRegistered && (
                               <span className="text-xs px-2 py-1 rounded-full border bg-green-500/20 text-green-400 border-green-500/30">
                                 Registreeritud
@@ -208,17 +237,39 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
                             )}
                           </div>
                           
+                          {/* Rally description */}
+                          {rally.description && (
+                            <p className="text-sm text-slate-400 mb-2 line-clamp-1">
+                              {rally.description}
+                            </p>
+                          )}
+                          
+                          {/* Rally details */}
                           <div className="flex items-center space-x-4 text-sm text-slate-400">
                             <span>📅 {new Date(rally.competition_date).toLocaleDateString('et-EE')}</span>
                             <span>🎮 {rally.game_name}</span>
-                            {rally.total_events && <span>🏆 {rally.total_events} events</span>}
-                            {rally.total_tracks && <span>🛣️ {rally.total_tracks} tracks</span>}
+                            
+                            {/* FIXED: Show events count if available */}
+                            {rally.total_events !== undefined && rally.total_events > 0 && (
+                              <span>🏆 {rally.total_events} {rally.total_events === 1 ? 'riik' : 'riiki'}</span>
+                            )}
+                            
+                            {/* FIXED: Only show tracks count if it's greater than 0 */}
+                            {rally.total_tracks !== undefined && rally.total_tracks > 0 && (
+                              <span>🛣️ {rally.total_tracks} {rally.total_tracks === 1 ? 'rada' : 'rada'}</span>
+                            )}
+                            
+                            {/* FIXED: Show registered participants count */}
+                            {rally.registered_participants !== undefined && (
+                              <span>👤 {rally.registered_participants} registreerunud</span>
+                            )}
                           </div>
                         </div>
                       </div>
 
+                      {/* Action buttons */}
                       <div className="flex items-center space-x-3">
-                        {/* Only show registration buttons for upcoming rallies */}
+                        {/* Registration buttons - only for upcoming rallies */}
                         {!showPastRallies && (
                           <>
                             {registrationAllowed && (
@@ -235,12 +286,11 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
                                 onClick={() => handleUnregister(rally)}
                                 className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg transition-all duration-200 text-sm font-medium"
                               >
-                                {/* FIXED: Changed from "Tühista" to "Tühista registreerimine" */}
                                 Tühista registreerimine
                               </button>
                             )}
 
-                            {/* FIXED: Show "Registreerimine suletud" when deadline passed */}
+                            {/* Show "Registreerimine suletud" when deadline passed */}
                             {!registrationAllowed && !isUserRegistered && (
                               <div className="px-4 py-2 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg text-sm font-medium">
                                 Registreerimine suletud
@@ -249,8 +299,9 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
                           </>
                         )}
                         
+                        {/* Details button - always available */}
                         <button
-                          onClick={() => setSelectedRally(rally)}
+                          onClick={() => handleViewDetails(rally)}
                           className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-lg transition-all duration-200 text-sm font-medium"
                         >
                           Detailid
@@ -262,6 +313,7 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
               })}
             </div>
 
+            {/* Show more/less button */}
             {hasMore && (
               <div className="text-center mt-6">
                 <button

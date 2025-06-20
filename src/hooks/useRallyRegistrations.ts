@@ -1,4 +1,4 @@
-// src/hooks/useRallyRegistrations.ts - CLEANED VERSION
+// src/hooks/useRallyRegistrations.ts - FIXED VERSION - Correct query key references
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { rallyKeys } from './useOptimizedRallies'
@@ -27,7 +27,7 @@ export const registrationKeys = {
 }
 
 // ============================================================================
-// CREATE REGISTRATION MUTATION - CLEANED
+// CREATE REGISTRATION MUTATION - FIXED
 // ============================================================================
 
 export function useCreateRegistration() {
@@ -65,13 +65,14 @@ export function useCreateRegistration() {
     onSuccess: (data, variables) => {
       console.log('🔄 Invalidating caches after registration creation...')
       
+      // FIXED: Use correct query key references
       queryClient.invalidateQueries({ queryKey: registrationKeys.rally(variables.rally_id) })
       queryClient.invalidateQueries({ queryKey: registrationKeys.all })
-      queryClient.invalidateQueries({ queryKey: rallyKeys.registrations() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.userRegistrations() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
-      queryClient.refetchQueries({ queryKey: rallyKeys.registrations() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.all })
       
       console.log('✅ Cache invalidation completed')
     },
@@ -82,7 +83,7 @@ export function useCreateRegistration() {
 }
 
 // ============================================================================
-// DELETE REGISTRATION MUTATION - CLEANED
+// DELETE REGISTRATION MUTATION - FIXED
 // ============================================================================
 
 export function useDeleteRegistration() {
@@ -127,13 +128,14 @@ export function useDeleteRegistration() {
     onSuccess: (data) => {
       console.log('🔄 Invalidating caches after registration deletion...')
       
+      // FIXED: Use correct query key references
       queryClient.invalidateQueries({ queryKey: registrationKeys.rally(data.rallyId) })
       queryClient.invalidateQueries({ queryKey: registrationKeys.all })
-      queryClient.invalidateQueries({ queryKey: rallyKeys.registrations() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.userRegistrations() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
-      queryClient.refetchQueries({ queryKey: rallyKeys.registrations() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.all })
       
       console.log('✅ Cache invalidation completed')
     },
@@ -144,7 +146,7 @@ export function useDeleteRegistration() {
 }
 
 // ============================================================================
-// UPDATE REGISTRATION MUTATION - CLEANED
+// UPDATE REGISTRATION MUTATION - FIXED
 // ============================================================================
 
 export function useUpdateRegistration() {
@@ -197,13 +199,14 @@ export function useUpdateRegistration() {
     onSuccess: (data) => {
       console.log('🔄 Invalidating caches after registration update...')
       
+      // FIXED: Use correct query key references
       queryClient.invalidateQueries({ queryKey: registrationKeys.rally(data.rallyId) })
       queryClient.invalidateQueries({ queryKey: registrationKeys.all })
-      queryClient.invalidateQueries({ queryKey: rallyKeys.registrations() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.userRegistrations() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
-      queryClient.refetchQueries({ queryKey: rallyKeys.registrations() })
+      queryClient.invalidateQueries({ queryKey: rallyKeys.all })
       
       console.log('✅ Cache invalidation completed')
     },
@@ -214,7 +217,7 @@ export function useUpdateRegistration() {
 }
 
 // ============================================================================
-// GET RALLY REGISTRATIONS - CLEANED
+// GET RALLY REGISTRATIONS - FOR VIEWING PARTICIPANTS
 // ============================================================================
 
 export function useRallyRegistrations(rallyId: string) {
@@ -247,71 +250,60 @@ export function useRallyRegistrations(rallyId: string) {
         throw error
       }
 
-      const transformedRegistrations = registrations?.map(reg => ({
+      const transformedRegistrations: RallyRegistration[] = (registrations || []).map(reg => ({
         ...reg,
-        user_name: reg.users?.name,
-        user_email: reg.users?.email,
-        user_player_name: reg.users?.player_name,
-        class_name: reg.game_classes?.name
-      })) || []
+        user_name: (reg.users as any)?.name || 'Unknown User',
+        user_email: (reg.users as any)?.email || 'Unknown Email',
+        user_player_name: (reg.users as any)?.player_name || 'Unknown Player',
+        class_name: (reg.game_classes as any)?.name || 'Unknown Class'
+      }))
 
       console.log(`✅ Rally registrations loaded: ${transformedRegistrations.length}`)
       return transformedRegistrations
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: !!rallyId, // Only run if rallyId is provided
   })
 }
 
 // ============================================================================
-// GET AVAILABLE CLASSES FOR RALLY - CLEANED
+// GET AVAILABLE CLASSES FOR RALLY
 // ============================================================================
 
 export function useRallyAvailableClasses(rallyId: string) {
   return useQuery({
     queryKey: ['rally_classes', rallyId],
     queryFn: async () => {
-      if (!rallyId) return []
-      
       console.log('🔄 Loading available classes for rally:', rallyId)
       
-      const { data: rally, error: rallyError } = await supabase
-        .from('rallies')
-        .select('game_id')
-        .eq('id', rallyId)
-        .single()
-
-      if (rallyError) {
-        console.error('Error loading rally:', rallyError)
-        throw rallyError
-      }
-
-      if (!rally?.game_id) {
-        console.log('No game_id found for rally')
-        return []
-      }
-
-      const { data: gameClasses, error } = await supabase
-        .from('game_classes')
+      const { data: rallyClasses, error } = await supabase
+        .from('rally_classes')
         .select(`
-          id,
-          name,
-          game_id,
-          is_active,
-          created_at,
-          updated_at
+          *,
+          class:game_classes!inner(
+            id,
+            name
+          )
         `)
-        .eq('game_id', rally.game_id)
+        .eq('rally_id', rallyId)
         .eq('is_active', true)
+        .order('created_at', { ascending: true })
 
       if (error) {
-        console.error('Error loading game classes:', error)
+        console.error('Error loading rally classes:', error)
         throw error
       }
 
-      console.log(`✅ Game classes loaded: ${gameClasses?.length || 0}`)
-      return gameClasses || []
+      const availableClasses = (rallyClasses || []).map(rc => ({
+        id: (rc.class as any)?.id || rc.class_id,
+        name: (rc.class as any)?.name || 'Unknown Class',
+        max_participants: rc.max_participants
+      }))
+
+      console.log(`✅ Available classes loaded: ${availableClasses.length}`)
+      return availableClasses
     },
-    enabled: !!rallyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!rallyId, // Only run if rallyId is provided
   })
 }
