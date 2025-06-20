@@ -24,8 +24,9 @@ export interface CompletedRally {
   participant_count: number
   results_needed_since: string
   results_completed: boolean
-  game_name?: string
-  game_type_name?: string
+  results_approved: boolean  // ADD THIS LINE
+  game_name: string
+  game_type_name: string
 }
 
 export const resultsKeys = {
@@ -166,6 +167,7 @@ export function useCompletedRallies() {
   return useQuery({
     queryKey: resultsKeys.completed_rallies(),
     queryFn: async (): Promise<CompletedRally[]> => {
+      // First, get all completed rallies
       const { data: rallies, error } = await supabase
         .from('rallies')
         .select(`
@@ -220,10 +222,10 @@ export function useCompletedRallies() {
         })
       }
 
-      // Get results status
+      // Get results status - FIXED: Filter out approved rallies
       const { data: resultsStatus } = await supabase
         .from('rally_results_status')
-        .select('rally_id, results_needed_since, results_completed')
+        .select('rally_id, results_needed_since, results_completed, results_approved')
         .in('rally_id', rallyIds)
 
       const statusMap: Record<string, any> = {}
@@ -233,22 +235,26 @@ export function useCompletedRallies() {
         })
       }
 
-      // Transform data
-      const transformedRallies: CompletedRally[] = rallies.map((rally: any) => {
-        const status = statusMap[rally.id]
-        
-        return {
-          id: rally.id,
-          name: rally.name,
-          description: rally.description,
-          competition_date: rally.competition_date,
-          participant_count: counts[rally.id] || 0,
-          results_needed_since: status?.results_needed_since || rally.competition_date,
-          results_completed: status?.results_completed || false,
-          game_name: rally.game?.name,
-          game_type_name: rally.game_type?.name
-        }
-      })
+      // Transform data and FILTER OUT approved rallies
+      const transformedRallies: CompletedRally[] = rallies
+        .map((rally: any) => {
+          const status = statusMap[rally.id]
+          
+          return {
+            id: rally.id,
+            name: rally.name,
+            description: rally.description,
+            competition_date: rally.competition_date,
+            participant_count: counts[rally.id] || 0,
+            results_needed_since: status?.results_needed_since || rally.competition_date,
+            results_completed: status?.results_completed || false,
+            results_approved: status?.results_approved || false, // Add this field
+            game_name: rally.game?.name,
+            game_type_name: rally.game_type?.name
+          }
+        })
+        // CRITICAL FIX: Only include rallies where results are NOT approved
+        .filter(rally => !rally.results_approved)
 
       return transformedRallies
     },
@@ -276,6 +282,7 @@ export function useApprovedRallies() {
 
       const approvedRallyIds = approvedStatus.map(s => s.rally_id)
 
+      // Get the actual rally data for approved rallies
       const { data: rallies, error } = await supabase
         .from('rallies')
         .select(`
@@ -287,8 +294,9 @@ export function useApprovedRallies() {
           game:games(name),
           game_type:game_types(name)
         `)
-        .eq('is_active', true)
         .in('id', approvedRallyIds)
+        .eq('is_active', true)
+        .eq('status', 'completed')
         .order('competition_date', { ascending: false })
 
       if (error) {
@@ -330,10 +338,10 @@ export function useApprovedRallies() {
         })
       }
 
-      // Get results status
+      // Get results status for approved rallies
       const { data: resultsStatus } = await supabase
         .from('rally_results_status')
-        .select('rally_id, results_needed_since, results_completed')
+        .select('rally_id, results_needed_since, results_completed, results_approved')
         .in('rally_id', rallyIds)
 
       const statusMap: Record<string, any> = {}
@@ -343,7 +351,7 @@ export function useApprovedRallies() {
         })
       }
 
-      // Transform data
+      // Transform data - all these rallies have results_approved = true
       const transformedRallies: CompletedRally[] = rallies.map((rally: any) => {
         const status = statusMap[rally.id]
         
@@ -355,6 +363,7 @@ export function useApprovedRallies() {
           participant_count: counts[rally.id] || 0,
           results_needed_since: status?.results_needed_since || rally.competition_date,
           results_completed: status?.results_completed || false,
+          results_approved: true, // These are all approved
           game_name: rally.game?.name,
           game_type_name: rally.game_type?.name
         }
