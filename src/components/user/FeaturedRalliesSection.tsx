@@ -1,11 +1,9 @@
-// src/components/user/FeaturedRalliesSection.tsx - FIXED: Estonian + Navigation
+// src/components/user/FeaturedRalliesSection.tsx - FIXED VERSION - No Auto Update
 'use client'
 
 import { useRouter } from 'next/navigation'
 import { TransformedRally } from '@/hooks/useOptimizedRallies'
 import { RallyDisplay } from '@/components/rally/RallyDisplay'
-import { useAutoUpdateRallyStatuses } from '@/hooks/useOptimizedRallies'
-import { useEffect } from 'react'
 
 interface FeaturedRalliesSectionProps {
   rallies: TransformedRally[]
@@ -14,13 +12,9 @@ interface FeaturedRalliesSectionProps {
 }
 
 export function FeaturedRalliesSection({ rallies, isLoading, canAccessRallies }: FeaturedRalliesSectionProps) {
-  const autoUpdate = useAutoUpdateRallyStatuses()
   const router = useRouter()
 
-  useEffect(() => {
-    console.log('🔄 Featured rallies loaded - triggering status update...')
-    autoUpdate.mutate()
-  }, [])
+  // FIXED: Removed auto-update from here - only manual updates from Rally Management
 
   if (!canAccessRallies || rallies.length === 0) return null
 
@@ -33,7 +27,6 @@ export function FeaturedRalliesSection({ rallies, isLoading, canAccessRallies }:
   return (
     <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
       <div className="flex items-center justify-between mb-6">
-        {/* FIXED: Estonian translation */}
         <h2 className="text-2xl font-bold text-white flex items-center space-x-3">
           <span>⭐</span>
           <span>Esiletõstetud rallid</span>
@@ -55,7 +48,7 @@ export function FeaturedRalliesSection({ rallies, isLoading, canAccessRallies }:
         <RallyDisplay 
           rallies={rallies}
           showRegistration={true}
-          onRegister={handleRegister} // FIXED: Proper navigation instead of alert
+          onRegister={handleRegister}
         />
       )}
     </div>
