@@ -1,9 +1,16 @@
-// src/components/rally/RallyDetailModal.tsx - ENHANCED with Statistics (Preserves All Existing Functions)
+// src/components/rally/RallyDetailModal.tsx - COMPLETE FIXED VERSION
 'use client'
 
 import { useState } from 'react'
-import { TransformedRally, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
+import { TransformedRally, useUserRallyRegistrations, UserRallyRegistration } from '@/hooks/useOptimizedRallies'
 import { useRallyRegistrations } from '@/hooks/useRallyRegistrations'
+import { 
+  getRallyStatus, 
+  getStatusDisplayText, 
+  getStatusColor,
+  canRegisterToRally,
+  isRallyInPast 
+} from '@/hooks/useOptimizedRallies'
 
 // Simple local interfaces to avoid type conflicts
 interface SimpleRallyEvent {
@@ -21,29 +28,50 @@ interface SimpleRallyTrack {
   track_order: number
 }
 
+// FIXED: Interface with correct props
 interface RallyDetailModalProps {
   rally: TransformedRally | null
   onClose: () => void
   onRegister?: () => void
+  userRegistration?: UserRallyRegistration  // ADDED: Optional userRegistration prop
+  onUnregister?: () => void  // ADDED: Optional onUnregister prop
 }
 
-export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModalProps) {
+export function RallyDetailModal({ rally, onClose, onRegister, userRegistration: propUserRegistration, onUnregister }: RallyDetailModalProps) {
   const [activeTab, setActiveTab] = useState<'info' | 'participants'>('info')
+  
+  if (!rally) return null
+
+  // FIXED: Calculate real-time status with proper parameters
+  const realTimeStatus = getRallyStatus({
+    competition_date: rally.competition_date,
+    registration_deadline: rally.registration_deadline
+    // REMOVED: status parameter as it's not needed for calculation
+  })
+
+  const registrationAllowed = canRegisterToRally({
+    competition_date: rally.competition_date,
+    registration_deadline: rally.registration_deadline
+    // REMOVED: status parameter as it's not needed for calculation
+  })
+
+  const isPastRally = isRallyInPast({
+    competition_date: rally.competition_date
+    // REMOVED: status parameter as it's not needed for calculation
+  })
   
   // Get user's registrations to check if already registered
   const { data: userRegistrations = [] } = useUserRallyRegistrations()
   
   // Get all participants for this rally
   const { data: participants = [], isLoading: isLoadingParticipants } = useRallyRegistrations(rally?.id || '')
-  
-  if (!rally) return null
 
-  // Check if user is already registered for this rally
-  const userRegistration = userRegistrations.find(
+  // FIXED: Check if user is already registered for this rally (use different variable name)
+  const currentUserRegistration = propUserRegistration || userRegistrations.find(
     reg => reg.rally_id === rally.id && 
            (reg.status === 'registered' || reg.status === 'confirmed')
   )
-  const isUserRegistered = !!userRegistration
+  const isUserRegistered = !!currentUserRegistration
 
   // ENHANCED: Calculate rally statistics
   const calculateStatistics = () => {
@@ -74,7 +102,7 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
     }
   }
   
-  const getStatusColor = (status: string) => {
+  const getStatusColorLocal = (status: string) => {
     switch (status) {
       case 'upcoming':
         return 'text-blue-400 bg-blue-500/20 border-blue-500/30'
@@ -93,7 +121,7 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
     }
   }
 
-  const getStatusText = (status: string) => {
+  const getStatusTextLocal = (status: string) => {
     switch (status) {
       case 'upcoming': return 'Tulemas'
       case 'registration_open': return 'Registreerimine avatud'
@@ -215,8 +243,9 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
                   <div>
                     <label className="text-sm font-medium text-slate-400">Staatus</label>
                     <div className="mt-1">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(rally.status)}`}>
-                        {getStatusText(rally.status)}
+                      {/* FIXED: Use realTimeStatus instead of rally.status */}
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColorLocal(realTimeStatus)}`}>
+                        {getStatusTextLocal(realTimeStatus)}
                       </span>
                       {isUserRegistered && (
                         <span className="ml-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border bg-green-500/20 text-green-400 border-green-500/30">
@@ -462,12 +491,23 @@ export function RallyDetailModal({ rally, onClose, onRegister }: RallyDetailModa
               Sulge
             </button>
             
-            {onRegister && !isUserRegistered && rally.status === 'registration_open' && (
+            {/* FIXED: Use real-time status for registration check */}
+            {onRegister && !isUserRegistered && registrationAllowed && (
               <button
                 onClick={onRegister}
                 className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
               >
                 Registreeru
+              </button>
+            )}
+
+            {/* ADDED: Unregister button if available */}
+            {onUnregister && isUserRegistered && !isPastRally && (
+              <button
+                onClick={onUnregister}
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Tühista registreerimine
               </button>
             )}
           </div>

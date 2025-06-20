@@ -1,4 +1,4 @@
-// src/hooks/useOptimizedRallies.ts - UPDATED VERSION with useAllRallies
+// src/hooks/useOptimizedRallies.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
@@ -316,11 +316,20 @@ export function useUpcomingRallies(limit = 10) {
 // ============================================================================
 
 export function useFeaturedRallies(limit = 5) {
+  const autoUpdate = useAutoUpdateRallyStatuses()
+
   return useQuery({
     queryKey: rallyKeys.featured(limit),
     queryFn: async (): Promise<RealRally[]> => {
       console.log('🔄 Loading featured rallies with events and tracks...')
       
+      try {
+        console.log('🔄 Running auto-update for featured rallies...')
+        await autoUpdate.mutateAsync()
+      } catch (error) {
+        console.warn('Status update failed for featured rallies, continuing:', error)
+      }
+
       const { data: rallies, error: ralliesError } = await supabase
         .from('rallies')
         .select(`
@@ -477,8 +486,8 @@ export function useAutoUpdateRallyStatuses() {
   return useMutation({
     mutationFn: async () => {
       console.log('🔄 Starting rally status auto-update...')
+      const currentTime = new Date().toISOString()
       const now = new Date()
-      const currentTime = now.toISOString()
       
       // FIXED: Get ALL rallies, not just active ones
       const { data: rallies, error: fetchError } = await supabase
@@ -491,51 +500,57 @@ export function useAutoUpdateRallyStatuses() {
       
       let updatedCount = 0
       
-    for (const rally of rallies) {
-      const competitionDate = new Date(rally.competition_date)
-      const registrationDeadline = new Date(rally.registration_deadline)
-      // FIXED: Changed from 24 hours to 12 hours as per requirements
-      const twelveHoursAfterCompetition = new Date(competitionDate.getTime() + (12 * 60 * 60 * 1000))
-      
-      let newStatus = rally.status
-      
-      // Determine correct status based on dates
-      if (now > twelveHoursAfterCompetition) {
-        newStatus = 'completed'
-      } else if (now > competitionDate) {
-        newStatus = 'active'
-      } else if (now > registrationDeadline) {
-        newStatus = 'registration_closed'
-      } else {
-        newStatus = 'registration_open'
-      }
-      
-      // CRITICAL FIX: Only update status, NEVER set is_active = false automatically
-      if (newStatus !== rally.status) {
-        console.log(`📅 Updating rally ${rally.id} status: ${rally.status} → ${newStatus}`)
+      for (const rally of rallies) {
+        const competitionDate = new Date(rally.competition_date)
+        const registrationDeadline = new Date(rally.registration_deadline)
+        // FIXED: Changed to 1 hour as per requirements
+        const oneHourAfterCompetition = new Date(competitionDate.getTime() + (1 * 60 * 60 * 1000))
         
-        const { error: updateError } = await supabase
-          .from('rallies')
-          .update({ 
-            status: newStatus,
-            updated_at: currentTime
-            // REMOVED: Any is_active updates
-          })
-          .eq('id', rally.id)
+        let newStatus = rally.status
         
-        if (updateError) {
-          console.error(`Error updating rally ${rally.id}:`, updateError)
+        // Determine correct status based on dates
+        if (now > oneHourAfterCompetition) {
+          // Rally finished more than 1 hour ago -> move to past (completed)
+          newStatus = 'completed'
+        } else if (now > competitionDate) {
+          // Rally is currently happening
+          newStatus = 'active'
+        } else if (now > registrationDeadline) {
+          // Registration deadline passed but rally hasn't started
+          newStatus = 'registration_closed'
         } else {
-          updatedCount++
+          // Registration is still open
+          newStatus = 'registration_open'
+        }
+        
+        // CRITICAL FIX: Only update status, NEVER set is_active = false automatically
+        if (newStatus !== rally.status) {
+          console.log(`📅 Updating rally ${rally.id} status: ${rally.status} → ${newStatus}`)
+          
+          const { error: updateError } = await supabase
+            .from('rallies')
+            .update({ 
+              status: newStatus,
+              updated_at: currentTime
+              // REMOVED: Any is_active updates
+            })
+            .eq('id', rally.id)
+          
+          if (updateError) {
+            console.error(`Error updating rally ${rally.id}:`, updateError)
+          } else {
+            updatedCount++
+          }
         }
       }
-    }
       
       console.log(`✅ Rally status update complete. Updated ${updatedCount} rallies.`)
       return { updated: updatedCount }
     },
     onSuccess: () => {
+      // Invalidate all rally-related queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: rallyKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['public_rallies'] })
     }
   })
 }
@@ -661,11 +676,21 @@ export function useAllRalliesWithAutoUpdate(limit = 20) {
 // Add this NEW function to src/hooks/useOptimizedRallies.ts:
 
 export function useAdminAllRallies(limit = 50) {
+  const autoUpdate = useAutoUpdateRallyStatuses()
+
   return useQuery({
     queryKey: [...rallyKeys.all, 'admin-all-rallies', limit],
     queryFn: async (): Promise<TransformedRally[]> => {
       console.log('🔄 Loading ALL rallies for admin (including inactive)...')
-      
+
+      // ADD THIS: Auto-update statuses before loading admin rallies
+      try {
+        console.log('🔄 Running auto-update for admin rallies...')
+        await autoUpdate.mutateAsync()
+      } catch (error) {
+        console.warn('Status update failed for admin rallies, continuing:', error)
+      }
+  
       const { data: rallies, error } = await supabase
         .from('rallies')
         .select(`
@@ -728,4 +753,79 @@ export function useAdminAllRallies(limit = 50) {
     },
     staleTime: 2 * 60 * 1000,
   })
+}
+
+// ============================================================================
+// HELPER FUNCTIONS FOR STATUS CHECKING
+// ============================================================================
+
+export const getRallyStatus = (rally: { 
+  competition_date: string, 
+  registration_deadline: string, 
+  status?: string 
+}) => {
+  const now = new Date()
+  const competitionDate = new Date(rally.competition_date)
+  const registrationDeadline = new Date(rally.registration_deadline)
+  const oneHourAfterCompetition = new Date(competitionDate.getTime() + (1 * 60 * 60 * 1000))
+  
+  // Calculate actual status based on current time
+  if (now > oneHourAfterCompetition) {
+    return 'completed'
+  } else if (now > competitionDate) {
+    return 'active'
+  } else if (now > registrationDeadline) {
+    return 'registration_closed'
+  } else {
+    return 'registration_open'
+  }
+}
+
+export const canRegisterToRally = (rally: { 
+  competition_date: string, 
+  registration_deadline: string, 
+  status?: string 
+}) => {
+  const now = new Date()
+  const registrationDeadline = new Date(rally.registration_deadline)
+  const competitionDate = new Date(rally.competition_date)
+  
+  // Can register only if:
+  // 1. Registration deadline hasn't passed
+  // 2. Competition hasn't started yet
+  return registrationDeadline > now && competitionDate > now
+}
+
+export const isRallyInPast = (rally: { 
+  competition_date: string 
+}) => {
+  const now = new Date()
+  const competitionDate = new Date(rally.competition_date)
+  const oneHourAfterCompetition = new Date(competitionDate.getTime() + (1 * 60 * 60 * 1000))
+  
+  return now > oneHourAfterCompetition
+}
+
+export const getStatusDisplayText = (status: string) => {
+  switch (status) {
+    case 'registration_open': return 'Registreerimine avatud'
+    case 'registration_closed': return 'Registreerimine suletud'
+    case 'active': return 'Käimasolev'
+    case 'completed': return 'Lõppenud'
+    case 'upcoming': return 'Tulemas'
+    case 'cancelled': return 'Tühistatud'
+    default: return status
+  }
+}
+
+export const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'registration_open': return 'bg-green-500/20 text-green-400 border-green-500/30'
+    case 'registration_closed': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+    case 'active': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+    case 'completed': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+    case 'upcoming': return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+    case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30'
+    default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+  }
 }

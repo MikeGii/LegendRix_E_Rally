@@ -1,4 +1,4 @@
-// src/components/user/UpcomingRalliesSection.tsx - SIMPLE VERSION
+// src/components/user/UpcomingRalliesSection.tsx - CORRECTLY FIXED VERSION
 'use client'
 
 import { useState } from 'react'
@@ -6,6 +6,15 @@ import { useRouter } from 'next/navigation'
 import { TransformedRally, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
 import { useDeleteRegistration } from '@/hooks/useRallyRegistrations'
 import { RallyDetailModal } from '@/components/rally/RallyDetailModal'
+
+// FIXED: Import the helper functions for proper status checking
+import { 
+  canRegisterToRally, 
+  getRallyStatus, 
+  getStatusDisplayText, 
+  getStatusColor,
+  isRallyInPast 
+} from '@/hooks/useOptimizedRallies'
 
 interface UpcomingRalliesSectionProps {
   rallies: TransformedRally[]
@@ -24,12 +33,9 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
 
   if (!canAccessRallies) return null
 
-  // SIMPLE DATE CHECK: If competition_date is more than 24h ago = past rally
+  // FIXED: Use the 1-hour rule instead of 24-hour rule
   const isRallyPast = (competitionDate: string) => {
-    const rallyDate = new Date(competitionDate)
-    const now = new Date()
-    const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000))
-    return rallyDate < twentyFourHoursAgo
+    return isRallyInPast({ competition_date: competitionDate })
   }
 
   // Split rallies by date only (ignore status completely)
@@ -71,15 +77,17 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
     }
   }
 
+  // FIXED: Use proper status checking instead of manual logic
   const canRegister = (rally: TransformedRally) => {
     if (showPastRallies) return false // No registration for past rallies
-    const now = new Date()
-    const deadline = new Date(rally.registration_deadline)
-    return rally.status === 'registration_open' || 
-           (rally.status === 'upcoming' && deadline > now)
+    return canRegisterToRally(rally)
   }
 
+  // FIXED: Add safety check for userRegistrations being undefined
   const getUserRegistration = (rallyId: string) => {
+    if (!userRegistrations || !Array.isArray(userRegistrations)) {
+      return undefined
+    }
     return userRegistrations.find(
       reg => reg.rally_id === rallyId && 
              (reg.status === 'registered' || reg.status === 'confirmed')
@@ -171,7 +179,9 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
               {limitedRallies.map((rally) => {
                 const userRegistration = getUserRegistration(rally.id)
                 const isUserRegistered = !!userRegistration
+                // FIXED: Use proper registration checking and show proper status
                 const registrationAllowed = canRegister(rally) && !isUserRegistered
+                const currentStatus = getRallyStatus(rally)
 
                 return (
                   <div
@@ -187,8 +197,9 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-1">
                             <h3 className="text-lg font-semibold text-white">{rally.name}</h3>
-                            <span className={`text-xs px-2 py-1 rounded-full border ${getStatusColor(rally.status)}`}>
-                              {getStatusText(rally.status)}
+                            {/* FIXED: Use real-time status instead of database status */}
+                            <span className={`text-xs px-2 py-1 rounded-full border ${getStatusColor(currentStatus)}`}>
+                              {getStatusText(currentStatus)}
                             </span>
                             {isUserRegistered && (
                               <span className="text-xs px-2 py-1 rounded-full border bg-green-500/20 text-green-400 border-green-500/30">
@@ -224,8 +235,16 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
                                 onClick={() => handleUnregister(rally)}
                                 className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg transition-all duration-200 text-sm font-medium"
                               >
-                                Tühista
+                                {/* FIXED: Changed from "Tühista" to "Tühista registreerimine" */}
+                                Tühista registreerimine
                               </button>
+                            )}
+
+                            {/* FIXED: Show "Registreerimine suletud" when deadline passed */}
+                            {!registrationAllowed && !isUserRegistered && (
+                              <div className="px-4 py-2 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg text-sm font-medium">
+                                Registreerimine suletud
+                              </div>
                             )}
                           </>
                         )}

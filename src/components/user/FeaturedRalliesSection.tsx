@@ -4,6 +4,8 @@
 import { useRouter } from 'next/navigation'
 import { RealRally } from '@/hooks/useOptimizedRallies'
 import { RallyDisplay } from '@/components/rally/RallyDisplay'
+import { useAutoUpdateRallyStatuses } from '@/hooks/useOptimizedRallies'
+import { useEffect } from 'react'
 
 interface FeaturedRalliesSectionProps {
   rallies: RealRally[]
@@ -12,7 +14,13 @@ interface FeaturedRalliesSectionProps {
 }
 
 export function FeaturedRalliesSection({ rallies, isLoading, canAccessRallies }: FeaturedRalliesSectionProps) {
+  const autoUpdate = useAutoUpdateRallyStatuses()
   const router = useRouter()
+
+  useEffect(() => {
+    console.log('🔄 Featured rallies loaded - triggering status update...')
+    autoUpdate.mutate()
+  }, [])
 
   if (!canAccessRallies || rallies.length === 0) return null
 
