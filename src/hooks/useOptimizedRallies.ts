@@ -1,4 +1,4 @@
-// src/hooks/useOptimizedRallies.ts - CLEANED AND OPTIMIZED VERSION
+// src/hooks/useOptimizedRallies.ts - FIXED VERSION - No More Infinite Updates
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
@@ -77,46 +77,77 @@ export const rallyKeys = {
 }
 
 // ============================================================================
-// SERVER-SIDE STATUS UPDATE (CORE FUNCTION)
+// THROTTLED SERVER-SIDE STATUS UPDATE (PREVENTS INFINITE LOOPS)
 // ============================================================================
+
+// FIXED: Add global state to prevent multiple simultaneous updates
+let isUpdating = false
+let lastUpdateTime = 0
+const UPDATE_COOLDOWN = 30000 // 30 seconds cooldown between updates
 
 export function useServerSideStatusUpdate() {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: async () => {
+      const now = Date.now()
+      
+      // FIXED: Prevent multiple simultaneous updates
+      if (isUpdating) {
+        console.log('⏳ Status update already in progress, skipping...')
+        return { updated: 0, total: 0, message: 'Update already in progress' }
+      }
+      
+      // FIXED: Cooldown period to prevent excessive updates
+      if (now - lastUpdateTime < UPDATE_COOLDOWN) {
+        const remainingTime = Math.ceil((UPDATE_COOLDOWN - (now - lastUpdateTime)) / 1000)
+        console.log(`⏳ Status update on cooldown for ${remainingTime} seconds`)
+        return { updated: 0, total: 0, message: `Cooldown active: ${remainingTime}s remaining` }
+      }
+      
+      isUpdating = true
       console.log('🔄 Triggering server-side rally status update...')
       
-      const response = await fetch('/api/rallies/update-statuses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
+      try {
+        const response = await fetch('/api/rallies/update-statuses', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Server status update failed')
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Server status update failed')
+        }
+
+        const result = await response.json()
+        console.log('✅ Server-side status update result:', result)
+        lastUpdateTime = now
+        return result
+      } finally {
+        isUpdating = false
       }
-
-      const result = await response.json()
-      console.log('✅ Server-side status update result:', result)
-      return result
     },
     onSuccess: (data) => {
-      console.log(`✅ Server updated ${data.updated} rally statuses`)
-      // Invalidate all rally-related queries to refresh the UI
-      queryClient.invalidateQueries({ queryKey: rallyKeys.all })
-      queryClient.invalidateQueries({ queryKey: ['public_rallies'] })
+      if (data.updated > 0) {
+        console.log(`✅ Server updated ${data.updated} rally statuses`)
+        // FIXED: Only invalidate queries if there were actual updates
+        queryClient.invalidateQueries({ queryKey: rallyKeys.all })
+        queryClient.invalidateQueries({ queryKey: ['public_rallies'] })
+      } else {
+        console.log('ℹ️ No rally statuses needed updating')
+      }
     },
     onError: (error) => {
       console.error('❌ Server-side status update failed:', error)
+      isUpdating = false // Reset flag on error
     }
   })
 }
 
 // ============================================================================
-// AUTO-UPDATE WRAPPER
+// AUTO-UPDATE WRAPPER (THROTTLED)
 // ============================================================================
 
 export function useAutoUpdateRallyStatuses() {
@@ -138,24 +169,16 @@ export function useAutoUpdateRallyStatuses() {
 }
 
 // ============================================================================
-// 1. ALL RALLIES HOOK - MAIN RALLY LOADER
+// 1. ALL RALLIES HOOK - REDUCED AUTO-UPDATE FREQUENCY
 // ============================================================================
 
 export function useAllRallies(limit = 20) {
-  const serverUpdate = useServerSideStatusUpdate()
-  
   return useQuery({
     queryKey: [...rallyKeys.all, 'all-rallies', limit],
     queryFn: async (): Promise<TransformedRally[]> => {
-      console.log('🔄 Loading ALL rallies with server-side status update...')
+      console.log('🔄 Loading ALL rallies...')
       
-      // Update statuses first
-      try {
-        await serverUpdate.mutateAsync()
-      } catch (error) {
-        console.warn('⚠️ Server status update failed, continuing:', error)
-      }
-      
+      // FIXED: NO automatic status update here - only manual updates
       const { data: rallies, error } = await supabase
         .from('rallies')
         .select(`
@@ -269,33 +292,25 @@ export function useAllRallies(limit = 20) {
         }
       })
 
-      console.log(`✅ ALL rallies loaded: ${transformedRallies.length} with real participant counts`)
+      console.log(`✅ ALL rallies loaded: ${transformedRallies.length}`)
       return transformedRallies
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchInterval: 5 * 60 * 1000, // Auto-refetch every 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: false, // FIXED: Disable automatic refetching
   })
 }
 
 // ============================================================================
-// 2. FEATURED RALLIES HOOK - FIXED MISSING FUNCTION
+// 2. FEATURED RALLIES HOOK - NO AUTO-UPDATE
 // ============================================================================
 
 export function useFeaturedRallies(limit = 5) {
-  const serverUpdate = useServerSideStatusUpdate()
-
   return useQuery({
     queryKey: rallyKeys.featured(limit),
     queryFn: async (): Promise<TransformedRally[]> => {
       console.log('🔄 Loading featured rallies...')
       
-      // Update statuses first
-      try {
-        await serverUpdate.mutateAsync()
-      } catch (error) {
-        console.warn('⚠️ Server status update failed for featured rallies, continuing:', error)
-      }
-
+      // FIXED: NO automatic status update here
       const { data: rallies, error: ralliesError } = await supabase
         .from('rallies')
         .select(`
@@ -390,7 +405,7 @@ export function useFeaturedRallies(limit = 5) {
       console.log(`✅ Featured rallies loaded: ${transformedRallies.length}`)
       return transformedRallies
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes - longer cache for featured
   })
 }
 
@@ -446,24 +461,16 @@ export function useUserRallyRegistrations() {
 }
 
 // ============================================================================
-// 4. ADMIN ALL RALLIES HOOK (FOR RALLY MANAGEMENT)
+// 4. ADMIN ALL RALLIES HOOK - MINIMAL AUTO-UPDATE
 // ============================================================================
 
 export function useAdminAllRallies(limit = 50) {
-  const serverUpdate = useServerSideStatusUpdate()
-
   return useQuery({
     queryKey: [...rallyKeys.all, 'admin-all-rallies', limit],
     queryFn: async (): Promise<TransformedRally[]> => {
       console.log('🔄 Loading ALL rallies for admin (including inactive)...')
 
-      // Auto-update statuses before loading admin rallies
-      try {
-        await serverUpdate.mutateAsync()
-      } catch (error) {
-        console.warn('⚠️ Server status update failed for admin rallies, continuing:', error)
-      }
-  
+      // FIXED: NO automatic status update here - only when manually triggered
       const { data: rallies, error } = await supabase
         .from('rallies')
         .select(`
@@ -500,7 +507,7 @@ export function useAdminAllRallies(limit = 50) {
       return transformedRallies
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchInterval: 5 * 60 * 1000, // Auto-refetch every 5 minutes
+    refetchInterval: false, // FIXED: Disable automatic refetching
   })
 }
 
@@ -550,7 +557,7 @@ export const isRallyInPast = (rally: {
 }) => {
   const now = new Date()
   const competitionDate = new Date(rally.competition_date)
-  const oneHourAfterCompetition = new Date(competitionDate.getTime() + (1 * 60 * 1000))
+  const oneHourAfterCompetition = new Date(competitionDate.getTime() + (1 * 60 * 60 * 1000))
   
   return now > oneHourAfterCompetition
 }

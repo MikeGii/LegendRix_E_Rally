@@ -1,17 +1,15 @@
-// src/components/UserDashboard.tsx - FIXED VERSION with useAllRallies
+// src/components/UserDashboard.tsx - FIXED VERSION - No Auto Update
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
 import { useView } from '@/components/ViewProvider'
-import { useAllRallies, useFeaturedRallies, useUserRallyRegistrations, useAutoUpdateRallyStatuses   } from '@/hooks/useOptimizedRallies'
+import { useAllRallies, useFeaturedRallies, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
 import { UserWelcomeHeader } from '@/components/user/UserWelcomeHeader'
 import { UserStatusBanner } from '@/components/user/UserStatusBanner'
 import { UpcomingRalliesSection } from '@/components/user/UpcomingRalliesSection'
 import { FeaturedRalliesSection } from '@/components/user/FeaturedRalliesSection'
 import { UserRegistrationsSection } from '@/components/user/UserRegistrationsSection'
 import { UserActionPrompt } from '@/components/user/UserActionPrompt'
-import { useEffect } from 'react'
-
 
 interface StatusMessage {
   type: 'success' | 'warning' | 'info'
@@ -54,18 +52,14 @@ function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage | nu
 export function UserDashboard() {
   const { user } = useAuth()
   const { currentView } = useView()
-
-  const autoUpdateMutation = useAutoUpdateRallyStatuses()
   
+  // FIXED: Removed auto-update from here - only manual updates from Rally Management
   // Load rally data using updated hooks - Use higher limit to get more rallies
   const { data: allRallies = [], isLoading: isLoadingAll } = useAllRallies(20)
   const { data: featuredRallies = [], isLoading: isLoadingFeatured } = useFeaturedRallies(3)
   const { data: userRegistrations = [], isLoading: isLoadingRegistrations } = useUserRallyRegistrations()
 
-  useEffect(() => {
-    console.log('🔄 UserDashboard loaded - triggering rally status update...')
-    autoUpdateMutation.mutate()
-  }, []) // Run once when component mounts
+  // FIXED: Removed useEffect with auto-update trigger
 
   if (!user) return null
 
@@ -105,7 +99,7 @@ export function UserDashboard() {
           />
         )}
 
-        {/* All Rallies Section - CHANGE: Pass allRallies instead of upcomingRallies */}
+        {/* All Rallies Section */}
          <UpcomingRalliesSection
            rallies={allRallies}
            isLoading={isLoadingAll}
