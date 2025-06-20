@@ -1,32 +1,23 @@
-// src/components/results/utils/classBasedCalculations.ts - IMPROVED VERSION
+// src/components/results/utils/classBasedCalculations.ts - FINAL FIX: No positions for non-participants
+
 import type { ParticipantResult } from '../hooks/useResultsState'
 
-export interface ClassPositionResult {
+export interface CalculatedPosition {
   participantId: string
-  overallPosition: number
-  classPosition: number
+  overallPosition: number | null  // NULL for non-participants
+  classPosition: number | null    // NULL for non-participants
   totalPoints: number
   className: string
+  participated: boolean
 }
 
-export function calculateClassBasedPositions(
-  results: Record<string, ParticipantResult>
-): ClassPositionResult[] {
-  console.log('🔄 Starting class-based position calculation...')
-  
-  // Get all results with points (only participants who have results)
-  const resultsWithPoints = Object.values(results).filter(r => 
-    r.totalPoints !== null && r.totalPoints !== undefined && r.totalPoints >= 0
-  )
+export function calculateClassBasedPositions(results: Record<string, ParticipantResult>): CalculatedPosition[] {
+  const finalResults: CalculatedPosition[] = []
 
-  if (resultsWithPoints.length === 0) {
-    console.log('No results with points found')
-    return []
-  }
-
-  // Group by class
+  // Group results by class
   const resultsByClass: Record<string, ParticipantResult[]> = {}
-  resultsWithPoints.forEach(result => {
+  
+  Object.values(results).forEach(result => {
     const className = result.className || 'Teadmata klass'
     if (!resultsByClass[className]) {
       resultsByClass[className] = []
@@ -34,67 +25,88 @@ export function calculateClassBasedPositions(
     resultsByClass[className].push(result)
   })
 
-  console.log(`Found ${Object.keys(resultsByClass).length} classes:`, Object.keys(resultsByClass))
-
-  const finalResults: ClassPositionResult[] = []
-
-  // ============================================================================
-  // STEP 1: Calculate class positions (1st, 2nd, 3rd within each class)
-  // ============================================================================
-  
+  // Process each class separately with improved sorting
   Object.entries(resultsByClass).forEach(([className, classResults]) => {
-    console.log(`\n📊 Processing class: ${className} with ${classResults.length} participants`)
-    
-    // Sort participants within class by points (descending = highest points first)
-    const sortedClassResults = classResults.sort((a, b) => {
-      const pointsA = a.totalPoints || 0
-      const pointsB = b.totalPoints || 0
-      return pointsB - pointsA // Descending order
-    })
+    // SEPARATE: Participants vs Non-participants
+    const participatedResults = classResults.filter(r => r.participated)
+    const nonParticipatedResults = classResults.filter(r => !r.participated)
 
-    // Assign class positions
-    sortedClassResults.forEach((result, classIndex) => {
-      const classPosition = classIndex + 1 // 1st, 2nd, 3rd in class
-      
-      console.log(`  ${classPosition}. ${result.playerName}: ${result.totalPoints} punkti`)
+    // SORT PARTICIPATED PARTICIPANTS ONLY:
+    // 1. Participants with points > 0 (by points DESC)
+    // 2. Participants with 0 points (alphabetical)
+    
+    const participatedWithPoints = participatedResults.filter(r => 
+      r.totalPoints !== null && r.totalPoints > 0
+    ).sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0))
+    
+    const participatedWithZeroPoints = participatedResults.filter(r => 
+      r.totalPoints === null || r.totalPoints === 0
+    ).sort((a, b) => (a.playerName || '').localeCompare(b.playerName || ''))
+
+    // Combine participated participants in correct order
+    const sortedParticipated = [
+      ...participatedWithPoints,
+      ...participatedWithZeroPoints
+    ]
+
+    // ASSIGN POSITIONS ONLY TO PARTICIPANTS
+    sortedParticipated.forEach((result, index) => {
+      const classPosition = index + 1
       
       finalResults.push({
         participantId: result.participantId,
-        overallPosition: 0, // Will be calculated in step 2
+        overallPosition: 0, // Will be calculated later
         classPosition: classPosition,
         totalPoints: result.totalPoints || 0,
-        className: className
+        className: className,
+        participated: true
+      })
+    })
+
+    // ADD NON-PARTICIPANTS WITHOUT POSITIONS
+    nonParticipatedResults.forEach(result => {
+      finalResults.push({
+        participantId: result.participantId,
+        overallPosition: null, // NO POSITION for non-participants
+        classPosition: null,   // NO POSITION for non-participants
+        totalPoints: 0,        // Force 0 points for non-participants
+        className: className,
+        participated: false
       })
     })
   })
 
-  // ============================================================================
-  // STEP 2: Calculate overall positions across all classes
-  // ============================================================================
+  // CALCULATE OVERALL POSITIONS ONLY FOR PARTICIPANTS
+  const participatedResults = finalResults.filter(r => r.participated)
+    .sort((a, b) => b.totalPoints - a.totalPoints)
   
-  // Sort all results by total points (highest first) for overall ranking
-  finalResults.sort((a, b) => b.totalPoints - a.totalPoints)
-  
-  // Assign overall positions
-  finalResults.forEach((result, overallIndex) => {
-    result.overallPosition = overallIndex + 1
+  const nonParticipatedResults = finalResults.filter(r => !r.participated)
+
+  // Assign overall positions ONLY to participants
+  participatedResults.forEach((result, index) => {
+    result.overallPosition = index + 1
   })
 
-  console.log('\n✅ Final positions calculated:')
-  finalResults.forEach(result => {
-    console.log(`  Overall #${result.overallPosition} (${result.className} #${result.classPosition}): ${result.participantId} - ${result.totalPoints} pts`)
-  })
-
-  console.log(`\n🏁 Total participants processed: ${finalResults.length}`)
-  console.log(`📊 Classes processed: ${Object.keys(resultsByClass).length}`)
+  // Combine results: participants first, then non-participants
+  const allSortedResults = [...participatedResults, ...nonParticipatedResults]
   
-  return finalResults
+  return allSortedResults
 }
 
-// ============================================================================
-// HELPER FUNCTION: Get class statistics
-// ============================================================================
+// Function to determine participant status based on participation and points
+export function getParticipantStatus(participated: boolean, totalPoints: number | null): 'Sisestatud' | 'Ei osale' | 'Ootel' {
+  if (!participated) {
+    return 'Ei osale'
+  }
+  
+  if (totalPoints !== null) {
+    return 'Sisestatud'
+  }
+  
+  return 'Ootel'
+}
 
+// Get class statistics
 export function getClassStatistics(results: Record<string, ParticipantResult>) {
   const resultsByClass: Record<string, {
     count: number
@@ -119,7 +131,7 @@ export function getClassStatistics(results: Record<string, ParticipantResult>) {
 
     resultsByClass[className].count++
 
-    if (result.totalPoints !== null && result.totalPoints !== undefined && result.totalPoints >= 0) {
+    if (result.participated && result.totalPoints !== null && result.totalPoints !== undefined && result.totalPoints >= 0) {
       resultsByClass[className].withResults++
       
       const points = result.totalPoints
@@ -132,50 +144,15 @@ export function getClassStatistics(results: Record<string, ParticipantResult>) {
   Object.keys(resultsByClass).forEach(className => {
     const classData = resultsByClass[className]
     const totalPoints = Object.values(results)
-      .filter(r => r.className === className && r.totalPoints !== null && r.totalPoints >= 0)
+      .filter(r => r.className === className && r.participated && r.totalPoints !== null && r.totalPoints >= 0)
       .reduce((sum, r) => sum + (r.totalPoints || 0), 0)
     
     classData.averagePoints = classData.withResults > 0 ? totalPoints / classData.withResults : 0
     
-    // Handle edge case where no one has points
     if (classData.lowestPoints === Infinity) {
       classData.lowestPoints = 0
     }
   })
 
   return resultsByClass
-}
-
-// ============================================================================
-// VALIDATION FUNCTION: Check for duplicate class positions ONLY
-// ============================================================================
-
-export function validateClassPositions(results: ClassPositionResult[]): string[] {
-  const errors: string[] = []
-  
-  // Check for duplicate class positions within each class
-  const classesByPosition = new Map<string, Map<number, string[]>>()
-  results.forEach(result => {
-    if (!classesByPosition.has(result.className)) {
-      classesByPosition.set(result.className, new Map())
-    }
-    
-    const classPositions = classesByPosition.get(result.className)!
-    const pos = result.classPosition
-    
-    if (!classPositions.has(pos)) {
-      classPositions.set(pos, [])
-    }
-    classPositions.get(pos)!.push(result.participantId)
-  })
-
-  classesByPosition.forEach((positions, className) => {
-    positions.forEach((participants, position) => {
-      if (participants.length > 1) {
-        errors.push(`Duplikaat klassipositsioon ${position} klassis ${className}: ${participants.join(', ')}`)
-      }
-    })
-  })
-
-  return errors
 }

@@ -1,8 +1,10 @@
 // src/components/results/components/ClassSeparatedParticipantsTable.tsx
-// UPDATED: Added participation checkbox while preserving ALL existing functionality
+// FINAL FIX: Correct sorting - participants first, non-participants last without positions
+
 'use client'
 
 import React from 'react'
+import { getParticipantStatus } from '../utils/classBasedCalculations'
 
 // Simple icon components to avoid external dependencies
 const Trash2 = ({ className }: { className?: string }) => (
@@ -41,7 +43,7 @@ export function ClassSeparatedParticipantsTable({
   onShowAddParticipant 
 }: ClassSeparatedParticipantsTableProps) {
   
-  // Group participants by class
+  // Group participants by class with FIXED SORTING
   const participantsByClass = React.useMemo(() => {
     const grouped: Record<string, any[]> = {}
     
@@ -53,21 +55,45 @@ export function ClassSeparatedParticipantsTable({
       grouped[className].push(participant)
     })
 
-    // Sort participants within each class by class_position
+    // FIXED SORTING: Participants first (by position/points), then non-participants (alphabetical)
     Object.keys(grouped).forEach(className => {
       grouped[className].sort((a, b) => {
         const aResult = results[a.id]
         const bResult = results[b.id]
         
-        // Sort by class position if both have it
-        if (aResult?.classPosition && bResult?.classPosition) {
-          return aResult.classPosition - bResult.classPosition
+        // CRITICAL: Separate participants from non-participants
+        const aParticipated = aResult?.participated
+        const bParticipated = bResult?.participated
+        
+        // 1. Participants always come before non-participants
+        if (aParticipated && !bParticipated) return -1
+        if (!aParticipated && bParticipated) return 1
+        
+        if (aParticipated && bParticipated) {
+          // Both participated - sort by class position, then points, then name
+          if (aResult?.classPosition && bResult?.classPosition) {
+            return aResult.classPosition - bResult.classPosition
+          }
+          if (aResult?.classPosition && !bResult?.classPosition) return -1
+          if (!aResult?.classPosition && bResult?.classPosition) return 1
+          
+          // Sort by points if no positions
+          if (aResult?.totalPoints && bResult?.totalPoints) {
+            return bResult.totalPoints - aResult.totalPoints
+          }
+          if (aResult?.totalPoints && !bResult?.totalPoints) return -1
+          if (!aResult?.totalPoints && bResult?.totalPoints) return 1
+          
+          // Fallback to name
+          return (aResult?.playerName || '').localeCompare(bResult?.playerName || '')
         }
-        // Sort by points if no class positions
-        if (aResult?.totalPoints && bResult?.totalPoints) {
-          return bResult.totalPoints - aResult.totalPoints
+        
+        if (!aParticipated && !bParticipated) {
+          // Both didn't participate - sort alphabetically
+          return (aResult?.playerName || '').localeCompare(bResult?.playerName || '')
         }
-        // Default sort by name
+        
+        // Fallback
         return (aResult?.playerName || '').localeCompare(bResult?.playerName || '')
       })
     })
@@ -78,13 +104,20 @@ export function ClassSeparatedParticipantsTable({
   // Handle participation checkbox change
   const handleParticipationChange = (participantId: string, participated: boolean) => {
     onUpdateResult(participantId, 'participated', participated)
+    
+    // If unchecking participation, clear positions and points
+    if (!participated) {
+      onUpdateResult(participantId, 'totalPoints', null)
+      onUpdateResult(participantId, 'overallPosition', null)
+      onUpdateResult(participantId, 'classPosition', null)
+    }
   }
 
   // Calculate participation stats for display
   const getParticipationStats = () => {
     const total = participants.length
     const participated = Object.values(results).filter((r: any) => r.participated).length
-    const withPoints = Object.values(results).filter((r: any) => r.totalPoints !== null && r.totalPoints > 0).length
+    const withPoints = Object.values(results).filter((r: any) => r.participated && r.totalPoints !== null && r.totalPoints > 0).length
     
     return { total, participated, withPoints }
   }
@@ -129,7 +162,7 @@ export function ClassSeparatedParticipantsTable({
         const classStats = {
           total: classParticipants.length,
           participated: classParticipants.filter(p => results[p.id]?.participated).length,
-          withPoints: classParticipants.filter(p => results[p.id]?.totalPoints > 0).length
+          withPoints: classParticipants.filter(p => results[p.id]?.participated && results[p.id]?.totalPoints > 0).length
         }
 
         return (
@@ -145,37 +178,40 @@ export function ClassSeparatedParticipantsTable({
                     <div>
                       <h3 className="text-xl font-bold text-white mb-1">{className}</h3>
                       <p className="text-slate-300 text-sm">
-                        {classStats.participated}/{classStats.total} osales{classStats.withPoints > 0 ? `, ${classStats.withPoints} punktidega` : ''}
+                        {classStats.participated}/{classStats.total} osales{classStats.withPoints > 0 ? 
+                          `, ${classStats.withPoints} punktidega` : ''}
                       </p>
                     </div>
-                  </div>
-                  
-                  <div className="text-sm text-slate-300">
-                    <span className="text-slate-400">Osalejaid: </span>
-                    <span className="font-medium text-white">{classParticipants.length}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Class Table */}
+            {/* Class Participants Table */}
             <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-slate-800/50">
                     <tr>
-                      <th className="text-center py-4 px-4 text-slate-400 font-medium">Koht</th>
-                      <th className="text-left py-4 px-6 text-slate-400 font-medium">Osaleja</th>
-                      <th className="text-center py-4 px-4 text-slate-400 font-medium">
-                        <div className="flex items-center justify-center space-x-1">
-                          <span>Osales</span>
-                          <span className="text-xs">✓</span>
-                        </div>
+                      <th className="text-center py-4 px-4 text-slate-400 font-medium text-sm">
+                        Koht
                       </th>
-                      <th className="text-right py-4 px-6 text-slate-400 font-medium">Punktid</th>
-                      <th className="text-center py-4 px-6 text-slate-400 font-medium">Olek</th>
-                      {editMode && (
-                        <th className="text-center py-4 px-6 text-slate-400 font-medium">Toimingud</th>
+                      <th className="text-left py-4 px-6 text-slate-400 font-medium text-sm">
+                        Osaleja
+                      </th>
+                      <th className="text-center py-4 px-4 text-slate-400 font-medium text-sm">
+                        Osales
+                      </th>
+                      <th className="text-right py-4 px-6 text-slate-400 font-medium text-sm">
+                        Punktid
+                      </th>
+                      <th className="text-center py-4 px-6 text-slate-400 font-medium text-sm">
+                        Olek
+                      </th>
+                      {editMode && onRemoveParticipant && (
+                        <th className="text-center py-4 px-6 text-slate-400 font-medium text-sm">
+                          Toimingud
+                        </th>
                       )}
                     </tr>
                   </thead>
@@ -183,56 +219,49 @@ export function ClassSeparatedParticipantsTable({
                     {classParticipants.map((participant, index) => {
                       const result = results[participant.id] || {
                         participantId: participant.id,
-                        playerName: participant.player_name || participant.user_name || 'Teadmata',
-                        className: participant.class_name || 'Teadmata klass',
+                        playerName: participant.player_name || participant.user_name || 'Tundmatu',
+                        className: participant.class_name || 'Tundmata klass',
                         overallPosition: null,
                         classPosition: null,
                         totalPoints: null,
-                        participated: participant.participated || false, // NEW: Load participation status
+                        participated: false,
                         eventResults: {},
                         isModified: false
                       }
 
                       const isManual = participant.user_id === 'manual-participant'
-                      const isModified = result.isModified
+                      const status = getParticipantStatus(result.participated, result.totalPoints)
 
                       return (
                         <tr 
                           key={participant.id} 
                           className={`border-b border-slate-700/30 hover:bg-slate-800/20 transition-all duration-200 ${
-                            isModified ? 'bg-blue-900/10 border-blue-500/30' : ''
+                            result.isModified ? 'bg-blue-900/10 border-blue-500/30' : ''
                           }`}
                         >
-                          {/* Class Position - UNCHANGED */}
+                          {/* Position - FIXED: Only show for participants */}
                           <td className="py-4 px-4 text-center">
-                            {editMode ? (
-                              <input
-                                type="number"
-                                min="1"
-                                value={result.classPosition || ''}
-                                onChange={(e) => onUpdateResult(participant.id, 'classPosition', parseInt(e.target.value) || null)}
-                                className="w-20 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-center focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                placeholder="—"
-                              />
-                            ) : (
+                            {result.participated && result.classPosition ? (
                               <span className={`font-bold text-lg ${
                                 result.classPosition === 1 ? 'text-yellow-400' :
                                 result.classPosition === 2 ? 'text-slate-300' :
                                 result.classPosition === 3 ? 'text-orange-400' :
                                 'text-white'
                               }`}>
-                                {result.classPosition ? `${result.classPosition}.` : '—'}
+                                {result.classPosition}.
                               </span>
+                            ) : (
+                              <span className="text-slate-500">—</span>
                             )}
                           </td>
 
-                          {/* Player Name - UNCHANGED */}
+                          {/* Participant Name */}
                           <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
-                                result.classPosition === 1 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' :
-                                result.classPosition === 2 ? 'bg-gradient-to-r from-slate-400 to-slate-500' :
-                                result.classPosition === 3 ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium text-white ${
+                                result.participated && result.classPosition === 1 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' :
+                                result.participated && result.classPosition === 2 ? 'bg-gradient-to-r from-slate-400 to-slate-500' :
+                                result.participated && result.classPosition === 3 ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
                                 'bg-slate-700'
                               }`}>
                                 {result.playerName.charAt(0).toUpperCase()}
@@ -246,7 +275,7 @@ export function ClassSeparatedParticipantsTable({
                             </div>
                           </td>
 
-                          {/* NEW: Participation Checkbox */}
+                          {/* Participation Checkbox */}
                           <td className="py-4 px-4 text-center">
                             <div className="flex justify-center">
                               <label className="relative inline-flex items-center cursor-pointer">
@@ -275,35 +304,45 @@ export function ClassSeparatedParticipantsTable({
                             </div>
                           </td>
 
-                          {/* Total Points - UNCHANGED */}
+                          {/* Total Points */}
                           <td className="py-4 px-6 text-right">
                             {editMode ? (
                               <input
                                 type="number"
+                                value={result.totalPoints || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value === '' ? null : parseFloat(e.target.value)
+                                  onUpdateResult(participant.id, 'totalPoints', value)
+                                }}
+                                disabled={!result.participated}
+                                className={`w-20 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                  !result.participated ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
+                                placeholder="0.0"
                                 step="0.1"
                                 min="0"
-                                value={result.totalPoints || ''}
-                                onChange={(e) => onUpdateResult(participant.id, 'totalPoints', parseFloat(e.target.value) || null)}
-                                className="w-24 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                placeholder="0.0"
                               />
                             ) : (
                               <span className={`font-bold text-lg ${
-                                result.classPosition === 1 ? 'text-yellow-400' :
-                                result.classPosition === 2 ? 'text-slate-300' :
-                                result.classPosition === 3 ? 'text-orange-400' :
+                                result.participated && result.classPosition === 1 ? 'text-yellow-400' :
+                                result.participated && result.classPosition === 2 ? 'text-slate-300' :
+                                result.participated && result.classPosition === 3 ? 'text-orange-400' :
                                 'text-white'
                               }`}>
-                                {result.totalPoints?.toFixed(1) || '0.0'}
+                                {result.participated ? (result.totalPoints?.toFixed(1) || '0.0') : '—'}
                               </span>
                             )}
                           </td>
 
-                          {/* Status - UNCHANGED */}
+                          {/* Status - IMPROVED with participation awareness */}
                           <td className="py-4 px-6 text-center">
-                            {participant.results_entered ? (
+                            {status === 'Sisestatud' ? (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
                                 Sisestatud
+                              </span>
+                            ) : status === 'Ei osale' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+                                Ei osale
                               </span>
                             ) : (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
@@ -312,19 +351,17 @@ export function ClassSeparatedParticipantsTable({
                             )}
                           </td>
 
-                          {/* Actions - UNCHANGED */}
-                          {editMode && (
+                          {/* Actions */}
+                          {editMode && onRemoveParticipant && (
                             <td className="py-4 px-6 text-center">
                               <div className="flex justify-center gap-2">
-                                {onRemoveParticipant && (
-                                  <button
-                                    onClick={() => onRemoveParticipant(participant.id)}
-                                    className="text-red-400 hover:text-red-300 transition-colors"
-                                    title="Eemalda osaleja"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                )}
+                                <button
+                                  onClick={() => onRemoveParticipant(participant.id)}
+                                  className="text-red-400 hover:text-red-300 transition-colors"
+                                  title="Eemalda osaleja"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
                             </td>
                           )}
@@ -335,7 +372,7 @@ export function ClassSeparatedParticipantsTable({
                 </table>
               </div>
 
-              {/* Class Summary - UPDATED with participation */}
+              {/* Class Summary */}
               <div className="border-t border-slate-700/50 p-4 bg-slate-800/20">
                 <div className="flex justify-between items-center text-sm">
                   <div className="text-slate-400">

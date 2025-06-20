@@ -1,4 +1,4 @@
-// src/components/results/components/ResultsHeader.tsx
+// src/components/results/components/ResultsHeader.tsx - UPDATED with correct Estonian texts
 interface ResultsHeaderProps {
   editMode: boolean
   showAddParticipant: boolean
@@ -23,7 +23,7 @@ export function ResultsHeader({
       <div className="flex-1">
         <h3 className="text-xl font-bold text-white mb-2">Tulemuste sisestamine</h3>
         <p className="text-slate-400 text-sm">
-          Sisesta osalejate kohad ja punktid. Saad osalejaid ka eemaldada.
+          Sisesta osalejate kohad ja punktid. Märgi osalejad, kes tegelikult võistlusel osalesid.
         </p>
       </div>
       
@@ -52,14 +52,16 @@ export function ResultsHeader({
             <button
               onClick={onCalculatePositions}
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all duration-200"
+              title="Arvutab kohad automaatselt vastavalt punktidele ja osalemisele"
             >
-              Arvuta kohad
+              Arvuta tulemused
             </button>
             
             <button
               onClick={onSaveResults}
               disabled={isSaving}
               className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+              title="Salvesta kõik tulemused, kohad ja osalemise staatused"
             >
               {isSaving ? (
                 <>

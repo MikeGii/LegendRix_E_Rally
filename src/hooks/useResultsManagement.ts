@@ -32,9 +32,10 @@ export interface RallyParticipant {
   class_name: string
   registration_date: string
   overall_position?: number
-  class_position?: number  // NEW: Add class_position
+  class_position?: number
   total_points?: number
   results_entered: boolean
+  participated: boolean  // NEW: Add participation status from rally_registrations
 }
 
 // ============================================================================
@@ -183,9 +184,7 @@ export function useRallyParticipants(rallyId: string) {
     queryFn: async (): Promise<RallyParticipant[]> => {
       if (!rallyId) return []
 
-      console.log('🔄 Loading rally participants with class positions...')
-
-      // Get registered participants
+      // Get registered participants WITH participation status
       const { data: realParticipants, error: registeredError } = await supabase
         .from('rally_registrations')
         .select(`
@@ -193,6 +192,7 @@ export function useRallyParticipants(rallyId: string) {
           user_id,
           class_id,
           registration_date,
+          participated,
           users!inner(
             id,
             player_name
@@ -259,9 +259,11 @@ export function useRallyParticipants(rallyId: string) {
             class_name: p.game_classes.name,
             registration_date: p.registration_date,
             overall_position: result?.overall_position,
-            class_position: result?.class_position ? parseInt(result.class_position) : null, // CONVERT string to number
+            class_position: result?.class_position ? parseInt(result.class_position) : null,
             total_points: result?.total_points,
-            results_entered: !!hasResultsEntered
+            results_entered: !!hasResultsEntered,
+            // FIXED: Include participation status from rally_registrations
+            participated: p.participated || false
           })
         })
       }
@@ -281,18 +283,24 @@ export function useRallyParticipants(rallyId: string) {
             class_name: mp.class_name || 'Manual Entry',
             registration_date: '2024-01-01T00:00:00Z',
             overall_position: mp.overall_position,
-            class_position: mp.class_position ? parseInt(mp.class_position) : null, // CONVERT string to number
+            class_position: mp.class_position ? parseInt(mp.class_position) : null,
             total_points: mp.total_points,
-            results_entered: !!hasResultsEntered
+            results_entered: !!hasResultsEntered,
+            // Manual participants are assumed to have participated (they were added manually)
+            participated: true
           })
         })
       }
 
-      console.log(`✅ Total participants loaded: ${allParticipants.length}`)
+      if (registeredError || manualError) {
+        const errors = [registeredError, manualError].filter(Boolean)
+        throw errors[0]
+      }
+
       return allParticipants
     },
     enabled: !!rallyId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 

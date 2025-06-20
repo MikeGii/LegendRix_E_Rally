@@ -1,4 +1,4 @@
-// src/components/results/hooks/useResultsState.ts
+// src/components/results/hooks/useResultsState.ts - FIXED: Better data loading and state management
 import { useState, useEffect } from 'react'
 
 export interface ParticipantResult {
@@ -8,7 +8,7 @@ export interface ParticipantResult {
   overallPosition: number | null
   classPosition: number | null
   totalPoints: number | null
-  participated: boolean  // NEW: Participation checkbox state
+  participated: boolean  // Load from rally_registrations.participated
   eventResults: Record<string, number>
   isModified: boolean
 }
@@ -32,19 +32,31 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
     className: ''
   })
 
-  // Initialize results with participant data
+  // Initialize results with participant data - IMPROVED
   useEffect(() => {
+    if (participants.length === 0) return
+
     const initialResults: Record<string, ParticipantResult> = {}
     
     participants.forEach(participant => {
+      // Determine if this is a manual participant
+      const isManual = participant.user_id === 'manual-participant'
+      
       initialResults[participant.id] = {
         participantId: participant.id,
-        playerName: participant.player_name || participant.user_name || 'Unknown',
+        playerName: participant.player_name || participant.user_name || participant.participant_name || 'Unknown',
         className: participant.class_name || 'Unknown Class',
-        overallPosition: participant.overall_position,
-        classPosition: participant.class_position,
-        totalPoints: participant.total_points,
-        participated: participant.participated || false, // NEW: Load existing participation status
+        
+        // Load existing results if they exist
+        overallPosition: participant.overall_position || null,
+        classPosition: participant.class_position || null,
+        totalPoints: participant.total_points || null,
+        
+        // FIXED: Load participation correctly based on participant type
+        participated: isManual 
+          ? true // Manual participants are assumed to have participated (they were added manually)
+          : (participant.participated === true), // For registered participants, use the exact boolean value
+        
         eventResults: {},
         isModified: false
       }
@@ -83,9 +95,9 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
   }
 
   const resetNewParticipantForm = () => {
-    setNewParticipant({ 
-      playerName: '', 
-      className: rallyClasses[0]?.class_name || rallyClasses[0]?.name || '' 
+    setNewParticipant({
+      playerName: '',
+      className: rallyClasses[0]?.class_name || rallyClasses[0]?.name || ''
     })
     setShowAddParticipant(false)
   }
@@ -101,19 +113,16 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
   }
 
   return {
-    // State
     results,
     editMode,
-    showAddParticipant,
-    newParticipant,
-    
-    // Actions
     setEditMode,
+    showAddParticipant,
     setShowAddParticipant,
+    newParticipant,
     setNewParticipant,
     updateResult,
     removeParticipantFromState,
     resetNewParticipantForm,
-    resetModificationFlags // NEW: For save optimization
+    resetModificationFlags
   }
 }

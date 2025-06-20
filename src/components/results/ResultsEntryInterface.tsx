@@ -1,4 +1,4 @@
-// src/components/results/ResultsEntryInterface.tsx - UPDATED with class separation
+// src/components/results/ResultsEntryInterface.tsx - FIXED: Don't exit edit mode after save
 'use client'
 
 import { useRallyClasses } from '@/hooks/useRallyManagement'
@@ -55,19 +55,21 @@ export function ResultsEntryInterface({
     onParticipantRemoved: removeParticipantFromState
   })
 
-  // Save results
+  // Save results - FIXED: Don't exit edit mode after save
   const {
     saveResultsMutation,
     handleSaveResults
   } = useSaveResults({
     rallyId,
     participants,
-    onSaveSuccess: () => setEditMode(false)
+    onSaveSuccess: () => {
+      // FIXED: Don't exit edit mode - just show success
+      // setEditMode(false) // REMOVED: This was clearing the form
+    }
   })
 
   // Event handlers
   const handleCalculatePositions = () => {
-    console.log('🔄 Calculating class-based positions...')
     calculatePositionsFromPoints(results, updateResult)
   }
 
