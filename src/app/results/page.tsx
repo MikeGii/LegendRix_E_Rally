@@ -1,10 +1,11 @@
-// src/app/results/page.tsx - CLEANED VERSION with proper container width
+// src/app/results/page.tsx - FIXED: Proper rally filtering and approved rallies
 'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { 
   useCompletedRallies, 
+  useApprovedRallies,
   useRallyParticipants, 
   useRallyEvents 
 } from '@/hooks/useResultsManagement'
@@ -22,9 +23,15 @@ function ResultsPageContent() {
 
   const { 
     data: completedRallies = [], 
-    isLoading: ralliesLoading,
-    error: ralliesError 
+    isLoading: completedLoading,
+    error: completedError 
   } = useCompletedRallies()
+
+  const { 
+    data: approvedRallies = [], 
+    isLoading: approvedLoading,
+    error: approvedError 
+  } = useApprovedRallies()
 
   const { 
     data: participants = [], 
@@ -35,28 +42,31 @@ function ResultsPageContent() {
     data: events = [] 
   } = useRallyEvents(selectedRally || '')
 
-  if (ralliesLoading && !completedRallies.length) {
-    return <LoadingState message="Laen lõppenud rallisid..." />
+  if (completedLoading && approvedLoading) {
+    return <LoadingState message="Laen rallisid..." />
   }
 
-  const selectedRallyData = completedRallies.find(r => r.id === selectedRally)
+  // Find selected rally from both completed and approved rallies
+  const selectedRallyData = [...completedRallies, ...approvedRallies].find(r => r.id === selectedRally)
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="space-y-6">
         <AdminPageHeader 
-                  title="Tulemuste haldus"
-                  description="Sisesta ja halda ralli tulemusi" icon={''}        />
+          title="Tulemuste haldus"
+          description="Sisesta ja halda ralli tulemusi" 
+          icon={''}        
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Rally Selector Sidebar */}
           <div className="lg:col-span-1">
             <RallySelector
-              rallies={completedRallies}
+              rallies={[]} // Not used anymore, component loads its own data
               selectedRallyId={selectedRally}
               onSelectRally={setSelectedRally}
-              isLoading={ralliesLoading}
-              error={ralliesError}
+              isLoading={completedLoading || approvedLoading}
+              error={completedError || approvedError}
             />
           </div>
 
@@ -87,10 +97,10 @@ function ResultsPageContent() {
                 <p className="text-slate-400 mb-4">
                   Vali vasakult ralli, et näha osalejaid ja sisestada tulemusi.
                 </p>
-                {completedRallies.length === 0 && (
+                {completedRallies.length === 0 && approvedRallies.length === 0 && (
                   <div className="mt-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
                     <p className="text-blue-400 text-sm">
-                      💡 Vihje: Loo Rally Management lehel uus ralli ja määra selle kuupäev minevikku, et see ilmuks siia.
+                      💡 Vihje: Loo Rally Management lehel uus ralli ja määra selle staatus "completed", et see ilmuks siia.
                     </p>
                   </div>
                 )}
