@@ -1,80 +1,114 @@
-// src/components/results/components/ResultsHeader.tsx
+// src/components/results/components/ResultsHeader.tsx - SIMPLIFIED: Added approve button, removed progress tracking
+'use client'
+
+import { Calculator, Save, CheckCircle, UserPlus, Edit3, Lock } from 'lucide-react'
+
 interface ResultsHeaderProps {
   editMode: boolean
-  showAddParticipant: boolean
-  onToggleEditMode: () => void
-  onToggleAddParticipant: () => void
+  setEditMode: (value: boolean) => void
   onCalculatePositions: () => void
   onSaveResults: () => void
-  isSaving?: boolean
+  onApproveResults?: () => void
+  onShowAddParticipant: () => void
+  isSaving: boolean
+  isApproving: boolean
+  isApproved: boolean
+  canApprove: boolean
 }
 
 export function ResultsHeader({
   editMode,
-  showAddParticipant,
-  onToggleEditMode,
-  onToggleAddParticipant,
+  setEditMode,
   onCalculatePositions,
   onSaveResults,
-  isSaving = false
+  onApproveResults,
+  onShowAddParticipant,
+  isSaving,
+  isApproving,
+  isApproved,
+  canApprove
 }: ResultsHeaderProps) {
   return (
-    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
-      <div className="flex-1">
-        <h3 className="text-xl font-bold text-white mb-2">Tulemuste sisestamine</h3>
-        <p className="text-slate-400 text-sm">
-          Sisesta osalejate kohad ja punktid. Saad osalejaid ka eemaldada.
-        </p>
+    <div className="bg-gradient-to-r from-slate-800/80 to-slate-800/40 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-xl flex items-center justify-center">
+            <Calculator className="text-white" size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Tulemuste sisestamine</h1>
+            <p className="text-slate-300">
+              {isApproved ? 'Tulemused on kinnitatud ja lukustatud' : 'Sisesta punktid või eemalda mitteosalejad'}
+            </p>
+          </div>
+        </div>
+
+        {isApproved && (
+          <div className="flex items-center space-x-2 px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg">
+            <Lock size={16} />
+            <span className="font-medium">Kinnitatud</span>
+          </div>
+        )}
       </div>
-      
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onToggleAddParticipant}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
-        >
-          <span className="text-lg">➕</span>
-          Lisa osaleja
-        </button>
-        
-        <button
-          onClick={onToggleEditMode}
-          className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-            editMode 
-            ? 'bg-green-600 hover:bg-green-700 text-white' 
-            : 'bg-gray-600 hover:bg-gray-700 text-white'
-          }`}
-        >
-          {editMode ? 'Lõpeta muutmine' : 'Alusta muutmist'}
-        </button>
-        
-        {editMode && (
-          <>
-            <button
-              onClick={onCalculatePositions}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all duration-200"
-            >
-              Arvuta kohad
-            </button>
-            
-            <button
-              onClick={onSaveResults}
-              disabled={isSaving}
-              className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
-            >
-              {isSaving ? (
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          {!isApproved && (
+            <>
+              <button
+                onClick={() => setEditMode(!editMode)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  editMode
+                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                    : 'bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700/70'
+                }`}
+              >
+                <Edit3 size={16} />
+                <span>{editMode ? 'Väljasta režiim' : 'Muutmisrežiim'}</span>
+              </button>
+
+              {editMode && (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Salvestan...
-                </>
-              ) : (
-                <>
-                  <span>💾</span>
-                  Salvesta tulemused
+                  <button
+                    onClick={onCalculatePositions}
+                    className="flex items-center space-x-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 rounded-lg transition-all duration-200"
+                  >
+                    <Calculator size={16} />
+                    <span>Arvuta tulemused</span>
+                  </button>
+
+                  <button
+                    onClick={onSaveResults}
+                    disabled={isSaving}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg transition-all duration-200 disabled:opacity-50"
+                  >
+                    <Save size={16} />
+                    <span>{isSaving ? 'Salvestan...' : 'Salvesta tulemused'}</span>
+                  </button>
+
+                  {canApprove && onApproveResults && (
+                    <button
+                      onClick={onApproveResults}
+                      disabled={isApproving}
+                      className="flex items-center space-x-2 px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 rounded-lg transition-all duration-200 disabled:opacity-50"
+                    >
+                      <CheckCircle size={16} />
+                      <span>{isApproving ? 'Kinnitamine...' : 'Kinnita tulemused'}</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={onShowAddParticipant}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-lg transition-all duration-200"
+                  >
+                    <UserPlus size={16} />
+                    <span>Lisa osaleja</span>
+                  </button>
                 </>
               )}
-            </button>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   )

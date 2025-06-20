@@ -1,4 +1,4 @@
-// src/components/results/ResultsEntryInterface.tsx - UPDATED with class separation
+// src/components/results/ResultsEntryInterface.tsx - SIMPLIFIED: Removed participated logic
 'use client'
 
 import { useRallyClasses } from '@/hooks/useRallyManagement'
@@ -51,23 +51,23 @@ export function ResultsEntryInterface({
     handleRemoveParticipant
   } = useParticipantActions({
     rallyId,
-    onParticipantAdded: resetNewParticipantForm,
+    onParticipantAdded: () => {
+      resetNewParticipantForm()
+      setShowAddParticipant(false)
+    },
     onParticipantRemoved: removeParticipantFromState
   })
 
   // Save results
-  const {
-    saveResultsMutation,
-    handleSaveResults
-  } = useSaveResults({
+  const { saveResultsMutation, approveResultsMutation } = useSaveResults({
     rallyId,
-    participants,
-    onSaveSuccess: () => setEditMode(false)
+    onSaveSuccess: () => {
+      // Keep edit mode active after save
+    }
   })
 
-  // Event handlers
+  // Actions
   const handleCalculatePositions = () => {
-    console.log('🔄 Calculating class-based positions...')
     calculatePositionsFromPoints(results, updateResult)
   }
 
@@ -75,78 +75,94 @@ export function ResultsEntryInterface({
     clearParticipantResults(participantId, updateResult)
   }
 
-  const handleSave = () => {
-    handleSaveResults(results)
+  const handleSaveResults = () => {
+    const allParticipants = participants.map(participant => {
+      const result = results[participant.id]
+      return {
+        participantId: participant.id,
+        playerName: participant.player_name,
+        className: participant.class_name,
+        overallPosition: result?.overallPosition || null,
+        classPosition: result?.classPosition || null,
+        totalPoints: result?.totalPoints || null
+      }
+    })
+
+    saveResultsMutation.mutate({ rallyId, allParticipants })
   }
 
   const handleAddParticipantSubmit = () => {
-    handleAddParticipant(newParticipant)
+    if (newParticipant.playerName.trim() && newParticipant.className.trim()) {
+      addManualParticipantMutation.mutate(newParticipant)
+    }
   }
 
-  // Disable editing if results are approved
-  const isEditingDisabled = resultsStatus?.results_approved || false
+  const handleApproveResults = () => {
+    if (confirm('Kas olete kindel, et soovite tulemused kinnitada? Pärast kinnitamist ei saa tulemusi enam muuta.')) {
+      approveResultsMutation.mutate(rallyId)
+    }
+  }
+
+  const isResultsApproved = resultsStatus?.results_approved || false
+  const canEdit = editMode && !isResultsApproved
+  const canApprove = resultsStatus?.results_completed && !isResultsApproved
 
   if (isLoading) {
     return (
-      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-slate-700 rounded w-1/3"></div>
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-12 bg-slate-700 rounded"></div>
-            ))}
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-slate-400">Andmete laadimine...</div>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      {/* Header & Controls */}
-      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-        <ResultsHeader
-          editMode={editMode && !isEditingDisabled}
-          showAddParticipant={showAddParticipant}
-          onToggleEditMode={() => !isEditingDisabled && setEditMode(!editMode)}
-          onToggleAddParticipant={() => !isEditingDisabled && setShowAddParticipant(!showAddParticipant)}
-          onCalculatePositions={handleCalculatePositions}
-          onSaveResults={handleSave}
-          isSaving={saveResultsMutation.isPending}
-        />
-
-        {/* Add Participant Form */}
-        {showAddParticipant && !isEditingDisabled && (
-          <div className="mt-6 pt-6 border-t border-slate-700/50">
-            <AddParticipantForm
-              show={true}
-              participant={newParticipant}
-              rallyClasses={rallyClasses}
-              isAdding={addManualParticipantMutation.isPending}
-              onParticipantChange={setNewParticipant}
-              onSubmit={handleAddParticipantSubmit}
-              onCancel={() => setShowAddParticipant(false)}
-            />
-          </div>
-        )}
-      </div>
-
       {/* Status Messages */}
       <StatusMessages 
-        removeError={removeParticipantMutation.error?.message}
-        saveError={saveResultsMutation.error?.message}
-        saveSuccess={saveResultsMutation.isSuccess}
         isSaving={saveResultsMutation.isPending}
+        isApproving={approveResultsMutation.isPending}
+        isApproved={isResultsApproved}
       />
 
-      {/* Class Separated Participants Tables */}
+      {/* Header with actions */}
+      <ResultsHeader
+        editMode={editMode}
+        setEditMode={setEditMode}
+        onCalculatePositions={handleCalculatePositions}
+        onSaveResults={handleSaveResults}
+        onApproveResults={canApprove ? handleApproveResults : undefined}
+        onShowAddParticipant={() => setShowAddParticipant(true)}
+        isSaving={saveResultsMutation.isPending}
+        isApproving={approveResultsMutation.isPending}
+        isApproved={isResultsApproved}
+        canApprove={canApprove}
+      />
+
+      {/* Add Participant Form */}
+      {showAddParticipant && (
+        <AddParticipantForm
+          show={true}
+          participant={newParticipant}
+          rallyClasses={rallyClasses}
+          isAdding={addManualParticipantMutation.isPending}
+          onParticipantChange={setNewParticipant}
+          onSubmit={handleAddParticipantSubmit}
+          onCancel={() => {
+            setShowAddParticipant(false)
+            resetNewParticipantForm()
+          }}
+        />
+      )}
+
+      {/* Participants Table */}
       <ClassSeparatedParticipantsTable
         participants={participants}
         results={results}
-        editMode={editMode && !isEditingDisabled}
+        editMode={canEdit}
         onUpdateResult={updateResult}
-        onRemoveParticipant={!isEditingDisabled ? handleRemoveParticipant : undefined}
-        onShowAddParticipant={() => !isEditingDisabled && setShowAddParticipant(true)}
+        onClearResults={handleClearResults}
+        onRemoveParticipant={handleRemoveParticipant}
+        isRemoving={removeParticipantMutation.isPending}
       />
     </div>
   )

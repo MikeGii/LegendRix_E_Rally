@@ -1,5 +1,4 @@
-// src/components/results/utils/resultCalculations.ts
-
+// src/components/results/utils/resultCalculations.ts - SIMPLIFIED: Removed participated logic
 import type { ParticipantResult } from '../hooks/useResultsState'
 import { calculateClassBasedPositions } from './classBasedCalculations'
 
@@ -7,9 +6,16 @@ export function calculatePositionsFromPoints(
   results: Record<string, ParticipantResult>,
   updateResult: (participantId: string, field: keyof ParticipantResult, value: any) => void
 ) {
-  console.log('🔄 Starting class-based position calculation...')
-  
-  // Calculate class-based positions
+  // Only calculate positions for participants with points > 0
+  const participantsWithPoints = Object.values(results).filter(result => 
+    result.totalPoints && result.totalPoints > 0
+  )
+
+  if (participantsWithPoints.length === 0) {
+    return
+  }
+
+  // Calculate class-based positions using the improved algorithm
   const classPositions = calculateClassBasedPositions(results)
   
   // Update results with calculated positions
@@ -17,8 +23,6 @@ export function calculatePositionsFromPoints(
     updateResult(position.participantId, 'overallPosition', position.overallPosition)
     updateResult(position.participantId, 'classPosition', position.classPosition)
   })
-  
-  console.log('✅ Class-based positions calculated and applied')
 }
 
 export function clearParticipantResults(
@@ -38,11 +42,17 @@ export function sortParticipantsByResults(
     const aResult = results[a.id]
     const bResult = results[b.id]
     
-    if (aResult?.overallPosition && bResult?.overallPosition) {
-      return aResult.overallPosition - bResult.overallPosition
+    // 1. Participants with points > 0 (by points DESC)
+    const aHasPoints = aResult?.totalPoints > 0
+    const bHasPoints = bResult?.totalPoints > 0
+    
+    if (aHasPoints && bHasPoints) {
+      return (bResult.totalPoints || 0) - (aResult.totalPoints || 0)
     }
-    if (aResult?.overallPosition && !bResult?.overallPosition) return -1
-    if (!aResult?.overallPosition && bResult?.overallPosition) return 1
+    if (aHasPoints && !bHasPoints) return -1
+    if (!aHasPoints && bHasPoints) return 1
+    
+    // 2. Participants without points (alphabetical by name)
     return (aResult?.playerName || '').localeCompare(bResult?.playerName || '')
   })
 }

@@ -1,4 +1,4 @@
-// src/components/results/hooks/useParticipantActions.ts
+// src/components/results/hooks/useParticipantActions.ts - FIXED: Proper deletion logic
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { resultsKeys } from '@/hooks/useResultsManagement'
@@ -20,8 +20,6 @@ export function useParticipantActions({
   // Add manual participant mutation
   const addManualParticipantMutation = useMutation({
     mutationFn: async (participant: ManualParticipant) => {
-      console.log('🔄 Adding manual participant:', participant)
-      
       const { data, error } = await supabase
         .from('rally_results')
         .insert({
@@ -37,7 +35,6 @@ export function useParticipantActions({
         .single()
 
       if (error) {
-        console.error('Error adding manual participant:', error)
         throw error
       }
 
@@ -46,23 +43,29 @@ export function useParticipantActions({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
       onParticipantAdded()
-      console.log('✅ Manual participant added successfully')
     },
     onError: (error) => {
-      console.error('❌ Failed to add manual participant:', error)
+      console.error('Failed to add manual participant:', error)
     }
   })
 
-  // Remove participant mutation
+  // Remove participant mutation - FIXED: Direct database approach with proper verification
   const removeParticipantMutation = useMutation({
     mutationFn: async (participant: any) => {
-      console.log('🔄 Removing participant:', participant)
+      console.log('🗑️ Starting deletion process for:', participant.player_name)
+      console.log('📋 Participant data:', {
+        id: participant.id,
+        user_id: participant.user_id,
+        rally_id: rallyId,
+        is_manual: participant.user_id === 'manual-participant'
+      })
       
       const isManualParticipant = participant.user_id === 'manual-participant'
       
       if (isManualParticipant) {
-        // Remove manual participant from rally_results
-        const { error } = await supabase
+        console.log('📝 Deleting manual participant from rally_results')
+        
+        const { error, count } = await supabase
           .from('rally_results')
           .delete()
           .eq('rally_id', rallyId)
@@ -70,43 +73,83 @@ export function useParticipantActions({
           .is('user_id', null)
 
         if (error) {
-          console.error('Error removing manual participant:', error)
+          console.error('❌ Failed to delete manual participant:', error)
           throw error
         }
+        
+        console.log('✅ Manual participant deleted, affected rows:', count)
       } else {
-        // For registered participants, remove from rally_registrations
-        // This will cascade delete the rally_results entry
-        const { error } = await supabase
+        console.log('👤 Deleting registered participant')
+        
+        // First, verify the registration exists
+        const { data: existingReg, error: fetchError } = await supabase
           .from('rally_registrations')
-          .delete()
+          .select('id, rally_id, user_id')
           .eq('id', participant.id)
-          .eq('rally_id', rallyId)
+          .single()
 
-        if (error) {
-          console.error('Error removing registered participant:', error)
-          throw error
+        if (fetchError) {
+          console.error('❌ Could not find registration:', fetchError)
+          throw new Error(`Registreeringu leidmine ebaõnnestus: ${fetchError.message}`)
         }
 
-        // Also clean up any existing rally_results entry
-        await supabase
+        console.log('📋 Found existing registration:', existingReg)
+
+        // Step 1: Delete any existing rally_results entry
+        const { error: resultsError, count: resultsCount } = await supabase
           .from('rally_results')
           .delete()
           .eq('rally_id', rallyId)
           .eq('user_id', participant.user_id)
+
+        if (resultsError) {
+          console.warn('⚠️ Error deleting rally_results:', resultsError)
+        } else {
+          console.log('✅ Rally results cleaned up, affected rows:', resultsCount)
+        }
+
+        // Step 2: Delete the registration using the correct approach
+        const { error: regError, count: regCount } = await supabase
+          .from('rally_registrations')
+          .delete()
+          .eq('id', participant.id)
+
+        if (regError) {
+          console.error('❌ Failed to delete registration:', regError)
+          throw new Error(`Registreeringu kustutamine ebaõnnestus: ${regError.message}`)
+        }
+        
+        console.log('✅ Registration deleted, affected rows:', regCount)
+
+        // Verify deletion worked
+        if (regCount === 0) {
+          throw new Error('Registreeringu kustutamine ebaõnnestus - ühtegi rida ei mõjutatud')
+        }
       }
 
       return participant.id
     },
-    onSuccess: (participantId) => {
-      // Remove from local state
+    onSuccess: (participantId, participant) => {
+      console.log('🎉 Deletion completed successfully for:', participant.player_name)
+      
+      // Remove from local state immediately
       onParticipantRemoved(participantId)
       
-      // Refresh participants list
+      // Force complete refresh of all related data
+      queryClient.removeQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
       queryClient.invalidateQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
-      console.log('✅ Participant removed successfully')
+      queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
+      
+      // Force refetch to ensure UI updates
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
+      }, 100)
+      
+      console.log('✅ All queries refreshed')
     },
-    onError: (error) => {
-      console.error('❌ Failed to remove participant:', error)
+    onError: (error, participant) => {
+      console.error('❌ Deletion failed for:', participant.player_name, error)
+      alert(`Osaleja "${participant.player_name}" eemaldamine ebaõnnestus: ${error.message}`)
     }
   })
 

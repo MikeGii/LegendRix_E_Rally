@@ -1,7 +1,20 @@
-// src/hooks/useResultsManagement.ts - CLEAN VERSION without any debug functionality
-
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+// src/hooks/useResultsManagement.ts - FINAL CLEAN VERSION
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+
+export interface RallyParticipant {
+  id: string
+  user_id: string | null
+  user_name: string
+  player_name: string
+  user_email: string
+  class_name: string
+  registration_date: string
+  overall_position: number | null
+  class_position: number | null
+  total_points: number | null
+  results_entered: boolean
+}
 
 export interface CompletedRally {
   id: string
@@ -9,181 +22,26 @@ export interface CompletedRally {
   description?: string
   competition_date: string
   participant_count: number
-  results_needed_since?: string
+  results_needed_since: string
   results_completed: boolean
-  game_name?: string
-  game_type_name?: string
-  events?: RallyEvent[]
+  results_approved: boolean  // ADD THIS LINE
+  game_name: string
+  game_type_name: string
 }
-
-export interface RallyEvent {
-  id: string
-  event_name: string
-  event_order: number
-  points_multiplier?: number
-}
-
-export interface RallyParticipant {
-  id: string
-  user_id: string
-  user_name: string
-  player_name: string
-  user_email: string
-  class_name: string
-  registration_date: string
-  overall_position?: number
-  class_position?: number  // NEW: Add class_position
-  total_points?: number
-  results_entered: boolean
-}
-
-// ============================================================================
-// QUERY KEYS
-// ============================================================================
 
 export const resultsKeys = {
   all: ['results'] as const,
-  completed_rallies: () => [...resultsKeys.all, 'completed-rallies'] as const,
+  completed_rallies: () => [...resultsKeys.all, 'completed'] as const,
   rally_participants: (rallyId: string) => [...resultsKeys.all, 'participants', rallyId] as const,
-  rally_results: (rallyId: string) => [...resultsKeys.all, 'results', rallyId] as const,
+  rally_events: (rallyId: string) => [...resultsKeys.all, 'events', rallyId] as const,
+  rally_results: (rallyId: string) => [...resultsKeys.all, 'rally-results', rallyId] as const,
 }
-
-// ============================================================================
-// GET COMPLETED RALLIES (need results entry)
-// ============================================================================
-
-export function useCompletedRallies() {
-  return useQuery({
-    queryKey: resultsKeys.completed_rallies(),
-    queryFn: async (): Promise<CompletedRally[]> => {
-      console.log('🔄 Loading rallies that need results entry...')
-
-      // Get rallies where competition_date + 12 hours < NOW
-      const twelveHoursAgo = new Date()
-      twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12)
-
-      const { data: rallies, error } = await supabase
-        .from('rallies')
-        .select(`
-          id,
-          name,
-          description,
-          competition_date,
-          is_active,
-          game:games(name),
-          game_type:game_types(name)
-        `)
-        .lte('competition_date', twelveHoursAgo.toISOString())
-        .order('competition_date', { ascending: false })
-
-      if (error) {
-        console.error('Error loading completed rallies:', error)
-        throw error
-      }
-
-      if (!rallies || rallies.length === 0) {
-        console.log('No completed rallies found')
-        return []
-      }
-
-      const rallyIds = rallies.map(r => r.id)
-
-      // Get participant counts from both real registrations and manual participants
-      const { data: realParticipants, error: realParticipantsError } = await supabase
-        .from('rally_registrations')
-        .select('rally_id')
-        .in('rally_id', rallyIds)
-        .in('status', ['registered', 'confirmed'])
-
-      if (realParticipantsError) {
-        console.error('Error loading participant counts:', realParticipantsError)
-      }
-
-      // Try to get manual participants count (gracefully handle if table doesn't exist)
-      let manualParticipants: any[] = []
-      try {
-        const { data: manualData, error: manualError } = await supabase
-          .from('rally_results')
-          .select('rally_id')
-          .in('rally_id', rallyIds)
-          .is('user_id', null)
-
-        if (!manualError && manualData) {
-          manualParticipants = manualData
-        }
-      } catch (error) {
-        console.log('Manual participants table not available')
-      }
-
-      // Count participants per rally
-      const counts: Record<string, number> = {}
-      rallyIds.forEach(id => counts[id] = 0)
-      
-      if (realParticipants) {
-        realParticipants.forEach(p => {
-          counts[p.rally_id] = (counts[p.rally_id] || 0) + 1
-        })
-      }
-      
-      manualParticipants.forEach(p => {
-        counts[p.rally_id] = (counts[p.rally_id] || 0) + 1
-      })
-
-      // Check if results status exists
-      const { data: resultsStatus, error: statusError } = await supabase
-        .from('rally_results_status')
-        .select('rally_id, results_needed_since, results_completed')
-        .in('rally_id', rallyIds)
-
-      if (statusError) {
-        console.error('Error loading results status:', statusError)
-      }
-
-      const statusMap: Record<string, any> = {}
-      if (resultsStatus) {
-        resultsStatus.forEach(s => {
-          statusMap[s.rally_id] = s
-        })
-      }
-
-      // Transform data
-      const transformedRallies: CompletedRally[] = rallies.map((rally: any) => {
-        const status = statusMap[rally.id]
-        
-        return {
-          id: rally.id,
-          name: rally.name,
-          description: rally.description,
-          competition_date: rally.competition_date,
-          participant_count: counts[rally.id] || 0,
-          results_needed_since: status?.results_needed_since || rally.competition_date,
-          results_completed: status?.results_completed || false,
-          game_name: rally.game?.name,
-          game_type_name: rally.game_type?.name
-        }
-      })
-
-      console.log(`✅ Loaded ${transformedRallies.length} completed rallies`)
-      return transformedRallies
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  })
-}
-
-// ============================================================================
-// GET RALLY PARTICIPANTS (real registrations + manual participants)
-// ============================================================================
-
-// Fixed useRallyParticipants function in useResultsManagement.ts
-// Replace the manual participants loading section
 
 export function useRallyParticipants(rallyId: string) {
   return useQuery({
     queryKey: resultsKeys.rally_participants(rallyId),
     queryFn: async (): Promise<RallyParticipant[]> => {
       if (!rallyId) return []
-
-      console.log('🔄 Loading rally participants with class positions...')
 
       // Get registered participants
       const { data: realParticipants, error: registeredError } = await supabase
@@ -195,7 +53,9 @@ export function useRallyParticipants(rallyId: string) {
           registration_date,
           users!inner(
             id,
-            player_name
+            player_name,
+            name,
+            email
           ),
           game_classes!inner(
             id,
@@ -204,6 +64,10 @@ export function useRallyParticipants(rallyId: string) {
         `)
         .eq('rally_id', rallyId)
         .in('status', ['registered', 'confirmed'])
+
+      if (registeredError) {
+        throw registeredError
+      }
 
       // Get manual participants
       const { data: manualParticipants, error: manualError } = await supabase
@@ -219,6 +83,10 @@ export function useRallyParticipants(rallyId: string) {
         `)
         .eq('rally_id', rallyId)
         .is('user_id', null)
+
+      if (manualError) {
+        throw manualError
+      }
 
       const allParticipants: RallyParticipant[] = []
 
@@ -253,13 +121,13 @@ export function useRallyParticipants(rallyId: string) {
           allParticipants.push({
             id: p.id,
             user_id: p.user_id,
-            user_name: '',
-            player_name: p.users.player_name,
-            user_email: '',
-            class_name: p.game_classes.name,
+            user_name: p.users?.name || '',
+            player_name: p.users?.player_name || '',
+            user_email: p.users?.email || '',
+            class_name: p.game_classes?.name || '',
             registration_date: p.registration_date,
             overall_position: result?.overall_position,
-            class_position: result?.class_position ? parseInt(result.class_position) : null, // CONVERT string to number
+            class_position: result?.class_position ? parseInt(result.class_position) : null,
             total_points: result?.total_points,
             results_entered: !!hasResultsEntered
           })
@@ -276,183 +144,261 @@ export function useRallyParticipants(rallyId: string) {
             id: mp.id,
             user_id: 'manual-participant',
             user_name: '',
-            player_name: mp.participant_name,
+            player_name: mp.participant_name || '',
             user_email: '',
             class_name: mp.class_name || 'Manual Entry',
             registration_date: '2024-01-01T00:00:00Z',
             overall_position: mp.overall_position,
-            class_position: mp.class_position ? parseInt(mp.class_position) : null, // CONVERT string to number
+            class_position: mp.class_position ? parseInt(mp.class_position) : null,
             total_points: mp.total_points,
             results_entered: !!hasResultsEntered
           })
         })
       }
 
-      console.log(`✅ Total participants loaded: ${allParticipants.length}`)
       return allParticipants
     },
     enabled: !!rallyId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 1000,
   })
 }
 
-// ============================================================================
-// GET RALLY EVENTS (for event-based scoring)
-// ============================================================================
+export function useCompletedRallies() {
+  return useQuery({
+    queryKey: resultsKeys.completed_rallies(),
+    queryFn: async (): Promise<CompletedRally[]> => {
+      // First, get all completed rallies
+      const { data: rallies, error } = await supabase
+        .from('rallies')
+        .select(`
+          id,
+          name,
+          description,
+          competition_date,
+          status,
+          game:games(name),
+          game_type:game_types(name)
+        `)
+        .eq('is_active', true)
+        .eq('status', 'completed')
+        .order('competition_date', { ascending: false })
+
+      if (error) {
+        throw error
+      }
+
+      if (!rallies || rallies.length === 0) {
+        return []
+      }
+
+      const rallyIds = rallies.map(rally => rally.id)
+
+      // Get participant counts
+      const { data: realParticipants } = await supabase
+        .from('rally_registrations')
+        .select('rally_id')
+        .in('rally_id', rallyIds)
+        .in('status', ['registered', 'confirmed'])
+
+      const { data: manualParticipants } = await supabase
+        .from('rally_results')
+        .select('rally_id')
+        .in('rally_id', rallyIds)
+        .is('user_id', null)
+
+      // Count participants per rally
+      const counts: Record<string, number> = {}
+      rallyIds.forEach(id => counts[id] = 0)
+      
+      if (realParticipants) {
+        realParticipants.forEach(p => {
+          counts[p.rally_id] = (counts[p.rally_id] || 0) + 1
+        })
+      }
+      
+      if (manualParticipants) {
+        manualParticipants.forEach(p => {
+          counts[p.rally_id] = (counts[p.rally_id] || 0) + 1
+        })
+      }
+
+      // Get results status - FIXED: Filter out approved rallies
+      const { data: resultsStatus } = await supabase
+        .from('rally_results_status')
+        .select('rally_id, results_needed_since, results_completed, results_approved')
+        .in('rally_id', rallyIds)
+
+      const statusMap: Record<string, any> = {}
+      if (resultsStatus) {
+        resultsStatus.forEach(s => {
+          statusMap[s.rally_id] = s
+        })
+      }
+
+      // Transform data and FILTER OUT approved rallies
+      const transformedRallies: CompletedRally[] = rallies
+        .map((rally: any) => {
+          const status = statusMap[rally.id]
+          
+          return {
+            id: rally.id,
+            name: rally.name,
+            description: rally.description,
+            competition_date: rally.competition_date,
+            participant_count: counts[rally.id] || 0,
+            results_needed_since: status?.results_needed_since || rally.competition_date,
+            results_completed: status?.results_completed || false,
+            results_approved: status?.results_approved || false, // Add this field
+            game_name: rally.game?.name,
+            game_type_name: rally.game_type?.name
+          }
+        })
+        // CRITICAL FIX: Only include rallies where results are NOT approved
+        .filter(rally => !rally.results_approved)
+
+      return transformedRallies
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useApprovedRallies() {
+  return useQuery({
+    queryKey: [...resultsKeys.completed_rallies(), 'approved'],
+    queryFn: async (): Promise<CompletedRally[]> => {
+      // Get rallies that have results_approved = true
+      const { data: approvedStatus, error: statusError } = await supabase
+        .from('rally_results_status')
+        .select('rally_id')
+        .eq('results_approved', true)
+
+      if (statusError) {
+        throw statusError
+      }
+
+      if (!approvedStatus || approvedStatus.length === 0) {
+        return []
+      }
+
+      const approvedRallyIds = approvedStatus.map(s => s.rally_id)
+
+      // Get the actual rally data for approved rallies
+      const { data: rallies, error } = await supabase
+        .from('rallies')
+        .select(`
+          id,
+          name,
+          description,
+          competition_date,
+          status,
+          game:games(name),
+          game_type:game_types(name)
+        `)
+        .in('id', approvedRallyIds)
+        .eq('is_active', true)
+        .eq('status', 'completed')
+        .order('competition_date', { ascending: false })
+
+      if (error) {
+        throw error
+      }
+
+      if (!rallies || rallies.length === 0) {
+        return []
+      }
+
+      const rallyIds = rallies.map(rally => rally.id)
+
+      // Get participant counts
+      const { data: realParticipants } = await supabase
+        .from('rally_registrations')
+        .select('rally_id')
+        .in('rally_id', rallyIds)
+        .in('status', ['registered', 'confirmed'])
+
+      const { data: manualParticipants } = await supabase
+        .from('rally_results')
+        .select('rally_id')
+        .in('rally_id', rallyIds)
+        .is('user_id', null)
+
+      // Count participants per rally
+      const counts: Record<string, number> = {}
+      rallyIds.forEach(id => counts[id] = 0)
+      
+      if (realParticipants) {
+        realParticipants.forEach(p => {
+          counts[p.rally_id] = (counts[p.rally_id] || 0) + 1
+        })
+      }
+      
+      if (manualParticipants) {
+        manualParticipants.forEach(p => {
+          counts[p.rally_id] = (counts[p.rally_id] || 0) + 1
+        })
+      }
+
+      // Get results status for approved rallies
+      const { data: resultsStatus } = await supabase
+        .from('rally_results_status')
+        .select('rally_id, results_needed_since, results_completed, results_approved')
+        .in('rally_id', rallyIds)
+
+      const statusMap: Record<string, any> = {}
+      if (resultsStatus) {
+        resultsStatus.forEach(s => {
+          statusMap[s.rally_id] = s
+        })
+      }
+
+      // Transform data - all these rallies have results_approved = true
+      const transformedRallies: CompletedRally[] = rallies.map((rally: any) => {
+        const status = statusMap[rally.id]
+        
+        return {
+          id: rally.id,
+          name: rally.name,
+          description: rally.description,
+          competition_date: rally.competition_date,
+          participant_count: counts[rally.id] || 0,
+          results_needed_since: status?.results_needed_since || rally.competition_date,
+          results_completed: status?.results_completed || false,
+          results_approved: true, // These are all approved
+          game_name: rally.game?.name,
+          game_type_name: rally.game_type?.name
+        }
+      })
+
+      return transformedRallies
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
 
 export function useRallyEvents(rallyId: string) {
   return useQuery({
-    queryKey: [...resultsKeys.all, 'events', rallyId],
-    queryFn: async (): Promise<RallyEvent[]> => {
+    queryKey: resultsKeys.rally_events(rallyId),
+    queryFn: async () => {
       if (!rallyId) return []
-
-      console.log('🔄 Loading events for rally:', rallyId)
 
       const { data: events, error } = await supabase
         .from('rally_events')
         .select(`
           id,
           event_order,
-          points_multiplier,
-          event:game_events(
-            id,
-            name
-          )
+          is_active
         `)
         .eq('rally_id', rallyId)
         .eq('is_active', true)
         .order('event_order', { ascending: true })
 
       if (error) {
-        console.error('Error loading rally events:', error)
-        throw error
+        return []
       }
 
-      if (!events) return []
-
-      const transformedEvents: RallyEvent[] = events
-        .filter((e: any) => e.event && e.event.id)
-        .map((e: any) => ({
-          id: e.id,
-          event_name: e.event.name,
-          event_order: e.event_order,
-          points_multiplier: e.points_multiplier
-        }))
-
-      console.log(`✅ Loaded ${transformedEvents.length} events`)
-      return transformedEvents
+      return events || []
     },
     enabled: !!rallyId,
     staleTime: 5 * 60 * 1000,
-  })
-}
-
-// ============================================================================
-// MUTATIONS FOR SAVING RESULTS
-// ============================================================================
-
-export function useSaveRallyResults() {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (params: {
-      rallyId: string
-      results: Array<{
-        userId: string
-        registrationId: string
-        overallPosition?: number
-        totalPoints: number
-        eventResults?: Array<{
-          rallyEventId: string
-          eventPoints: number
-          powerStagePoints?: number
-        }>
-      }>
-    }) => {
-      console.log('🔄 Saving rally results...', params)
-      
-      const { rallyId, results } = params
-      
-      // Get current user for tracking who entered results
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) {
-        throw new Error('User not authenticated')
-      }
-
-      // Save main results
-      for (const result of results) {
-        // Upsert rally result
-        const { error: resultError } = await supabase
-          .from('rally_results')
-          .upsert({
-            rally_id: rallyId,
-            user_id: result.userId,
-            registration_id: result.registrationId,
-            overall_position: result.overallPosition,
-            total_points: result.totalPoints,
-            results_entered_by: user.id,
-            results_entered_at: new Date().toISOString()
-          }, {
-            onConflict: 'rally_id,user_id'
-          })
-
-        if (resultError) {
-          console.error('Error saving rally result:', resultError)
-          throw resultError
-        }
-
-        // Save event results if provided
-        if (result.eventResults && result.eventResults.length > 0) {
-          const { data: rallyResult } = await supabase
-            .from('rally_results')
-            .select('id')
-            .eq('rally_id', rallyId)
-            .eq('user_id', result.userId)
-            .single()
-
-          if (rallyResult) {
-            for (const eventResult of result.eventResults) {
-              const { error: eventError } = await supabase
-                .from('event_results')
-                .upsert({
-                  rally_result_id: rallyResult.id,
-                  rally_event_id: eventResult.rallyEventId,
-                  event_points: eventResult.eventPoints,
-                  power_stage_points: eventResult.powerStagePoints || 0
-                }, {
-                  onConflict: 'rally_result_id,rally_event_id'
-                })
-
-              if (eventError) {
-                console.error('Error saving event result:', eventError)
-                throw eventError
-              }
-            }
-          }
-        }
-      }
-
-      // Update rally results status
-      const { error: statusError } = await supabase
-        .from('rally_results_status')
-        .upsert({
-          rally_id: rallyId,
-          results_completed: true,
-          completed_by: user.id,
-          completed_at: new Date().toISOString()
-        })
-
-      if (statusError) {
-        console.error('Error updating rally results status:', statusError)
-        throw statusError
-      }
-
-      return results.length
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: resultsKeys.rally_participants(variables.rallyId) })
-      queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
-      queryClient.invalidateQueries({ queryKey: resultsKeys.rally_results(variables.rallyId) })
-    }
   })
 }
