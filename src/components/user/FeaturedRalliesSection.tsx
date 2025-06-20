@@ -2,13 +2,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { RealRally } from '@/hooks/useOptimizedRallies'
+import { TransformedRally } from '@/hooks/useOptimizedRallies'
 import { RallyDisplay } from '@/components/rally/RallyDisplay'
 import { useAutoUpdateRallyStatuses } from '@/hooks/useOptimizedRallies'
 import { useEffect } from 'react'
 
 interface FeaturedRalliesSectionProps {
-  rallies: RealRally[]
+  rallies: TransformedRally[]
   isLoading: boolean
   canAccessRallies: boolean
 }
@@ -24,8 +24,8 @@ export function FeaturedRalliesSection({ rallies, isLoading, canAccessRallies }:
 
   if (!canAccessRallies || rallies.length === 0) return null
 
-  // FIXED: Proper navigation to registration page with prefilled rally
-  const handleRegister = (rally: RealRally) => {
+  // Proper navigation to registration page with prefilled rally
+  const handleRegister = (rally: TransformedRally) => {
     console.log('🔄 Navigating to registration for rally:', rally.name)
     router.push(`/registration?rallyId=${rally.id}`)
   }

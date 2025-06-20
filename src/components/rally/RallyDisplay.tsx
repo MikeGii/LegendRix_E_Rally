@@ -1,7 +1,7 @@
 // src/components/rally/RallyDisplay.tsx
 'use client'
 
-import { RealRally } from '@/hooks/useOptimizedRallies'
+import { TransformedRally } from '@/hooks/useOptimizedRallies'
 import { 
   canRegisterToRally, 
   getRallyStatus, 
@@ -10,10 +10,10 @@ import {
 } from '@/hooks/useOptimizedRallies'
 
 interface RallyDisplayProps {
-  rallies: RealRally[]
+  rallies: TransformedRally[]
   showLimit?: number
   showRegistration?: boolean
-  onRegister?: (rally: RealRally) => void
+  onRegister?: (rally: TransformedRally) => void
 }
 
 export function RallyDisplay({ rallies, showLimit, showRegistration = false, onRegister }: RallyDisplayProps) {
@@ -53,10 +53,10 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
     }
   }
 
-  const isRegistrationOpen = (rally: RealRally) => {
+  const isRegistrationOpen = (rally: TransformedRally) => {
     return canRegisterToRally({
-      competition_date: rally.rally_date || rally.competition_date,
-      registration_deadline: rally.registration_ending_date || rally.registration_deadline
+      competition_date: rally.competition_date,
+      registration_deadline: rally.registration_deadline
     })
   }
 
@@ -65,8 +65,8 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
       {displayRallies.map((rally) => {
         // FIXED: Calculate real-time status
         const currentStatus = getRallyStatus({
-          competition_date: rally.rally_date || rally.competition_date,
-          registration_deadline: rally.registration_ending_date || rally.registration_deadline
+          competition_date: rally.competition_date,
+          registration_deadline: rally.registration_deadline
         })
         const registrationAllowed = isRegistrationOpen(rally)
 
@@ -114,7 +114,7 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
               <div className="flex items-center space-x-2 text-sm">
                 <span className="text-slate-400">📅</span>
                 <span className="text-slate-300">
-                  {new Date(rally.rally_date || rally.competition_date).toLocaleDateString('et-EE', {
+                  {new Date(rally.competition_date).toLocaleDateString('et-EE', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
@@ -127,7 +127,7 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
               <div className="flex items-center space-x-2 text-sm">
                 <span className="text-slate-400">⏰</span>
                 <span className="text-slate-300">
-                  Registreerimine kuni {new Date(rally.registration_ending_date || rally.registration_deadline).toLocaleDateString('et-EE', {
+                  Registreerimine kuni {new Date(rally.registration_deadline).toLocaleDateString('et-EE', {
                     month: 'short',
                     day: 'numeric',
                     hour: '2-digit',
@@ -177,10 +177,10 @@ export function RallyDisplay({ rallies, showLimit, showRegistration = false, onR
             </div>
 
             {/* Rally Description */}
-            {(rally.description || rally.optional_notes) && (
+            {rally.description && (
               <div className="mb-6">
                 <p className="text-sm text-slate-400 line-clamp-2">
-                  {rally.description || rally.optional_notes}
+                  {rally.description}
                 </p>
               </div>
             )}

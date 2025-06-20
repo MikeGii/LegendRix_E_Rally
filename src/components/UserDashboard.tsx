@@ -12,6 +12,7 @@ import { UserRegistrationsSection } from '@/components/user/UserRegistrationsSec
 import { UserActionPrompt } from '@/components/user/UserActionPrompt'
 import { useEffect } from 'react'
 
+
 interface StatusMessage {
   type: 'success' | 'warning' | 'info'
   message: string

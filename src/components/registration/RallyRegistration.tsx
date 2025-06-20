@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { useUpcomingRallies } from '@/hooks/useOptimizedRallies'
+import { useAllRallies } from '@/hooks/useOptimizedRallies'
 import { RegistrationFormWithClasses } from './RegistrationFormWithClasses'
 import { RallyDetails } from './RallyDetails'
 import { TransformedRally } from '@/hooks/useOptimizedRallies'
@@ -26,7 +26,7 @@ export function RallyRegistration({ preselectedRallyId }: RallyRegistrationProps
   const targetRallyId = preselectedRallyId || rallyIdFromUrl
 
   // Get all rallies to find the selected one
-  const { data: allRallies = [] } = useUpcomingRallies(50)
+  const { data: allRallies = [] } = useAllRallies(50)
 
   useEffect(() => {
     if (targetRallyId && allRallies.length > 0) {
