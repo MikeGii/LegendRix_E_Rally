@@ -41,7 +41,7 @@ export const userStatsKeys = {
 }
 
 // ============================================================================
-// GET USER STATISTICS (FROM CACHE)
+// UPDATED MAIN STATISTICS HOOK (CACHE + SERVER-SIDE)
 // ============================================================================
 export function useUserStatistics(userId: string, options?: { 
   useCache?: boolean 
@@ -83,196 +83,79 @@ export function useUserStatistics(userId: string, options?: {
         console.log('⚠️ Cache miss or error, checking fallback options')
       }
 
-      // Fallback to live calculation or throw error
+      // Fallback to server-side calculation ONLY
       if (fallbackToLive) {
-        console.log('🔄 Falling back to live calculation...')
-        return calculateLiveStatistics(userId)
+        console.log('🔄 Falling back to server-side calculation...')
+        return calculateServerSideStatistics(userId)
       } else {
-        throw new Error('Statistics not available in cache')
+        throw new Error('Statistics not available in cache and fallback disabled')
       }
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes - cache is usually fresh
+    staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   })
 }
 
 // ============================================================================
-// GET LIVE STATISTICS (REAL-TIME CALCULATION)
+// SIMPLIFIED LIVE STATISTICS (SERVER-SIDE ONLY)
 // ============================================================================
 export function useUserStatisticsLive(userId: string) {
   return useQuery({
     queryKey: userStatsKeys.live(userId),
-    queryFn: () => calculateLiveStatistics(userId),
+    queryFn: () => calculateServerSideStatistics(userId),
     enabled: !!userId,
-    staleTime: 60 * 1000, // 1 minute - live data changes more frequently
+    staleTime: 60 * 1000, // 1 minute
   })
 }
 
-// Helper function for live statistics calculation (FIXED FOR ACTUAL SCHEMA)
-async function calculateLiveStatistics(userId: string): Promise<UserStatisticsData> {
-  console.log('🔄 Calculating live statistics for user:', userId)
+// Helper function - SERVER-SIDE ONLY
+async function calculateServerSideStatistics(userId: string): Promise<UserStatisticsData> {
+  console.log('🔄 Calculating statistics via server-side function for user:', userId)
 
   try {
-    // Use the database function for optimized calculation
+    // Use ONLY the database function - no fallback
     const { data, error } = await supabase
       .rpc('calculate_user_statistics', { target_user_id: userId })
 
     if (error) {
-      console.error('Error calling calculate_user_statistics function:', error)
-      // Fallback to manual calculation if function doesn't exist yet
-      return calculateManualStatistics(userId)
+      console.error('❌ Server-side statistics calculation failed:', error)
+      throw new Error(`Statistics calculation failed: ${error.message}`)
     }
 
-    console.log('✅ Live statistics calculated:', data)
+    if (!data) {
+      console.error('❌ No data returned from statistics function')
+      throw new Error('No statistics data returned from server')
+    }
+
+    console.log('✅ Server-side statistics calculated:', data)
     
     return {
-      trainings: data?.trainings || 0,
-      regularRallies: data?.regular_rallies || 0,
-      championshipRallies: data?.championship_rallies || 0,
-      totalParticipations: data?.total_participations || 0,
-      championshipTitles: data?.championship_titles || 0,
-      rallyWins: data?.rally_wins || 0,
-      podiumFinishes: data?.podium_finishes || 0,
+      trainings: data.trainings || 0,
+      regularRallies: data.regular_rallies || 0,
+      championshipRallies: data.championship_rallies || 0,
+      totalParticipations: data.total_participations || 0,
+      championshipTitles: data.championship_titles || 0,
+      rallyWins: data.rally_wins || 0,
+      podiumFinishes: data.podium_finishes || 0,
+      lastCalculatedAt: new Date().toISOString()
     }
   } catch (error) {
-    console.error('Error calculating live statistics:', error)
-    // Fallback to manual calculation
-    return calculateManualStatistics(userId)
-  }
-}
-
-// Fallback manual calculation with correct schema
-async function calculateManualStatistics(userId: string): Promise<UserStatisticsData> {
-  console.log('🔄 Using manual statistics calculation fallback')
-
-  // Get rally participations with game types
-  const { data: participations, error: participationError } = await supabase
-    .from('rally_registrations')
-    .select(`
-      id,
-      user_id,
-      rally_id,
-      status,
-      rallies!inner (
-        id,
-        name,
-        game_type_id,
-        status,
-        game_types!inner (
-          name
-        )
-      )
-    `)
-    .eq('user_id', userId)
-    .in('status', ['registered', 'confirmed'])
-
-  if (participationError) {
-    console.error('Error fetching participations:', participationError)
-    throw participationError
-  }
-
-  // Get rally results with game types and approval status
-  const { data: rallyResults, error: resultsError } = await supabase
-    .from('rally_results')
-    .select(`
-      id,
-      user_id,
-      rally_id,
-      overall_position,
-      class_position,
-      rallies!inner (
-        game_type_id,
-        game_types!inner (
-          name
-        )
-      ),
-      rally_results_status!inner (
-        results_approved
-      )
-    `)
-    .eq('user_id', userId)
-    .not('overall_position', 'is', null)
-
-  if (resultsError) {
-    console.error('Error fetching rally results:', resultsError)
-    // Don't throw, just proceed without results
-  }
-
-  // Get championship titles (if table exists)
-  let championshipTitles: any[] = []
-  try {
-    const { data: titles } = await supabase
-    .from('user_championship_titles')
-    .select(`
-        *,
-        championships!inner(status)
-    `)
-    .eq('user_id', userId)
-    .eq('is_completed', true)
-    .eq('final_position', 1)  // ✅ FIXED: Only 1st place wins
-
-    // ✅ FIXED: Filter only completed championships
-    const completedChampionshipWins = (titles || []).filter(title => 
-    (title.championships as any)?.status === 'completed'
-    )
-
-    championshipTitles = completedChampionshipWins
-  } catch (error) {
-    console.log('Championship titles table not available yet')
-  }
-
-  // Calculate statistics
-  const stats: UserStatisticsData = {
-    trainings: 0,
-    regularRallies: 0,
-    championshipRallies: 0,
-    totalParticipations: 0,
-    championshipTitles: 0,
-    rallyWins: 0,
-    podiumFinishes: 0
-  }
-
-  // Process participations
-  participations?.forEach((participation: any) => {
-    const gameTypeName = participation.rallies?.game_types?.name
+    console.error('❌ Fatal error in statistics calculation:', error)
     
-    if (gameTypeName === 'Treening') {
-      stats.trainings++
-    } else if (gameTypeName === 'Meistrivõistlused') {
-      stats.championshipRallies++
-    } else {
-      stats.regularRallies++
+    // Return zeros instead of trying client-side calculation
+    // This makes errors visible and forces fixing the server-side function
+    return {
+      trainings: 0,
+      regularRallies: 0,
+      championshipRallies: 0,
+      totalParticipations: 0,
+      championshipTitles: 0,
+      rallyWins: 0,
+      podiumFinishes: 0,
+      lastCalculatedAt: new Date().toISOString()
     }
-  })
-
-  // Process rally results
-  rallyResults?.forEach((result: any) => {
-    const gameTypeName = result.rallies?.game_types?.name
-    const resultsApproved = result.rally_results_status?.results_approved || false
-    const position = result.overall_position
-
-    // Count total participations (approved results only)
-    if (resultsApproved) {
-      stats.totalParticipations++
-    }
-
-    // Count wins and podiums (only for non-training events with approved results)
-    if (resultsApproved && gameTypeName !== 'Treening' && position) {
-      if (position === 1) {
-        stats.rallyWins++
-        stats.podiumFinishes++
-      } else if (position >= 2 && position <= 3) {
-        stats.podiumFinishes++
-      }
-    }
-  })
-
-  // Count championship titles
-  stats.championshipTitles = championshipTitles.length
-
-  console.log('✅ Manual statistics calculated:', stats)
-  return stats
+  }
 }
 
 // ============================================================================
