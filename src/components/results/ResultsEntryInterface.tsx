@@ -84,7 +84,8 @@ export function ResultsEntryInterface({
         className: participant.class_name,
         overallPosition: result?.overallPosition || null,
         classPosition: result?.classPosition || null,
-        totalPoints: result?.totalPoints || null
+        totalPoints: result?.totalPoints || null,
+        extraPoints: result?.extraPoints || null  // NEW: Include extra points
       }
     })
 
@@ -137,6 +138,28 @@ export function ResultsEntryInterface({
         isApproved={isResultsApproved}
         canApprove={canApprove}
       />
+
+      {/* Extra Points Info */}
+      {editMode && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+          <div className="flex items-start space-x-3">
+            <div className="w-6 h-6 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-amber-400 text-sm">!</span>
+            </div>
+            <div>
+              <h4 className="text-amber-400 font-medium mb-1">Lisa punktide süsteem</h4>
+              <p className="text-amber-200/80 text-sm">
+                <strong>Punktid:</strong> Tavalised rally punktid<br/>
+                <strong>Lisa punktid:</strong> Lisaklassifikatsioonide punktid (nt WRC powerstage)<br/>
+                <strong>Kokku punktid:</strong> Automaatselt arvutatud summa, mis määrab lõpliku positsiooni
+              </p>
+              <p className="text-amber-200/60 text-xs mt-2">
+                Võrdsete kokkupunktide korral määrab parema koha see, kellel on rohkem lisaklassifikatsiooni punkte.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Participant Form */}
       {showAddParticipant && (

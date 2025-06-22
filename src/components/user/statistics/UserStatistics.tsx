@@ -1,4 +1,4 @@
-// src/components/user/statistics/UserStatistics.tsx
+// Fixed UserStatistics component that accepts userId prop
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
@@ -92,6 +92,7 @@ export function UserStatistics({ userId, showRefreshButton = true }: UserStatist
     )
   }
 
+  // Show statistics
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
@@ -140,8 +141,8 @@ export function UserStatistics({ userId, showRefreshButton = true }: UserStatist
         </div>
       </div>
 
-      {/* Cache Status and Refresh */}
-      {statistics.lastCalculatedAt && (
+      {/* Cache Status and Refresh - Only show for own statistics */}
+      {canRefresh && statistics.lastCalculatedAt && (
         <div className="flex items-center justify-between p-2 bg-slate-800/20 border border-slate-700/20 rounded-lg">
           <span className="text-xs text-slate-500">
             Viimati uuendatud: {new Date(statistics.lastCalculatedAt).toLocaleDateString('et-EE')}

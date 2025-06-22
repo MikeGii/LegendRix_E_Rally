@@ -8,6 +8,8 @@ export interface ParticipantResult {
   overallPosition: number | null
   classPosition: number | null
   totalPoints: number | null
+  extraPoints: number | null  // NEW: Extra points (powerstage, etc.)
+  overallPoints: number       // NEW: Calculated total (totalPoints + extraPoints)
 }
 
 export interface ManualParticipant {
@@ -35,13 +37,19 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
       const initialResults: Record<string, ParticipantResult> = {}
       
       participants.forEach(participant => {
+        const totalPoints = participant.total_points || null
+        const extraPoints = participant.extra_points || null  // 👈 This should now work
+        const overallPoints = (totalPoints || 0) + (extraPoints || 0)
+        
         initialResults[participant.id] = {
           participantId: participant.id,
           playerName: participant.player_name || participant.participant_name,
           className: participant.class_name,
           overallPosition: participant.overall_position || null,
           classPosition: participant.class_position ? parseInt(participant.class_position) : null,
-          totalPoints: participant.total_points || null
+          totalPoints: totalPoints,
+          extraPoints: extraPoints,
+          overallPoints: overallPoints
         }
       })
       
@@ -60,13 +68,25 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
   }, [rallyClasses, newParticipant.className])
 
   const updateResult = (participantId: string, field: keyof ParticipantResult, value: any) => {
-    setResults(prev => ({
-      ...prev,
-      [participantId]: {
-        ...prev[participantId],
-        [field]: value
+    setResults(prev => {
+      const updated = {
+        ...prev,
+        [participantId]: {
+          ...prev[participantId],
+          [field]: value
+        }
       }
-    }))
+      
+      // Automatically recalculate overall points when totalPoints or extraPoints change
+      if (field === 'totalPoints' || field === 'extraPoints') {
+        const result = updated[participantId]
+        const totalPoints = result.totalPoints || 0
+        const extraPoints = result.extraPoints || 0
+        updated[participantId].overallPoints = totalPoints + extraPoints
+      }
+      
+      return updated
+    })
   }
 
   const removeParticipantFromState = (participantId: string) => {

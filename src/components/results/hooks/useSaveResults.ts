@@ -12,6 +12,7 @@ interface SaveResultsData {
     overallPosition: number | null
     classPosition: number | null
     totalPoints: number | null
+    extraPoints: number | null  // NEW: Extra points
   }>
 }
 
@@ -57,7 +58,7 @@ export function useSaveResults({ rallyId, onSaveSuccess }: UseSaveResultsProps) 
         const isManualParticipant = participant.user_id === 'manual-participant'
         
         // Only save results if participant has positions/points
-        if (!result.classPosition && !result.totalPoints) {
+        if (!result.classPosition && !result.totalPoints && !result.extraPoints) {
           continue
         }
 
@@ -81,6 +82,7 @@ export function useSaveResults({ rallyId, onSaveSuccess }: UseSaveResultsProps) 
               overall_position: result.overallPosition,
               class_position: result.classPosition,
               total_points: result.totalPoints,
+              extra_points: result.extraPoints,  // NEW: Save extra points
               results_entered_by: user.id,
               results_entered_at: currentTime,
               updated_at: currentTime
@@ -110,33 +112,37 @@ export function useSaveResults({ rallyId, onSaveSuccess }: UseSaveResultsProps) 
               overall_position: result.overallPosition,
               class_position: result.classPosition,
               total_points: result.totalPoints,
+              extra_points: result.extraPoints,  // NEW: Save extra points
               results_entered_by: user.id,
               results_entered_at: currentTime,
               updated_at: currentTime
             }
 
-            const { data: existing } = await supabase
+            // Check if result already exists
+            const { data: existingResult } = await supabase
               .from('rally_results')
               .select('id')
               .eq('rally_id', rallyId)
               .eq('user_id', participant.user_id)
               .single()
 
-            if (existing) {
+            if (existingResult) {
+              // Update existing result
               const { error } = await supabase
                 .from('rally_results')
                 .update(rallyResultData)
-                .eq('id', existing.id)
+                .eq('id', existingResult.id)
               if (error) throw error
             } else {
+              // Insert new result
               const { error } = await supabase
                 .from('rally_results')
                 .insert(rallyResultData)
               if (error) throw error
             }
           }
-
         } catch (error) {
+          console.error(`Error saving result for participant ${result.playerName}:`, error)
           throw error
         }
       }
