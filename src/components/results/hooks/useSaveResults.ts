@@ -1,4 +1,4 @@
-// src/components/results/hooks/useSaveResults.ts - SIMPLIFIED: Removed participated logic, added approve
+// src/components/results/hooks/useSaveResults.ts - DEBUG VERSION with extensive logging
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { resultsKeys } from '@/hooks/useResultsManagement'
@@ -12,7 +12,7 @@ interface SaveResultsData {
     overallPosition: number | null
     classPosition: number | null
     totalPoints: number | null
-    extraPoints: number | null  // NEW: Extra points
+    extraPoints: number | null
   }>
 }
 
@@ -26,128 +26,185 @@ export function useSaveResults({ rallyId, onSaveSuccess }: UseSaveResultsProps) 
 
   const saveResultsMutation = useMutation({
     mutationFn: async ({ rallyId, allParticipants }: SaveResultsData) => {
+      console.log('🚀 === SAVE RESULTS DEBUG START ===')
+      console.log('📊 Rally ID:', rallyId)
+      console.log('👥 Total participants to process:', allParticipants.length)
+      
+      // Log all participant data being passed in
+      console.log('📋 Participants data:')
+      allParticipants.forEach((participant, index) => {
+        console.log(`  ${index + 1}. ${participant.playerName}:`, {
+          id: participant.participantId,
+          overallPosition: participant.overallPosition,
+          classPosition: participant.classPosition,
+          totalPoints: participant.totalPoints,
+          extraPoints: participant.extraPoints,
+          className: participant.className
+        })
+      })
+      
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) {
+        console.error('❌ User authentication failed:', userError)
         throw new Error('User not authenticated')
       }
+      console.log('✅ User authenticated:', user.email)
 
       const currentTime = new Date().toISOString()
+      let savedCount = 0
+      let skippedCount = 0
+      let errorCount = 0
 
-      // Get all participants to match with registrations
-      const { data: participants, error: participantsError } = await supabase
-        .from('rally_registrations')
-        .select(`
-          id,
-          user_id,
-          class_id,
-          users!inner(player_name),
-          game_classes!inner(name)
-        `)
-        .eq('rally_id', rallyId)
-        .in('status', ['registered', 'confirmed'])
-
-      if (participantsError) {
-        throw participantsError
-      }
-
-      // Save rally results for all participants
-      for (const result of allParticipants) {
-        const participant = participants.find(p => p.id === result.participantId)
-        if (!participant) continue
-
-        const isManualParticipant = participant.user_id === 'manual-participant'
-        
-        // Only save results if participant has positions/points
-        if (!result.classPosition && !result.totalPoints && !result.extraPoints) {
-          continue
-        }
-
+      // Process each participant individually
+      for (let index = 0; index < allParticipants.length; index++) {
+        const result = allParticipants[index]
         try {
+          console.log(`\n--- Processing ${index + 1}/${allParticipants.length}: ${result.playerName} ---`)
+          
+          // Check if participant has any results to save
+          const hasResults = result.overallPosition !== null || 
+                           result.classPosition !== null || 
+                           (result.totalPoints !== null && result.totalPoints !== 0) || 
+                           (result.extraPoints !== null && result.extraPoints !== 0)
+
+          console.log('🔍 Results check:', {
+            overallPosition: result.overallPosition,
+            classPosition: result.classPosition,
+            totalPoints: result.totalPoints,
+            extraPoints: result.extraPoints,
+            hasResults: hasResults
+          })
+
+          if (!hasResults) {
+            console.log('⏭️ Skipping - no results to save')
+            skippedCount++
+            continue
+          }
+
+          // Look up the participant in the database
+          console.log('🔍 Looking up participant ID:', result.participantId)
+          const { data: currentParticipant, error: lookupError } = await supabase
+            .from('rally_results')
+            .select('id, user_id, participant_name, registration_id, total_points, extra_points, overall_position, class_position')
+            .eq('id', result.participantId)
+            .single()
+
+          if (lookupError) {
+            console.error('❌ Database lookup failed:', lookupError)
+            throw new Error(`Could not find participant ${result.playerName}: ${lookupError.message}`)
+          }
+
+          console.log('📊 Current DB data:', currentParticipant)
+          
+          const isManualParticipant = currentParticipant.user_id === null
+          console.log('🏷️ Participant type:', isManualParticipant ? 'Manual' : 'Registered')
+
           if (isManualParticipant) {
-            // Manual participants: save to rally_results
-            const { data: existing } = await supabase
-              .from('rally_results')
-              .select('id')
-              .eq('rally_id', rallyId)
-              .eq('participant_name', result.playerName)
-              .is('user_id', null)
-              .single()
-
-              const rallyResultData = {
-                rally_id: rallyId,
-                user_id: null,
-                registration_id: null,
-                participant_name: result.playerName,
-                class_name: result.className,
-                overall_position: result.overallPosition,
-                class_position: result.classPosition,
-                total_points: result.totalPoints,
-                extra_points: result.extraPoints || 0,  // 👈 ADD THIS LINE with default 0
-                results_entered_by: user.id,
-                results_entered_at: currentTime,
-                updated_at: currentTime
-              }
-
-            if (existing) {
-              const { error } = await supabase
-                .from('rally_results')
-                .update(rallyResultData)
-                .eq('id', existing.id)
-              if (error) throw error
-            } else {
-              const { error } = await supabase
-                .from('rally_results')
-                .insert(rallyResultData)
-              if (error) throw error
-            }
-
-          } else {
-            // Registered participants: save to rally_results
-            const rallyResultData = {
-              rally_id: rallyId,
-              user_id: participant.user_id,
-              registration_id: participant.id,
-              participant_name: null,
-              class_name: null,
+            // For manual participants: Update existing rally_results record
+            const updateData = {
               overall_position: result.overallPosition,
               class_position: result.classPosition,
               total_points: result.totalPoints,
-              extra_points: result.extraPoints || 0,  // 👈 ADD THIS LINE with default 0
+              extra_points: result.extraPoints || 0,
               results_entered_by: user.id,
               results_entered_at: currentTime,
               updated_at: currentTime
             }
 
-            // Check if result already exists
-            const { data: existingResult } = await supabase
+            console.log('📝 Preparing to update manual participant with data:', updateData)
+
+            const { data: updateResult, error: updateError } = await supabase
+              .from('rally_results')
+              .update(updateData)
+              .eq('id', result.participantId)
+              .select() // Get the updated data back
+
+            if (updateError) {
+              console.error('❌ Update failed:', updateError)
+              throw new Error(`Failed to update manual participant ${result.playerName}: ${updateError.message}`)
+            }
+
+            console.log('✅ Update successful! Updated data:', updateResult)
+
+          } else {
+            // For registered participants: Check if rally_results record exists, create/update as needed
+            console.log('🔍 Checking for existing registered participant result...')
+            const { data: existingResult, error: existingError } = await supabase
               .from('rally_results')
               .select('id')
               .eq('rally_id', rallyId)
-              .eq('user_id', participant.user_id)
-              .single()
+              .eq('user_id', currentParticipant.user_id)
+              .maybeSingle()
+
+            if (existingError) {
+              console.error('❌ Error checking existing result:', existingError)
+              throw new Error(`Error checking existing results for ${result.playerName}: ${existingError.message}`)
+            }
+
+            console.log('📊 Existing result check:', existingResult)
+
+            const resultData = {
+              rally_id: rallyId,
+              user_id: currentParticipant.user_id,
+              registration_id: currentParticipant.registration_id,
+              participant_name: null, // NULL for registered participants
+              class_name: null, // NULL for registered participants (use registration data)
+              overall_position: result.overallPosition,
+              class_position: result.classPosition,
+              total_points: result.totalPoints,
+              extra_points: result.extraPoints || 0,
+              results_entered_by: user.id,
+              results_entered_at: currentTime,
+              updated_at: currentTime
+            }
 
             if (existingResult) {
-              // Update existing result
-              const { error } = await supabase
+              // Update existing
+              console.log('📝 Updating existing registered participant result')
+              const { data: updateResult, error: updateError } = await supabase
                 .from('rally_results')
-                .update(rallyResultData)
+                .update(resultData)
                 .eq('id', existingResult.id)
-              if (error) throw error
+                .select()
+
+              if (updateError) {
+                console.error('❌ Update failed:', updateError)
+                throw new Error(`Failed to update registered participant ${result.playerName}: ${updateError.message}`)
+              }
+              console.log('✅ Update successful!', updateResult)
             } else {
-              // Insert new result
-              const { error } = await supabase
+              // Create new
+              console.log('📝 Creating new registered participant result')
+              const { data: insertResult, error: insertError } = await supabase
                 .from('rally_results')
-                .insert(rallyResultData)
-              if (error) throw error
+                .insert(resultData)
+                .select()
+
+              if (insertError) {
+                console.error('❌ Insert failed:', insertError)
+                throw new Error(`Failed to create result for registered participant ${result.playerName}: ${insertError.message}`)
+              }
+              console.log('✅ Insert successful!', insertResult)
             }
           }
+
+          savedCount++
+          console.log(`✅ SUCCESS: Saved result for ${result.playerName}`)
+
         } catch (error) {
-          console.error(`Error saving result for participant ${result.playerName}:`, error)
-          throw error
+          console.error(`❌ ERROR processing ${result.playerName}:`, error)
+          errorCount++
+          throw error // Re-throw to stop the whole operation
         }
       }
 
+      console.log(`\n🎯 FINAL SUMMARY:`)
+      console.log(`  ✅ Saved: ${savedCount}`)
+      console.log(`  ⏭️ Skipped: ${skippedCount}`)
+      console.log(`  ❌ Errors: ${errorCount}`)
+
       // Update rally results status to completed
+      console.log('\n🔄 Updating rally status...')
       const { error: statusError } = await supabase
         .from('rally_results_status')
         .upsert({
@@ -161,19 +218,26 @@ export function useSaveResults({ rallyId, onSaveSuccess }: UseSaveResultsProps) 
         })
 
       if (statusError) {
-        throw statusError
+        console.error('❌ Rally status update failed:', statusError)
+        throw new Error(`Failed to update rally status: ${statusError.message}`)
       }
+      
+      console.log('✅ Rally status updated successfully')
+      console.log('🏁 === SAVE RESULTS DEBUG END ===\n')
 
-      return true
+      return { savedCount, skippedCount, errorCount }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log('🎉 Save mutation completed successfully:', result)
       queryClient.invalidateQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
       queryClient.invalidateQueries({ queryKey: [...resultsKeys.rally_results(rallyId), 'status'] })
       queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
       onSaveSuccess?.()
+      alert(`Results saved successfully! ${result.savedCount} participants saved, ${result.skippedCount} skipped.`)
     },
     onError: (error) => {
-      console.error('Failed to save results:', error)
+      console.error('❌ Save mutation failed:', error)
+      alert(`Failed to save results: ${error.message}`)
     }
   })
 
@@ -205,9 +269,11 @@ export function useSaveResults({ rallyId, onSaveSuccess }: UseSaveResultsProps) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...resultsKeys.rally_results(rallyId), 'status'] })
       queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
+      queryClient.invalidateQueries({ queryKey: ['approved-rallies'] })
     },
     onError: (error) => {
       console.error('Failed to approve results:', error)
+      alert(`Failed to approve results: ${error.message}`)
     }
   })
 
