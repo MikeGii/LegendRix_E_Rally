@@ -49,7 +49,7 @@ export default function SponsorsPage() {
 
   const [newSupporter, setNewSupporter] = useState({
     supporter_name: '',
-    donation_amount: '',
+    donation_amount: '0', // Change from '' to '0'
     donation_month: new Date().getMonth() + 1,
     donation_year: new Date().getFullYear()
   })
