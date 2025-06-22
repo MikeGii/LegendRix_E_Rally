@@ -1,4 +1,4 @@
-// src/components/user/settings/ProfileTab.tsx - Updated version
+// Fixed ProfileTab component that passes userId to child components
 'use client'
 
 import { useState } from 'react'
@@ -30,11 +30,13 @@ export function ProfileTab() {
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'statistics':
-        return <UserStatistics />
+        // Pass user's own ID and allow refresh button
+        return <UserStatistics userId={user?.id} showRefreshButton={true} />
       case 'achievements':
-        return <UserAchievements />
+        // Pass user's own ID
+        return <UserAchievements userId={user?.id} />
       default:
-        return <UserStatistics />
+        return <UserStatistics userId={user?.id} showRefreshButton={true} />
     }
   }
 
@@ -94,14 +96,14 @@ export function ProfileTab() {
       </div>
 
       {/* Active Section Content */}
-      <div className="bg-slate-900/20 backdrop-blur-xl border border-slate-700/30 rounded-2xl p-4">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-6 h-6 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg flex items-center justify-center">
-            <span className="text-blue-300 text-xs">
+      <div className="bg-slate-900/20 backdrop-blur-xl border border-slate-700/30 rounded-2xl p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="w-8 h-8 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg flex items-center justify-center">
+            <span className="text-blue-300 text-sm">
               {profileSections.find(s => s.id === activeSection)?.icon}
             </span>
           </div>
-          <h5 className="text-base font-semibold text-white">
+          <h5 className="text-lg font-semibold text-white">
             {profileSections.find(s => s.id === activeSection)?.title}
           </h5>
         </div>

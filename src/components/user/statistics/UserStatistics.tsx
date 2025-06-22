@@ -4,23 +4,36 @@
 import { useAuth } from '@/components/AuthProvider'
 import { useUserStatistics, useUpdateUserStatistics } from '@/hooks/useUserStatistics'
 
-export function UserStatistics() {
+interface UserStatisticsProps {
+  userId?: string // NEW: Allow passing userId to view any user's statistics
+  showRefreshButton?: boolean // NEW: Option to hide refresh button for public views
+}
+
+export function UserStatistics({ userId, showRefreshButton = true }: UserStatisticsProps) {
   const { user } = useAuth()
+  
+  // Use passed userId or fall back to current user's ID
+  const targetUserId = userId || user?.id || ''
+  
+  // Only allow refresh for current user's own statistics
+  const canRefresh = showRefreshButton && user?.id === targetUserId
+  
   const { 
     data: statistics, 
     isLoading, 
     error, 
     refetch 
-  } = useUserStatistics(user?.id || '')
+  } = useUserStatistics(targetUserId)
 
   const updateStatsMutation = useUpdateUserStatistics()
 
   const handleRefreshStats = () => {
-    if (user?.id) {
-      updateStatsMutation.mutate(user.id)
+    if (canRefresh && targetUserId) {
+      updateStatsMutation.mutate(targetUserId)
     }
   }
 
+  // Show loading state
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -44,29 +57,33 @@ export function UserStatistics() {
     )
   }
 
+  // Show error state
   if (error) {
     return (
       <div className="bg-red-900/20 border border-red-700/30 rounded-lg p-4 text-center">
         <span className="text-red-300 text-sm">❌ Statistika laadimine ebaõnnestus</span>
-        <div className="flex justify-center space-x-2 mt-2">
-          <button
-            onClick={() => refetch()}
-            className="text-xs text-red-200 hover:text-red-100 underline"
-          >
-            Proovi uuesti
-          </button>
-          <button
-            onClick={handleRefreshStats}
-            disabled={updateStatsMutation.isPending}
-            className="text-xs text-red-200 hover:text-red-100 underline disabled:opacity-50"
-          >
-            Värskenda cache
-          </button>
-        </div>
+        {canRefresh && (
+          <div className="flex justify-center space-x-2 mt-2">
+            <button
+              onClick={() => refetch()}
+              className="text-xs text-red-200 hover:text-red-100 underline"
+            >
+              Proovi uuesti
+            </button>
+            <button
+              onClick={handleRefreshStats}
+              disabled={updateStatsMutation.isPending}
+              className="text-xs text-red-200 hover:text-red-100 underline disabled:opacity-50"
+            >
+              Värskenda cache
+            </button>
+          </div>
+        )}
       </div>
     )
   }
 
+  // Show no data state
   if (!statistics) {
     return (
       <div className="bg-slate-800/20 border border-slate-700/30 rounded-lg p-4 text-center">
