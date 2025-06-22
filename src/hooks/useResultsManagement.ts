@@ -13,6 +13,7 @@ export interface RallyParticipant {
   overall_position: number | null
   class_position: number | null
   total_points: number | null
+  extra_points: number | null
   results_entered: boolean
 }
 
@@ -79,6 +80,7 @@ export function useRallyParticipants(rallyId: string) {
           overall_position,
           class_position,
           total_points,
+          extra_points,
           results_entered_at
         `)
         .eq('rally_id', rallyId)
@@ -98,7 +100,7 @@ export function useRallyParticipants(rallyId: string) {
         if (participantUserIds.length > 0) {
           const { data: results, error: resultsError } = await supabase
             .from('rally_results')
-            .select('user_id, overall_position, class_position, total_points, results_entered_at')
+            .select('user_id, overall_position, class_position, total_points, extra_points, results_entered_at')
             .eq('rally_id', rallyId)
             .in('user_id', participantUserIds)
 
@@ -129,6 +131,7 @@ export function useRallyParticipants(rallyId: string) {
             overall_position: result?.overall_position,
             class_position: result?.class_position ? parseInt(result.class_position) : null,
             total_points: result?.total_points,
+            extra_points: result?.extra_points,
             results_entered: !!hasResultsEntered
           })
         })
@@ -151,6 +154,7 @@ export function useRallyParticipants(rallyId: string) {
             overall_position: mp.overall_position,
             class_position: mp.class_position ? parseInt(mp.class_position) : null,
             total_points: mp.total_points,
+            extra_points: mp.extra_points,
             results_entered: !!hasResultsEntered
           })
         })

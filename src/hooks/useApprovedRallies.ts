@@ -24,6 +24,8 @@ export interface ApprovedRallyResult {
   overall_position: number
   class_position: number | null
   total_points: number
+  extra_points: number            // 👈 ADD THIS LINE
+  overall_points: number          // 👈 ADD THIS LINE (calculated)
   registration_date?: string
 }
 
@@ -84,7 +86,8 @@ export function useApprovedRallyResults(rallyId: string) {
           class_name,
           overall_position,
           class_position,
-          total_points
+          total_points,
+          extra_points
         `)
         .eq('rally_id', rallyId)
         .not('class_position', 'is', null)
@@ -200,6 +203,8 @@ export function useApprovedRallyResults(rallyId: string) {
           overall_position: result.overall_position || 0,
           class_position: result.class_position ? parseInt(result.class_position.toString()) : null,
           total_points: result.total_points || 0,
+          extra_points: result.extra_points || 0,
+          overall_points: (result.total_points || 0) + (result.extra_points || 0),
           registration_date: registrationDate
         }
       })

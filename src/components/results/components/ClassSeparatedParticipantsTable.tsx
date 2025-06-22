@@ -110,12 +110,29 @@ export function ClassSeparatedParticipantsTable({
             <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-800/50 border-b border-slate-700/50">
-                      <th className="text-left p-4 text-slate-300 font-medium">Koht (klass)</th>
-                      <th className="text-left p-4 text-slate-300 font-medium">Mängija</th>
-                      <th className="text-left p-4 text-slate-300 font-medium">Punktid</th>
-                      {editMode && <th className="text-center p-4 text-slate-300 font-medium">Tegevused</th>}
+                  <thead className="bg-slate-700/50">
+                    <tr>
+                      <th className="sticky left-0 z-10 bg-slate-700/50 px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase border-r border-slate-600">
+                        Koht
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-slate-300 uppercase">
+                        Mängija
+                      </th>
+                      <th className="px-3 py-2 text-center text-xs font-medium text-slate-300 uppercase">
+                        Punktid
+                      </th>
+                      {/* 👇 ADD THESE TWO NEW COLUMNS */}
+                      <th className="px-3 py-2 text-center text-xs font-medium text-slate-300 uppercase">
+                        Lisa punktid
+                      </th>
+                      <th className="px-3 py-2 text-center text-xs font-medium text-slate-300 uppercase">
+                        Kokku punktid
+                      </th>
+                      {editMode && (
+                        <th className="px-3 py-2 text-center text-xs font-medium text-slate-300 uppercase">
+                          Tegevused
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -158,8 +175,8 @@ export function ClassSeparatedParticipantsTable({
                             </div>
                           </td>
 
-                          {/* Points */}
-                          <td className="p-4">
+                          {/* Existing Points column */}
+                          <td className="px-3 py-2 text-center">
                             {editMode ? (
                               <input
                                 type="number"
@@ -167,7 +184,7 @@ export function ClassSeparatedParticipantsTable({
                                 step="0.01"
                                 value={result?.totalPoints || ''}
                                 onChange={(e) => onUpdateResult(participant.id, 'totalPoints', e.target.value ? parseFloat(e.target.value) : null)}
-                                className="w-24 px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-20 px-2 py-1 bg-slate-700/50 border border-slate-600/50 rounded text-white text-center focus:ring-2 focus:ring-blue-500"
                                 placeholder="0"
                               />
                             ) : (
@@ -175,6 +192,40 @@ export function ClassSeparatedParticipantsTable({
                                 {result?.totalPoints || 0}
                               </span>
                             )}
+                          </td>
+
+                          {/* 👇 ADD THIS NEW EXTRA POINTS COLUMN */}
+                          <td className="px-3 py-2 text-center">
+                            {editMode ? (
+                              <input
+                                type="number"
+                                min="0" 
+                                step="0.01"
+                                value={result?.extraPoints || ''}
+                                onChange={(e) => onUpdateResult(participant.id, 'extraPoints', e.target.value ? parseFloat(e.target.value) : null)}
+                                className="w-20 px-2 py-1 bg-slate-700/50 border border-yellow-500/50 rounded text-white text-center focus:ring-2 focus:ring-yellow-500"
+                                placeholder="0"
+                                title="Lisa punktid (nt powerstage)"
+                              />
+                            ) : (
+                              <span className="text-yellow-400 font-medium">
+                                {result?.extraPoints || 0}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 👇 ADD THIS NEW OVERALL POINTS COLUMN */}
+                          <td className="px-3 py-2 text-center">
+                            <div className="flex flex-col">
+                              <span className="text-green-400 font-bold">
+                                {result?.overallPoints || 0}
+                              </span>
+                              {(result?.totalPoints || 0) > 0 || (result?.extraPoints || 0) > 0 ? (
+                                <span className="text-xs text-slate-400">
+                                  {result?.totalPoints || 0} + {result?.extraPoints || 0}
+                                </span>
+                              ) : null}
+                            </div>
                           </td>
 
                           {/* Actions */}

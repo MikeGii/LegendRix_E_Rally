@@ -8,7 +8,7 @@ export function calculatePositionsFromPoints(
 ) {
   // Only calculate positions for participants with points > 0
   const participantsWithPoints = Object.values(results).filter(result => 
-    result.totalPoints && result.totalPoints > 0
+    result.overallPoints && result.overallPoints > 0
   )
 
   if (participantsWithPoints.length === 0) {
@@ -32,6 +32,7 @@ export function clearParticipantResults(
   updateResult(participantId, 'overallPosition', null)
   updateResult(participantId, 'classPosition', null)
   updateResult(participantId, 'totalPoints', null)
+  updateResult(participantId, 'extraPoints', null)
 }
 
 export function sortParticipantsByResults(
@@ -42,12 +43,18 @@ export function sortParticipantsByResults(
     const aResult = results[a.id]
     const bResult = results[b.id]
     
-    // 1. Participants with points > 0 (by points DESC)
-    const aHasPoints = aResult?.totalPoints > 0
-    const bHasPoints = bResult?.totalPoints > 0
+    // 1. Participants with overall points > 0 (by overall points DESC, then extra points DESC)
+    const aHasPoints = aResult?.overallPoints > 0
+    const bHasPoints = bResult?.overallPoints > 0
     
     if (aHasPoints && bHasPoints) {
-      return (bResult.totalPoints || 0) - (aResult.totalPoints || 0)
+      // Sort by overall points first
+      const overallPointsDiff = (bResult.overallPoints || 0) - (aResult.overallPoints || 0)
+      if (overallPointsDiff !== 0) {
+        return overallPointsDiff
+      }
+      // Tiebreaker: extra points (higher is better)
+      return (bResult.extraPoints || 0) - (aResult.extraPoints || 0)
     }
     if (aHasPoints && !bHasPoints) return -1
     if (!aHasPoints && bHasPoints) return 1

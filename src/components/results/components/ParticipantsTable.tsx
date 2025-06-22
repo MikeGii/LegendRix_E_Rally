@@ -47,17 +47,22 @@ export function ParticipantsTable({
     )
   }
 
-  // Sort participants for display
+  // Sort participants for display using overall points and extra points tiebreaker
   const sortedParticipants = [...participants].sort((a, b) => {
     const aResult = results[a.id]
     const bResult = results[b.id]
     
-    // Participants with points, sorted by total points (descending)
-    const aHasPoints = aResult?.totalPoints > 0
-    const bHasPoints = bResult?.totalPoints > 0
+    // Participants with overall points, sorted by overall points (descending), then extra points (descending)
+    const aHasPoints = aResult?.overallPoints > 0
+    const bHasPoints = bResult?.overallPoints > 0
     
     if (aHasPoints && bHasPoints) {
-      return (bResult.totalPoints || 0) - (aResult.totalPoints || 0)
+      const overallPointsDiff = (bResult.overallPoints || 0) - (aResult.overallPoints || 0)
+      if (overallPointsDiff !== 0) {
+        return overallPointsDiff
+      }
+      // Tiebreaker: extra points (higher is better)
+      return (bResult.extraPoints || 0) - (aResult.extraPoints || 0)
     }
     if (aHasPoints && !bHasPoints) return -1
     if (!aHasPoints && bHasPoints) return 1
@@ -77,6 +82,8 @@ export function ParticipantsTable({
               <th className="text-left p-4 text-slate-300 font-medium">Mängija</th>
               <th className="text-left p-4 text-slate-300 font-medium">Klass</th>
               <th className="text-left p-4 text-slate-300 font-medium">Punktid</th>
+              <th className="text-left p-4 text-slate-300 font-medium">Lisa punktid</th>
+              <th className="text-left p-4 text-slate-300 font-medium">Kokku punktid</th>
               {editMode && <th className="text-center p-4 text-slate-300 font-medium">Tegevused</th>}
             </tr>
           </thead>
@@ -143,7 +150,7 @@ export function ParticipantsTable({
                     <span className="text-slate-300">{participant.class_name}</span>
                   </td>
 
-                  {/* Points */}
+                  {/* Standard Points */}
                   <td className="p-4">
                     {editMode ? (
                       <input
@@ -160,6 +167,40 @@ export function ParticipantsTable({
                         {result?.totalPoints || 0}
                       </span>
                     )}
+                  </td>
+
+                  {/* Extra Points */}
+                  <td className="p-4">
+                    {editMode ? (
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={result?.extraPoints || ''}
+                        onChange={(e) => onUpdateResult(participant.id, 'extraPoints', e.target.value ? parseFloat(e.target.value) : null)}
+                        className="w-24 px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-center focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                        placeholder="0"
+                        title="Lisa punktid (nt WRC powerstage punktid)"
+                      />
+                    ) : (
+                      <span className="text-yellow-400 font-medium">
+                        {result?.extraPoints || 0}
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Overall Points (Standard + Extra) */}
+                  <td className="p-4">
+                    <div className="flex flex-col">
+                      <span className="text-green-400 font-bold text-lg">
+                        {result?.overallPoints || 0}
+                      </span>
+                      {(result?.totalPoints || 0) > 0 || (result?.extraPoints || 0) > 0 ? (
+                        <span className="text-xs text-slate-400">
+                          {result?.totalPoints || 0} + {result?.extraPoints || 0}
+                        </span>
+                      ) : null}
+                    </div>
                   </td>
 
                   {/* Actions */}

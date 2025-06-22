@@ -13,17 +13,22 @@ export function calculateClassBasedPositions(
 ): CalculatedPosition[] {
   // Filter to only participants with points > 0
   const participantsWithPoints = Object.values(results).filter(result => 
-    result.totalPoints && result.totalPoints > 0
+    result.overallPoints && result.overallPoints > 0
   )
 
   if (participantsWithPoints.length === 0) {
     return []
   }
 
-  // Sort by points (descending) for overall positions
-  const sortedByPoints = [...participantsWithPoints].sort((a, b) => 
-    (b.totalPoints || 0) - (a.totalPoints || 0)
-  )
+  // Sort by overall points (descending), then by extra points (descending) for tiebreaker
+  const sortedByOverallPoints = [...participantsWithPoints].sort((a, b) => {
+    const overallPointsDiff = (b.overallPoints || 0) - (a.overallPoints || 0)
+    if (overallPointsDiff !== 0) {
+      return overallPointsDiff
+    }
+    // Tiebreaker: extra points (higher is better)
+    return (b.extraPoints || 0) - (a.extraPoints || 0)
+  })
 
   // Group by class for class positions
   const participantsByClass = _.groupBy(participantsWithPoints, 'className')
@@ -31,14 +36,19 @@ export function calculateClassBasedPositions(
   const calculatedPositions: CalculatedPosition[] = []
 
   // Calculate overall positions
-  sortedByPoints.forEach((participant, index) => {
+  sortedByOverallPoints.forEach((participant, index) => {
     const overallPosition = index + 1
     
-    // Find class position
+    // Find class position using same sorting logic
     const classParticipants = participantsByClass[participant.className] || []
-    const sortedClassParticipants = classParticipants.sort((a, b) => 
-      (b.totalPoints || 0) - (a.totalPoints || 0)
-    )
+    const sortedClassParticipants = classParticipants.sort((a, b) => {
+      const overallPointsDiff = (b.overallPoints || 0) - (a.overallPoints || 0)
+      if (overallPointsDiff !== 0) {
+        return overallPointsDiff
+      }
+      // Tiebreaker: extra points (higher is better)
+      return (b.extraPoints || 0) - (a.extraPoints || 0)
+    })
     
     const classPosition = sortedClassParticipants.findIndex(p => 
       p.participantId === participant.participantId
