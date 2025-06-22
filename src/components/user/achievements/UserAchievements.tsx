@@ -1,4 +1,4 @@
-// src/components/user/achievements/UserAchievements.tsx
+// Fixed UserAchievements component that accepts userId prop
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
@@ -20,14 +20,22 @@ interface Achievement {
   }
 }
 
-export function UserAchievements() {
+interface UserAchievementsProps {
+  userId?: string // NEW: Allow passing userId to view any user's achievements
+}
+
+export function UserAchievements({ userId }: UserAchievementsProps) {
   const { user } = useAuth()
+  
+  // Use passed userId or fall back to current user's ID
+  const targetUserId = userId || user?.id || ''
+  
   const { 
     data: achievements = [], 
     isLoading, 
     error,
     refetch 
-  } = useUserAchievements(user?.id || '')
+  } = useUserAchievements(targetUserId)
 
   if (isLoading) {
     return (
@@ -87,29 +95,17 @@ export function UserAchievements() {
             {earnedAchievements.length > 0 ? '🏆' : '🎯'}
           </div>
         </div>
-        
-        {/* Progress Bar */}
-        <div className="mt-3">
-          <div className="w-full bg-slate-700 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-yellow-500 to-orange-500 h-2 rounded-full transition-all duration-500"
-              style={{ 
-                width: `${achievements.length > 0 ? (earnedAchievements.length / achievements.length) * 100 : 0}%` 
-              }}
-            ></div>
-          </div>
-        </div>
       </div>
 
       {/* Earned Achievements */}
       {earnedAchievements.length > 0 && (
         <div>
-          <h5 className="text-sm font-medium text-green-300 mb-3 flex items-center">
-            <span className="mr-2">✅</span>
-            Teenitud saavutused ({earnedAchievements.length})
-          </h5>
+          <h6 className="text-sm font-medium text-green-200 mb-3 flex items-center space-x-2">
+            <span>🏆</span>
+            <span>Saavutatud ({earnedAchievements.length})</span>
+          </h6>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {earnedAchievements.map(achievement => (
+            {earnedAchievements.map((achievement) => (
               <AchievementCard key={achievement.id} achievement={achievement} />
             ))}
           </div>
@@ -119,25 +115,25 @@ export function UserAchievements() {
       {/* Available Achievements */}
       {availableAchievements.length > 0 && (
         <div>
-          <h5 className="text-sm font-medium text-slate-300 mb-3 flex items-center">
-            <span className="mr-2">🎯</span>
-            Saadaval olevad saavutused ({availableAchievements.length})
-          </h5>
+          <h6 className="text-sm font-medium text-slate-300 mb-3 flex items-center space-x-2">
+            <span>🎯</span>
+            <span>Saadaval ({availableAchievements.length})</span>
+          </h6>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {availableAchievements.map(achievement => (
+            {availableAchievements.map((achievement) => (
               <AchievementCard key={achievement.id} achievement={achievement} />
             ))}
           </div>
         </div>
       )}
 
-      {/* No Achievements Message */}
+      {/* No achievements state */}
       {achievements.length === 0 && (
-        <div className="bg-slate-800/20 border border-slate-700/30 rounded-lg p-6 text-center">
-          <div className="text-4xl mb-3">🎯</div>
-          <h4 className="text-lg font-medium text-white mb-2">Pole veel saavutusi</h4>
+        <div className="text-center py-8">
+          <div className="text-4xl mb-4">🎯</div>
+          <h6 className="text-lg font-medium text-slate-300 mb-2">Saavutusi pole veel</h6>
           <p className="text-slate-400 text-sm">
-            Osale rallidel, et teenida oma esimesi saavutusi!
+            Osale rallides, et saavutusi teenida!
           </p>
         </div>
       )}
@@ -194,45 +190,35 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               {achievement.description}
             </p>
 
-            {/* Requirement */}
-            <p className="text-xs text-slate-500 mb-2">
+            <p className="text-xs text-slate-500">
               {achievement.requirement}
             </p>
 
-            {/* Progress Bar for Unearned Achievements */}
+            {/* Progress bar for non-earned achievements */}
             {!achievement.earned && achievement.progress && (
-              <div className="mb-2">
+              <div className="mt-2">
                 <div className="flex justify-between text-xs text-slate-400 mb-1">
                   <span>Progress</span>
                   <span>{achievement.progress.current} / {achievement.progress.required}</span>
                 </div>
-                <div className="w-full bg-slate-700 rounded-full h-1.5">
+                <div className="w-full bg-slate-700/50 rounded-full h-1.5">
                   <div 
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all duration-300"
+                    className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" 
                     style={{ width: `${achievement.progress.percentage}%` }}
                   ></div>
                 </div>
               </div>
             )}
 
-            {/* Earned Date */}
+            {/* Earned date */}
             {achievement.earned && achievement.earnedAt && (
-              <p className="text-xs text-green-400/80">
-                Teenitud: {formatDate(achievement.earnedAt)}
+              <p className="text-xs text-green-400 mt-2">
+                Saavutatud: {formatDate(achievement.earnedAt)}
               </p>
             )}
           </div>
         </div>
       </div>
-
-      {/* Earned Badge */}
-      {achievement.earned && (
-        <div className="absolute top-2 right-2">
-          <div className="bg-green-500/20 border border-green-400/40 rounded-full px-2 py-1">
-            <span className="text-xs text-green-300 font-medium">✓</span>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
