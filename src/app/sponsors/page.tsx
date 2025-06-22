@@ -17,6 +17,12 @@ interface BigSponsor {
   created_at: string
 }
 
+interface BigSponsorCarouselProps {
+  sponsors: BigSponsor[]
+  autoPlay?: boolean
+  speed?: 'slow' | 'medium' | 'fast'
+}
+
 interface StreamSupporter {
   id: string
   supporter_name: string

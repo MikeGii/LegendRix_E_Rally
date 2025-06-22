@@ -96,25 +96,29 @@ export function BigSponsorsCarousel() {
 
   return (
     <div className="relative overflow-hidden">
-      <div className="flex justify-center items-center space-x-8 md:space-x-12 h-48">
+      <div className="flex justify-center items-center space-x-8 md:space-x-12 h-40">
         {visibleSponsors.map((sponsor, index) => (
           <div
             key={`${sponsor.id}-${currentIndex}-${index}`}
             className="flex-shrink-0 transition-all duration-500 ease-in-out"
           >
             <div 
-              className={`block group ${sponsor.website_url && sponsor.website_url !== '#' ? 'cursor-pointer' : 'cursor-default'}`}
+              className={`block group ${sponsor.website_url && sponsor.website_url !== '#' ?
+                'cursor-pointer' : 'cursor-default'}`}
               onClick={() => handleSponsorClick(sponsor)}
             >
-              <img
-                src={sponsor.logo_url}
-                alt={sponsor.name}
-                className="h-32 md:h-40 w-auto object-contain filter brightness-90 group-hover:brightness-110 transition-all duration-300 group-hover:scale-105"
-                onError={(e) => {
-                  console.error(`Failed to load sponsor logo: ${sponsor.logo_url}`)
-                  ;(e.target as HTMLImageElement).src = '/image/sponsor-placeholder.png'
-                }}
-              />
+              {/* RESPONSIVE transparent container */}
+              <div className="w-48 h-24 md:w-64 md:h-32 flex items-center justify-center hover:scale-105 transition-all duration-300">
+                <img
+                  src={sponsor.logo_url}
+                  alt={sponsor.name}
+                  className="max-w-full max-h-full w-auto h-auto object-contain filter brightness-90 group-hover:brightness-110 transition-all duration-300"
+                  onError={(e) => {
+                    console.error(`Failed to load sponsor logo: ${sponsor.logo_url}`)
+                    ;(e.target as HTMLImageElement).src = '/image/sponsor-placeholder.png'
+                  }}
+                />
+              </div>
             </div>
           </div>
         ))}
