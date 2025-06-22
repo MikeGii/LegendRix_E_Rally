@@ -1,4 +1,4 @@
-// src/components/results/hooks/useResultsState.ts - SIMPLIFIED: Removed participated logic
+// src/components/results/hooks/useResultsState.ts - FIXED: Safe initialization
 import { useState, useEffect } from 'react'
 
 export interface ParticipantResult {
@@ -22,13 +22,22 @@ interface UseResultsStateProps {
   rallyClasses: any[]
 }
 
+// Helper function to safely get class name
+const getDefaultClassName = (rallyClasses: any[]): string => {
+  if (!rallyClasses || rallyClasses.length === 0) return ''
+  const firstClass = rallyClasses[0]
+  return firstClass?.class_name || firstClass?.name || ''
+}
+
 export function useResultsState({ participants, rallyClasses }: UseResultsStateProps) {
   const [results, setResults] = useState<Record<string, ParticipantResult>>({})
   const [editMode, setEditMode] = useState(false)
   const [showAddParticipant, setShowAddParticipant] = useState(false)
+  
+  // Initialize with safe defaults
   const [newParticipant, setNewParticipant] = useState<ManualParticipant>({
     playerName: '',
-    className: rallyClasses[0]?.name || ''
+    className: ''
   })
 
   // Initialize results from participants data
@@ -38,13 +47,13 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
       
       participants.forEach(participant => {
         const totalPoints = participant.total_points || null
-        const extraPoints = participant.extra_points || null  // 👈 This should now work
+        const extraPoints = participant.extra_points || null
         const overallPoints = (totalPoints || 0) + (extraPoints || 0)
         
         initialResults[participant.id] = {
           participantId: participant.id,
-          playerName: participant.player_name || participant.participant_name,
-          className: participant.class_name,
+          playerName: participant.player_name || participant.participant_name || '',
+          className: participant.class_name || '',
           overallPosition: participant.overall_position || null,
           classPosition: participant.class_position ? parseInt(participant.class_position) : null,
           totalPoints: totalPoints,
@@ -59,13 +68,16 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
 
   // Update rally classes in new participant form
   useEffect(() => {
-    if (rallyClasses.length > 0 && !newParticipant.className) {
+    if (rallyClasses && rallyClasses.length > 0) {
+      const defaultClassName = getDefaultClassName(rallyClasses)
+      
+      // Only update if current className is empty or different
       setNewParticipant(prev => ({
         ...prev,
-        className: rallyClasses[0].name
+        className: prev.className || defaultClassName
       }))
     }
-  }, [rallyClasses, newParticipant.className])
+  }, [rallyClasses])
 
   const updateResult = (participantId: string, field: keyof ParticipantResult, value: any) => {
     setResults(prev => {
@@ -100,7 +112,7 @@ export function useResultsState({ participants, rallyClasses }: UseResultsStateP
   const resetNewParticipantForm = () => {
     setNewParticipant({
       playerName: '',
-      className: rallyClasses[0]?.name || ''
+      className: getDefaultClassName(rallyClasses)
     })
   }
 
