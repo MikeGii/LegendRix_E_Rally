@@ -1,4 +1,4 @@
-// src/components/edetabel/RallyResultsModal.tsx - IMPROVED WITH SCROLLING AND CLASS ORDERING
+// src/components/edetabel/RallyResultsModal.tsx - COMPLETE WITH EXTRA POINTS SUPPORT
 'use client'
 
 import { useState } from 'react'
@@ -83,12 +83,27 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
     return acc
   }, {} as Record<string, typeof results>)
 
-  // Sort each class by class_position
+  // Sort each class by class_position, then by overall_points, then by extra_points
   Object.keys(resultsByClass).forEach(className => {
     resultsByClass[className].sort((a, b) => {
+      // First sort by class position
       const aPos = a.class_position || 999
       const bPos = b.class_position || 999
-      return aPos - bPos
+      
+      if (aPos !== bPos) {
+        return aPos - bPos
+      }
+      
+      // If same class position, sort by overall points
+      const aOverall = a.overall_points || 0
+      const bOverall = b.overall_points || 0
+      
+      if (aOverall !== bOverall) {
+        return bOverall - aOverall
+      }
+      
+      // Tiebreaker: extra points (higher is better)
+      return (b.extra_points || 0) - (a.extra_points || 0)
     })
   })
 
@@ -126,6 +141,9 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
       })
     : resultsByClass[selectedClass] || []
 
+  // Check if any results have extra points
+  const hasExtraPoints = results.some(result => result.extra_points > 0)
+
   // Helper functions for display
   const formatTime = (totalSeconds: number | null): string => {
     if (!totalSeconds) return '-'
@@ -158,34 +176,34 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
   }
 
   const renderParticipantName = (result: any) => {
-  // SECURITY FIX: Differentiate between registered users and manual participants
-  console.log('Debug result:', result);
-  const isRegisteredUser = result.user_id && result.user_id !== 'manual-participant'
-  const isManualParticipant = !result.user_id || result.user_id === 'manual-participant'
+    // SECURITY FIX: Differentiate between registered users and manual participants
+    console.log('Debug result:', result);
+    const isRegisteredUser = result.user_id && result.user_id !== 'manual-participant'
+    const isManualParticipant = !result.user_id || result.user_id === 'manual-participant'
 
-  if (isRegisteredUser) {
-    // Registered user - secure clickable profile
-    return (
-      <ClickablePlayerName
-        userId={result.user_id}
-        playerName={result.participant_name}
-        participantType="registered"
-        className="font-medium text-white hover:text-blue-400"
-        onModalOpen={() => setIsPlayerModalOpen(true)}
-        onModalClose={() => setIsPlayerModalOpen(false)}
-      />
-    )
-  } else {
-    // Manual participant - not clickable, gray text to indicate difference
-    return (
-      <ClickablePlayerName
-        playerName={result.participant_name}
-        participantType="manual"
-        className="font-medium text-gray-400"
-      />
-    )
+    if (isRegisteredUser) {
+      // Registered user - secure clickable profile
+      return (
+        <ClickablePlayerName
+          userId={result.user_id}
+          playerName={result.participant_name}
+          participantType="registered"
+          className="font-medium text-white hover:text-blue-400"
+          onModalOpen={() => setIsPlayerModalOpen(true)}
+          onModalClose={() => setIsPlayerModalOpen(false)}
+        />
+      )
+    } else {
+      // Manual participant - not clickable, gray text to indicate difference
+      return (
+        <ClickablePlayerName
+          playerName={result.participant_name}
+          participantType="manual"
+          className="font-medium text-gray-400"
+        />
+      )
+    }
   }
-}
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -253,6 +271,8 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                     </div>
                   </div>
                 )}
+
+
               </div>
               
               {/* Class Filter and Close Button */}
@@ -303,7 +323,12 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                         <div className="col-span-4">Osaleja</div>
                         <div className="col-span-2">Klass</div>
                         <div className="col-span-2 text-center">Klassik.</div>
-                        <div className="col-span-2 text-right">Punktid</div>
+                        <div className="col-span-2 text-right">
+                          Punktid
+                          {hasExtraPoints && (
+                            <div className="text-xs text-slate-400 font-normal">(kokku)</div>
+                          )}
+                        </div>
                         <div className="col-span-1 text-center">🏆</div>
                       </div>
                     </div>
@@ -330,7 +355,10 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                                 <span className="text-slate-400 text-xs">({classResults.length} osalejat)</span>
                               </div>
                               <div className="text-slate-400 text-xs">
-                                Parim: {classResults[0]?.total_points?.toFixed(1) || '0.0'} punkti
+                                Parim: {hasExtraPoints ? 
+                                  (classResults[0]?.overall_points?.toFixed(1) || '0.0') : 
+                                  (classResults[0]?.total_points?.toFixed(1) || '0.0')
+                                } punkti
                               </div>
                             </div>
                           </div>
@@ -376,11 +404,24 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                                     </span>
                                   </div>
 
-                                  {/* Points */}
+                                  {/* Points - UPDATED TO SHOW EXTRA POINTS */}
                                   <div className="col-span-2 text-right">
-                                    <span className={`font-bold ${getPositionColor(classPosition)}`}>
-                                      {result.total_points?.toFixed(1) || '0.0'}
-                                    </span>
+                                    <div className="flex flex-col items-end">
+                                      {/* Overall Points (main display) */}
+                                      <span className={`font-bold ${getPositionColor(classPosition)}`}>
+                                        {hasExtraPoints ? 
+                                          (result.overall_points?.toFixed(1) || '0.0') : 
+                                          (result.total_points?.toFixed(1) || '0.0')
+                                        }
+                                      </span>
+                                      
+                                      {/* Breakdown if extra points exist */}
+                                      {hasExtraPoints && result.extra_points > 0 && (
+                                        <span className="text-xs text-slate-400">
+                                          {result.total_points?.toFixed(1) || '0.0'} + {result.extra_points?.toFixed(1)}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
 
                                   {/* Podium Icon */}
@@ -398,7 +439,7 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                     })}
                   </div>
                 ) : (
-                  // SINGLE CLASS VIEW - Original table
+                  // SINGLE CLASS VIEW - Original table with extra points support
                   <div>
                     {/* Table Header */}
                     <div className="sticky top-0 bg-slate-800/90 backdrop-blur border-b border-slate-700/50 text-xs font-medium text-slate-400 uppercase tracking-wide">
@@ -407,7 +448,12 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                         <div className="col-span-4">Osaleja</div>
                         <div className="col-span-2">Klass</div>
                         <div className="col-span-2 text-center">Klassik.</div>
-                        <div className="col-span-2 text-right">Punktid</div>
+                        <div className="col-span-2 text-right">
+                          Punktid
+                          {hasExtraPoints && (
+                            <div className="text-xs text-slate-400 font-normal">(kokku)</div>
+                          )}
+                        </div>
                         <div className="col-span-1 text-center">🏆</div>
                       </div>
                     </div>
@@ -449,11 +495,24 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
                               </span>
                             </div>
 
-                            {/* Points */}
+                            {/* Points - UPDATED TO SHOW EXTRA POINTS */}
                             <div className="col-span-2 text-right">
-                              <span className={`font-bold ${getPositionColor(position)}`}>
-                                {result.total_points?.toFixed(1) || '0.0'}
-                              </span>
+                              <div className="flex flex-col items-end">
+                                {/* Overall Points (main display) */}
+                                <span className={`font-bold ${getPositionColor(position)}`}>
+                                  {hasExtraPoints ? 
+                                    (result.overall_points?.toFixed(1) || '0.0') : 
+                                    (result.total_points?.toFixed(1) || '0.0')
+                                  }
+                                </span>
+                                
+                                {/* Breakdown if extra points exist */}
+                                {hasExtraPoints && result.extra_points > 0 && (
+                                  <span className="text-xs text-slate-400">
+                                    {result.total_points?.toFixed(1) || '0.0'} + {result.extra_points?.toFixed(1)}
+                                  </span>
+                                )}
+                              </div>
                             </div>
 
                             {/* Podium Icon */}

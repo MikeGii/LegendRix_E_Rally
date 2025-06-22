@@ -85,7 +85,7 @@ export function ResultsEntryInterface({
         overallPosition: result?.overallPosition || null,
         classPosition: result?.classPosition || null,
         totalPoints: result?.totalPoints || null,
-        extraPoints: result?.extraPoints || null  // NEW: Include extra points
+        extraPoints: result?.extraPoints || null  // 👈 ADD THIS LINE
       }
     })
 

@@ -20,17 +20,18 @@ export function useParticipantActions({
   // Add manual participant mutation
   const addManualParticipantMutation = useMutation({
     mutationFn: async (participant: ManualParticipant) => {
-      const { data, error } = await supabase
-        .from('rally_results')
-        .insert({
-          rally_id: rallyId,
-          user_id: null, // NULL for manual participants
-          registration_id: null,
-          participant_name: participant.playerName,
-          class_name: participant.className,
-          overall_position: null,
-          total_points: 0
-        })
+    const { data, error } = await supabase
+      .from('rally_results')
+      .insert({
+        rally_id: rallyId,
+        user_id: null, // NULL for manual participants
+        registration_id: null,
+        participant_name: participant.playerName,
+        class_name: participant.className,
+        overall_position: null,
+        total_points: 0,
+        extra_points: 0  // 👈 ADD THIS LINE
+      })
         .select()
         .single()
 

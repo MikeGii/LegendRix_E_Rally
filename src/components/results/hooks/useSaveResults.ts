@@ -73,20 +73,20 @@ export function useSaveResults({ rallyId, onSaveSuccess }: UseSaveResultsProps) 
               .is('user_id', null)
               .single()
 
-            const rallyResultData = {
-              rally_id: rallyId,
-              user_id: null,
-              registration_id: null,
-              participant_name: result.playerName,
-              class_name: result.className,
-              overall_position: result.overallPosition,
-              class_position: result.classPosition,
-              total_points: result.totalPoints,
-              extra_points: result.extraPoints,  // NEW: Save extra points
-              results_entered_by: user.id,
-              results_entered_at: currentTime,
-              updated_at: currentTime
-            }
+              const rallyResultData = {
+                rally_id: rallyId,
+                user_id: null,
+                registration_id: null,
+                participant_name: result.playerName,
+                class_name: result.className,
+                overall_position: result.overallPosition,
+                class_position: result.classPosition,
+                total_points: result.totalPoints,
+                extra_points: result.extraPoints || 0,  // 👈 ADD THIS LINE with default 0
+                results_entered_by: user.id,
+                results_entered_at: currentTime,
+                updated_at: currentTime
+              }
 
             if (existing) {
               const { error } = await supabase
@@ -112,7 +112,7 @@ export function useSaveResults({ rallyId, onSaveSuccess }: UseSaveResultsProps) 
               overall_position: result.overallPosition,
               class_position: result.classPosition,
               total_points: result.totalPoints,
-              extra_points: result.extraPoints,  // NEW: Save extra points
+              extra_points: result.extraPoints || 0,  // 👈 ADD THIS LINE with default 0
               results_entered_by: user.id,
               results_entered_at: currentTime,
               updated_at: currentTime
