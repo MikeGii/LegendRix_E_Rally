@@ -1,4 +1,4 @@
-// src/components/results/components/ResultsHeader.tsx - SIMPLIFIED: Added approve button, removed progress tracking
+// src/components/results/components/ResultsHeader.tsx - FIXED: Correct Estonian button names
 'use client'
 
 import { Calculator, Save, CheckCircle, UserPlus, Edit3, Lock } from 'lucide-react'
@@ -64,7 +64,7 @@ export function ResultsHeader({
                 }`}
               >
                 <Edit3 size={16} />
-                <span>{editMode ? 'Väljasta režiim' : 'Muutmisrežiim'}</span>
+                <span>{editMode ? 'Lõpeta muutmine' : 'Muuda'}</span>
               </button>
 
               {editMode && (
@@ -74,7 +74,7 @@ export function ResultsHeader({
                     className="flex items-center space-x-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 rounded-lg transition-all duration-200"
                   >
                     <Calculator size={16} />
-                    <span>Arvuta tulemused</span>
+                    <span>Arvuta</span>
                   </button>
 
                   <button
@@ -83,7 +83,15 @@ export function ResultsHeader({
                     className="flex items-center space-x-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg transition-all duration-200 disabled:opacity-50"
                   >
                     <Save size={16} />
-                    <span>{isSaving ? 'Salvestan...' : 'Salvesta tulemused'}</span>
+                    <span>{isSaving ? 'Salvestan...' : 'Salvesta'}</span>
+                  </button>
+
+                  <button
+                    onClick={onShowAddParticipant}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-lg transition-all duration-200"
+                  >
+                    <UserPlus size={16} />
+                    <span>Lisa osaleja</span>
                   </button>
 
                   {canApprove && onApproveResults && (
@@ -96,14 +104,6 @@ export function ResultsHeader({
                       <span>{isApproving ? 'Kinnitamine...' : 'Kinnita tulemused'}</span>
                     </button>
                   )}
-
-                  <button
-                    onClick={onShowAddParticipant}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-lg transition-all duration-200"
-                  >
-                    <UserPlus size={16} />
-                    <span>Lisa osaleja</span>
-                  </button>
                 </>
               )}
             </>

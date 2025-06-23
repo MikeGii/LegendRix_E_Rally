@@ -1,4 +1,4 @@
-// src/components/edetabel/ChampionshipResultsModal.tsx - COMPLETE WITH SECURE CLICKABLE NAMES
+// src/components/edetabel/ChampionshipResultsModal.tsx - FIXED OVERALL POINTS DISPLAY
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -287,14 +287,14 @@ export function ChampionshipResultsModal({
                                       {participant.class_name}
                                     </div>
 
-                                    {/* ALL Individual Rally Scores */}
+                                    {/* ✅ PARANDUS: Individual Rally Scores - kasuta overall_points */}
                                     {sortedRallies.map((rally) => {
                                       const rallyScore = participant.rally_scores.find(rs => rs.rally_id === rally.rally_id)
                                       return (
                                         <div key={rally.rally_id} className="text-center flex items-center justify-center">
                                           {rallyScore?.participated ? (
                                             <div className="flex flex-col">
-                                              <span className="text-white font-medium text-xs">{rallyScore.points}</span>
+                                              <span className="text-white font-medium text-xs">{rallyScore.overall_points}</span>
                                               {rallyScore.class_position && (
                                                 <span className="text-xs text-slate-400">{rallyScore.class_position}.</span>
                                               )}
@@ -306,10 +306,10 @@ export function ChampionshipResultsModal({
                                       )
                                     })}
 
-                                    {/* Total Points */}
+                                    {/* ✅ PARANDUS: Total Points - kasuta total_overall_points */}
                                     <div className="text-center flex items-center justify-center">
                                       <span className={`font-bold text-sm ${getPositionColor(position)}`}>
-                                        {participant.total_points}
+                                        {participant.total_overall_points}
                                       </span>
                                     </div>
                                   </div>
@@ -376,14 +376,14 @@ export function ChampionshipResultsModal({
                                 {participant.class_name}
                               </div>
 
-                              {/* ALL Individual Rally Scores */}
+                              {/* ✅ PARANDUS: Individual Rally Scores - kasuta overall_points */}
                               {sortedRallies.map((rally) => {
                                 const rallyScore = participant.rally_scores.find(rs => rs.rally_id === rally.rally_id)
                                 return (
                                   <div key={rally.rally_id} className="text-center flex items-center justify-center">
                                     {rallyScore?.participated ? (
                                       <div className="flex flex-col">
-                                        <span className="text-white font-medium text-xs">{rallyScore.points}</span>
+                                        <span className="text-white font-medium text-xs">{rallyScore.overall_points}</span>
                                         {rallyScore.class_position && (
                                           <span className="text-xs text-slate-400">{rallyScore.class_position}.</span>
                                         )}
@@ -395,10 +395,10 @@ export function ChampionshipResultsModal({
                                 )
                               })}
 
-                              {/* Total Points */}
+                              {/* ✅ PARANDUS: Total Points - kasuta total_overall_points */}
                               <div className="text-center flex items-center justify-center">
                                 <span className={`font-bold text-sm ${getPositionColor(position)}`}>
-                                  {participant.total_points}
+                                  {participant.total_overall_points}
                                 </span>
                               </div>
                             </div>

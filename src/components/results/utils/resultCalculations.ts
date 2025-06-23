@@ -1,65 +1,192 @@
-// src/components/results/utils/resultCalculations.ts - SIMPLIFIED: Removed participated logic
-import type { ParticipantResult } from '../hooks/useResultsState'
-import { calculateClassBasedPositions } from './classBasedCalculations'
+// src/components/results/utils/resultCalculations.ts - OPTIMIZED: Proper sorting with extra points tiebreaker
 
+export interface ParticipantResult {
+  participantId: string
+  playerName: string
+  className: string
+  overallPosition: number | null
+  classPosition: number | null
+  totalPoints: number | null
+  extraPoints: number | null
+  overallPoints: number // Calculated field: totalPoints + extraPoints
+}
+
+export type UpdateResultFunction = (
+  participantId: string, 
+  field: keyof ParticipantResult, 
+  value: any
+) => void
+
+export type ResultsState = Record<string, ParticipantResult>
+
+/**
+ * Calculate positions based on points with proper sorting logic
+ * Higher overall points = better position (1st, 2nd, etc.)
+ * Tiebreaker: extra points (higher = better)
+ */
 export function calculatePositionsFromPoints(
-  results: Record<string, ParticipantResult>,
-  updateResult: (participantId: string, field: keyof ParticipantResult, value: any) => void
-) {
-  // Only calculate positions for participants with points > 0
-  const participantsWithPoints = Object.values(results).filter(result => 
-    result.overallPoints && result.overallPoints > 0
-  )
+  results: ResultsState,
+  updateResult: UpdateResultFunction
+): void {
+  const participants = Object.keys(results)
 
-  if (participantsWithPoints.length === 0) {
-    return
-  }
+  // Group participants by class
+  const participantsByClass = new Map<string, { id: string; result: ParticipantResult }[]>()
 
-  // Calculate class-based positions using the improved algorithm
-  const classPositions = calculateClassBasedPositions(results)
-  
-  // Update results with calculated positions
-  classPositions.forEach(position => {
-    updateResult(position.participantId, 'overallPosition', position.overallPosition)
-    updateResult(position.participantId, 'classPosition', position.classPosition)
+  participants.forEach(participantId => {
+    const result = results[participantId]
+    if (!result) return
+
+    const className = result.className
+    if (!participantsByClass.has(className)) {
+      participantsByClass.set(className, [])
+    }
+
+    participantsByClass.get(className)!.push({
+      id: participantId,
+      result: {
+        ...result,
+        overallPoints: (result.totalPoints || 0) + (result.extraPoints || 0)
+      }
+    })
+  })
+
+  // Calculate overall positions (across all classes)
+  const allParticipantsWithPoints = participants
+    .map(id => ({
+      id,
+      result: results[id],
+      overallPoints: (results[id]?.totalPoints || 0) + (results[id]?.extraPoints || 0)
+    }))
+    .filter(p => p.overallPoints > 0)
+    .sort((a, b) => {
+      // Primary sort: overall points (descending - higher is better)
+      if (b.overallPoints !== a.overallPoints) {
+        return b.overallPoints - a.overallPoints
+      }
+      // Tiebreaker: extra points (descending - higher is better)
+      const aExtraPoints = a.result?.extraPoints || 0
+      const bExtraPoints = b.result?.extraPoints || 0
+      return bExtraPoints - aExtraPoints
+    })
+
+  // Assign overall positions
+  allParticipantsWithPoints.forEach((participant, index) => {
+    updateResult(participant.id, 'overallPosition', index + 1)
+  })
+
+  // Calculate class positions within each class
+  participantsByClass.forEach((classParticipants, className) => {
+    const participantsWithPoints = classParticipants
+      .filter(p => p.result.overallPoints > 0)
+      .sort((a, b) => {
+        // Primary sort: overall points (descending)
+        if (b.result.overallPoints !== a.result.overallPoints) {
+          return b.result.overallPoints - a.result.overallPoints
+        }
+        // Tiebreaker: extra points (descending)
+        const aExtraPoints = a.result.extraPoints || 0
+        const bExtraPoints = b.result.extraPoints || 0
+        return bExtraPoints - aExtraPoints
+      })
+
+    // Assign class positions
+    participantsWithPoints.forEach((participant, index) => {
+      updateResult(participant.id, 'classPosition', index + 1)
+    })
   })
 }
 
+/**
+ * Clear all results for a specific participant
+ */
 export function clearParticipantResults(
   participantId: string,
-  updateResult: (participantId: string, field: keyof ParticipantResult, value: any) => void
-) {
+  updateResult: UpdateResultFunction
+): void {
   updateResult(participantId, 'overallPosition', null)
   updateResult(participantId, 'classPosition', null)
   updateResult(participantId, 'totalPoints', null)
   updateResult(participantId, 'extraPoints', null)
 }
 
-export function sortParticipantsByResults(
-  participants: any[],
-  results: Record<string, ParticipantResult>
-) {
-  return participants.sort((a, b) => {
+/**
+ * Validate that points are non-negative numbers
+ */
+export function validatePoints(value: any): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+  
+  const numValue = Number(value)
+  if (isNaN(numValue)) {
+    return null
+  }
+  
+  return Math.max(0, Math.round(numValue)) // Ensure non-negative integers
+}
+
+/**
+ * Validate that position is a positive integer
+ */
+export function validatePosition(value: any): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+  
+  const numValue = Number(value)
+  if (isNaN(numValue) || numValue < 1) {
+    return null
+  }
+  
+  return Math.round(numValue) // Ensure positive integer
+}
+
+/**
+ * Calculate overall points from total and extra points
+ */
+export function calculateOverallPoints(totalPoints: number | null, extraPoints: number | null): number {
+  return (totalPoints || 0) + (extraPoints || 0)
+}
+
+/**
+ * Sort participants for display (used in tables)
+ * Participants with points first (sorted by overall points desc, then extra points desc)
+ * Then participants without points (sorted alphabetically)
+ */
+export function sortParticipantsForDisplay<T extends { 
+  id: string; 
+  player_name?: string; 
+  participant_name?: string; 
+}>(
+  participants: T[],
+  results: ResultsState
+): T[] {
+  return [...participants].sort((a, b) => {
     const aResult = results[a.id]
     const bResult = results[b.id]
     
-    // 1. Participants with overall points > 0 (by overall points DESC, then extra points DESC)
-    const aHasPoints = aResult?.overallPoints > 0
-    const bHasPoints = bResult?.overallPoints > 0
+    const aOverallPoints = calculateOverallPoints(aResult?.totalPoints, aResult?.extraPoints)
+    const bOverallPoints = calculateOverallPoints(bResult?.totalPoints, bResult?.extraPoints)
     
+    const aHasPoints = aOverallPoints > 0
+    const bHasPoints = bOverallPoints > 0
+    
+    // Participants with points come first
     if (aHasPoints && bHasPoints) {
-      // Sort by overall points first
-      const overallPointsDiff = (bResult.overallPoints || 0) - (aResult.overallPoints || 0)
-      if (overallPointsDiff !== 0) {
-        return overallPointsDiff
+      // Both have points - sort by overall points (descending), then extra points (descending)
+      if (bOverallPoints !== aOverallPoints) {
+        return bOverallPoints - aOverallPoints
       }
-      // Tiebreaker: extra points (higher is better)
-      return (bResult.extraPoints || 0) - (aResult.extraPoints || 0)
+      return (bResult?.extraPoints || 0) - (aResult?.extraPoints || 0)
     }
+    
     if (aHasPoints && !bHasPoints) return -1
     if (!aHasPoints && bHasPoints) return 1
     
-    // 2. Participants without points (alphabetical by name)
-    return (aResult?.playerName || '').localeCompare(bResult?.playerName || '')
+    // Neither has points - sort alphabetically by name
+    const aName = a.player_name || a.participant_name || ''
+    const bName = b.player_name || b.participant_name || ''
+    return aName.localeCompare(bName)
   })
 }

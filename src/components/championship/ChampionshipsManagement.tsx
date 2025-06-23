@@ -1,16 +1,356 @@
-// src/components/championship/ChampionshipsManagement.tsx - COMPLETE VERSION with Status Management
+// src/components/championship/ChampionshipsManagement.tsx - COMPLETE VERSION with Rally Linking
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useChampionships, useCreateChampionship, useActivateChampionship, useCompleteChampionship, useReopenChampionship } from '@/hooks/useChampionshipManagement'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { CreateChampionshipModal } from './CreateChampionshipModal'
 import { ChampionshipDetailsModal } from './ChampionshipDetailsModal'
+import { supabase } from '@/lib/supabase'
 
+// Rally Linking Modal Component (inline)
+interface Rally {
+  id: string
+  name: string
+  competition_date: string
+  status: string
+  game_name?: string
+  total_participants?: number
+}
+
+interface ChampionshipRally {
+  id: string
+  championship_id: string
+  rally_id: string
+  round_number: number
+  is_active: boolean
+  rally_name?: string
+  rally_date?: string
+}
+
+interface RallyLinkingModalProps {
+  championshipId: string
+  championshipName: string
+  isOpen: boolean
+  onClose: () => void
+  onSuccess: () => void
+}
+
+function RallyLinkingModal({ 
+  championshipId, 
+  championshipName, 
+  isOpen, 
+  onClose, 
+  onSuccess 
+}: RallyLinkingModalProps) {
+  const [availableRallies, setAvailableRallies] = useState<Rally[]>([])
+  const [linkedRallies, setLinkedRallies] = useState<ChampionshipRally[]>([])
+  const [selectedRallies, setSelectedRallies] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [filter, setFilter] = useState('')
+
+  useEffect(() => {
+    if (isOpen && championshipId) {
+      loadData()
+    }
+  }, [isOpen, championshipId])
+
+  const loadData = async () => {
+    setIsLoading(true)
+    try {
+      // Load all completed rallies
+      const { data: rallies, error: ralliesError } = await supabase
+        .from('rallies')
+        .select(`
+          id,
+          name,
+          competition_date,
+          status,
+          games(name)
+        `)
+        .eq('status', 'completed')
+        .order('competition_date', { ascending: false })
+
+      if (ralliesError) throw ralliesError
+
+      // Load currently linked rallies
+      const { data: linked, error: linkedError } = await supabase
+        .from('championship_rallies')
+        .select(`
+          id,
+          championship_id,
+          rally_id,
+          round_number,
+          is_active,
+          rallies!inner(name, competition_date)
+        `)
+        .eq('championship_id', championshipId)
+        .order('round_number', { ascending: true })
+
+      if (linkedError) throw linkedError
+
+      // Get participant counts for rallies
+      const rallyIds = rallies?.map(r => r.id) || []
+      let participantCounts: Record<string, number> = {}
+      
+      if (rallyIds.length > 0) {
+        const { data: participantData } = await supabase
+          .from('rally_results')
+          .select('rally_id')
+          .in('rally_id', rallyIds)
+
+        participantData?.forEach(p => {
+          participantCounts[p.rally_id] = (participantCounts[p.rally_id] || 0) + 1
+        })
+      }
+
+      // Format rallies
+      const formattedRallies = (rallies || []).map(rally => ({
+        id: rally.id,
+        name: rally.name,
+        competition_date: rally.competition_date,
+        status: rally.status,
+        game_name: (rally.games as any)?.name || 'Unknown Game',
+        total_participants: participantCounts[rally.id] || 0
+      }))
+
+      // Format linked rallies
+      const formattedLinked = (linked || []).map(l => ({
+        id: l.id,
+        championship_id: l.championship_id,
+        rally_id: l.rally_id,
+        round_number: l.round_number,
+        is_active: l.is_active,
+        rally_name: (l.rallies as any)?.name || 'Unknown Rally',
+        rally_date: (l.rallies as any)?.competition_date || ''
+      }))
+
+      setAvailableRallies(formattedRallies)
+      setLinkedRallies(formattedLinked)
+    } catch (error) {
+      console.error('Error loading rally data:', error)
+      alert('Viga andmete laadimisel')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAddRallies = async () => {
+    if (selectedRallies.length === 0) return
+
+    setIsLoading(true)
+    try {
+      // Get the next round numbers
+      const maxRound = Math.max(...linkedRallies.map(r => r.round_number), 0)
+      
+      // Create championship_rallies entries
+      const newEntries = selectedRallies.map((rallyId, index) => ({
+        championship_id: championshipId,
+        rally_id: rallyId,
+        round_number: maxRound + index + 1,
+        is_active: true,
+        created_at: new Date().toISOString()
+      }))
+
+      const { error } = await supabase
+        .from('championship_rallies')
+        .insert(newEntries)
+
+      if (error) throw error
+
+      alert(`${selectedRallies.length} rallit lisatud meistrivõistlusele!`)
+      setSelectedRallies([])
+      await loadData()
+      onSuccess()
+    } catch (error) {
+      console.error('Error adding rallies:', error)
+      alert('Viga rallide lisamisel')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRemoveRally = async (championshipRallyId: string, rallyName: string) => {
+    const confirmed = confirm(`Kas oled kindel, et soovid eemaldada ralli "${rallyName}" meistrivõistlusest?`)
+    
+    if (confirmed) {
+      setIsLoading(true)
+      try {
+        const { error } = await supabase
+          .from('championship_rallies')
+          .delete()
+          .eq('id', championshipRallyId)
+
+        if (error) throw error
+
+        alert('Rally eemaldatud!')
+        await loadData()
+        onSuccess()
+      } catch (error) {
+        console.error('Error removing rally:', error)
+        alert('Viga ralli eemaldamisel')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+  }
+
+  const handleToggleRallySelection = (rallyId: string) => {
+    setSelectedRallies(prev => 
+      prev.includes(rallyId) 
+        ? prev.filter(id => id !== rallyId)
+        : [...prev, rallyId]
+    )
+  }
+
+  // Filter available rallies (exclude already linked ones)
+  const linkedRallyIds = linkedRallies.map(r => r.rally_id)
+  const filteredAvailableRallies = availableRallies
+    .filter(rally => !linkedRallyIds.includes(rally.id))
+    .filter(rally => 
+      filter === '' || 
+      rally.name.toLowerCase().includes(filter.toLowerCase()) ||
+      rally.game_name?.toLowerCase().includes(filter.toLowerCase())
+    )
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-800 rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="p-6 border-b border-slate-700">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-white">Rallide haldus</h2>
+              <p className="text-slate-400">Meistrivõistlus: {championshipName}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-white text-2xl"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Current Championship Rallies */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white">
+                Meistrivõistluse rallid ({linkedRallies.length})
+              </h3>
+              
+              {linkedRallies.length === 0 ? (
+                <div className="text-center py-8 bg-slate-700/30 rounded-lg">
+                  <p className="text-slate-400">Ühtegi rallit pole veel lisatud</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {linkedRallies.map((rally) => (
+                    <div key={rally.id} className="bg-slate-700/30 rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="font-medium text-white">
+                            {rally.round_number}. {rally.rally_name}
+                          </div>
+                          <div className="text-sm text-slate-400">
+                            {new Date(rally.rally_date).toLocaleDateString('et-EE')}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveRally(rally.id, rally.rally_name)}
+                          className="text-red-400 hover:text-red-300 ml-2"
+                          disabled={isLoading}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Available Rallies */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Saadaolevad rallid
+                </h3>
+                <input
+                  type="text"
+                  placeholder="Otsi rallisid..."
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {filteredAvailableRallies.map((rally) => (
+                  <div 
+                    key={rally.id} 
+                    className={`p-4 rounded-lg cursor-pointer transition-colors ${
+                      selectedRallies.includes(rally.id)
+                        ? 'bg-blue-600/30 border border-blue-500'
+                        : 'bg-slate-700/30 hover:bg-slate-700/50'
+                    }`}
+                    onClick={() => handleToggleRallySelection(rally.id)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedRallies.includes(rally.id)}
+                        onChange={() => handleToggleRallySelection(rally.id)}
+                        className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-white">{rally.name}</div>
+                        <div className="text-sm text-slate-400">
+                          {new Date(rally.competition_date).toLocaleDateString('et-EE')} • 
+                          {rally.game_name} • 
+                          {rally.total_participants} osalejat
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {filteredAvailableRallies.length === 0 && (
+                  <div className="text-center py-8 bg-slate-700/30 rounded-lg">
+                    <p className="text-slate-400">
+                      {filter ? 'Otsingu järgi pole rallisid' : 'Kõik rallid on juba lisatud'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {selectedRallies.length > 0 && (
+                <button
+                  onClick={handleAddRallies}
+                  disabled={isLoading}
+                  className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded-lg transition-colors"
+                >
+                  {isLoading ? 'Lisan...' : `Lisa ${selectedRallies.length} rallit`}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main Championships Management Component
 export function ChampionshipsManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null)
   const [statusActionChampionship, setStatusActionChampionship] = useState<string | null>(null)
+  const [rallyModalChampionship, setRallyModalChampionship] = useState<{ id: string, name: string } | null>(null)
 
   const { data: championships = [], isLoading, refetch } = useChampionships()
   const activateChampionshipMutation = useActivateChampionship()
@@ -34,6 +374,7 @@ export function ChampionshipsManagement() {
       try {
         await activateChampionshipMutation.mutateAsync(championshipId)
         alert('Meistrivõistluse tulemused on edukalt kinnitatud!')
+        refetch()
       } catch (error) {
         console.error('Error activating championship:', error)
         alert('Viga kinnitamisel. Palun proovi uuesti.')
@@ -299,6 +640,14 @@ export function ChampionshipsManagement() {
                             Halda
                           </button>
                           
+                          {/* ADD RALLY BUTTON HERE */}
+                          <button
+                            onClick={() => setRallyModalChampionship({ id: championship.id, name: championship.name })}
+                            className="px-3 py-1 text-sm bg-purple-600/20 text-purple-400 border border-purple-600/30 rounded hover:bg-purple-600/30 transition-colors"
+                          >
+                            Rallid
+                          </button>
+                          
                           {!championship.is_active && (championship.total_rallies || 0) > 0 && (
                             <button
                               onClick={() => handleActivateChampionship(championship.id, championship.name)}
@@ -366,6 +715,20 @@ export function ChampionshipsManagement() {
           onClose={() => setSelectedChampionship(null)}
           onSuccess={() => {
             setSelectedChampionship(null)
+            refetch()
+          }}
+        />
+      )}
+
+      {/* Rally Linking Modal */}
+      {rallyModalChampionship && (
+        <RallyLinkingModal
+          championshipId={rallyModalChampionship.id}
+          championshipName={rallyModalChampionship.name}
+          isOpen={true}
+          onClose={() => setRallyModalChampionship(null)}
+          onSuccess={() => {
+            setRallyModalChampionship(null)
             refetch()
           }}
         />
