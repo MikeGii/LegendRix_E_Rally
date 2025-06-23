@@ -1,4 +1,4 @@
-// src/components/results/ResultsEntryInterface.tsx - SIMPLIFIED: Removed participated logic
+// src/components/results/ResultsEntryInterface.tsx - OPTIMIZED: Clean, universal interfaces
 'use client'
 
 import { useRallyClasses } from '@/hooks/useRallyManagement'
@@ -25,11 +25,9 @@ export function ResultsEntryInterface({
   events, 
   isLoading 
 }: ResultsEntryInterfaceProps) {
-  // Data hooks
   const { data: rallyClasses = [] } = useRallyClasses(rallyId)
   const { data: resultsStatus } = useRallyResultsStatus(rallyId)
 
-  // State management
   const {
     results,
     editMode,
@@ -43,7 +41,6 @@ export function ResultsEntryInterface({
     resetNewParticipantForm
   } = useResultsState({ participants, rallyClasses })
 
-  // Participant actions
   const {
     addManualParticipantMutation,
     removeParticipantMutation,
@@ -58,7 +55,6 @@ export function ResultsEntryInterface({
     onParticipantRemoved: removeParticipantFromState
   })
 
-  // Save results
   const { saveResultsMutation, approveResultsMutation } = useSaveResults({
     rallyId,
     onSaveSuccess: () => {
@@ -66,7 +62,6 @@ export function ResultsEntryInterface({
     }
   })
 
-  // Actions
   const handleCalculatePositions = () => {
     calculatePositionsFromPoints(results, updateResult)
   }
@@ -75,50 +70,35 @@ export function ResultsEntryInterface({
     clearParticipantResults(participantId, updateResult)
   }
 
-const handleSaveResults = () => {
-  console.log('🚀 === SAVE BUTTON CLICKED ===')
-  console.log('📊 Total participants:', participants.length)
-  console.log('📋 Current results state:', results)
-  
-  const allParticipants = participants.map(participant => {
-    const result = results[participant.id]
-    const participantData = {
-      participantId: participant.id,
-      playerName: participant.player_name || participant.participant_name,
-      className: participant.class_name,
-      overallPosition: result?.overallPosition || null,
-      classPosition: result?.classPosition || null,
-      totalPoints: result?.totalPoints || null,
-      extraPoints: result?.extraPoints || null
-    }
-    
-    // Log each participant's data
-    console.log(`👤 ${participantData.playerName}:`, participantData)
-    
-    return participantData
-  })
+  const handleSaveResults = () => {
+    const allParticipants = participants.map(participant => {
+      const result = results[participant.id]
+      return {
+        participantId: participant.id,
+        playerName: participant.player_name || participant.participant_name,
+        className: participant.class_name,
+        overallPosition: result?.overallPosition || null,
+        classPosition: result?.classPosition || null,
+        totalPoints: result?.totalPoints || null,
+        extraPoints: result?.extraPoints || null
+      }
+    })
 
-  console.log('📤 Final data being sent to mutation:', allParticipants)
-  
-  // Check if any participants have results
-  const participantsWithResults = allParticipants.filter(p => 
-    p.overallPosition !== null || 
-    p.classPosition !== null || 
-    (p.totalPoints !== null && p.totalPoints !== 0) || 
-    (p.extraPoints !== null && p.extraPoints !== 0)
-  )
-  
-  console.log(`📈 Participants with results: ${participantsWithResults.length}/${allParticipants.length}`)
-  
-  if (participantsWithResults.length === 0) {
-    console.warn('⚠️ WARNING: No participants have any results entered!')
-    if (!confirm('No results have been entered for any participants. Do you want to save anyway?')) {
-      return
+    const participantsWithResults = allParticipants.filter(p => 
+      p.overallPosition !== null || 
+      p.classPosition !== null || 
+      (p.totalPoints !== null && p.totalPoints !== 0) || 
+      (p.extraPoints !== null && p.extraPoints !== 0)
+    )
+
+    if (participantsWithResults.length === 0) {
+      if (!confirm('Ühtegi tulemust pole sisestatud. Kas soovite siiski salvestada?')) {
+        return
+      }
     }
+
+    saveResultsMutation.mutate({ rallyId, allParticipants })
   }
-
-  saveResultsMutation.mutate({ rallyId, allParticipants })
-}
 
   const handleAddParticipantSubmit = () => {
     if (newParticipant.playerName.trim() && newParticipant.className.trim()) {
@@ -132,6 +112,7 @@ const handleSaveResults = () => {
     }
   }
 
+  // Status checks
   const isResultsApproved = resultsStatus?.results_approved || false
   const canEdit = editMode && !isResultsApproved
   const canApprove = resultsStatus?.results_completed && !isResultsApproved
@@ -146,14 +127,12 @@ const handleSaveResults = () => {
 
   return (
     <div className="space-y-6">
-      {/* Status Messages */}
       <StatusMessages 
         isSaving={saveResultsMutation.isPending}
         isApproving={approveResultsMutation.isPending}
         isApproved={isResultsApproved}
       />
 
-      {/* Header with actions */}
       <ResultsHeader
         editMode={editMode}
         setEditMode={setEditMode}
@@ -167,7 +146,6 @@ const handleSaveResults = () => {
         canApprove={canApprove}
       />
 
-      {/* Extra Points Info */}
       {editMode && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
           <div className="flex items-start space-x-3">
@@ -189,7 +167,6 @@ const handleSaveResults = () => {
         </div>
       )}
 
-      {/* Add Participant Form */}
       {showAddParticipant && (
         <AddParticipantForm
           show={true}
@@ -205,7 +182,6 @@ const handleSaveResults = () => {
         />
       )}
 
-      {/* Participants Table */}
       <ClassSeparatedParticipantsTable
         participants={participants}
         results={results}

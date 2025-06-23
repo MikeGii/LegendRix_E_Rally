@@ -1,243 +1,146 @@
-// src/components/results/hooks/useRallyResultsStatus.ts - FIXED: Proper upsert logic
+// src/components/results/hooks/useRallyResultsStatus.ts - COMPLETE: Both status and approval functionality
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { resultsKeys } from '@/hooks/useResultsManagement'
 
 export interface RallyResultsStatus {
   rally_id: string
-  results_needed: boolean
-  results_needed_since?: string
+  results_needed_since: string
   results_completed: boolean
-  results_completed_at?: string
   results_approved: boolean
   approved_at?: string
   approved_by?: string
-  results_entered_by?: string
 }
 
+/**
+ * Get results status for a specific rally
+ */
 export function useRallyResultsStatus(rallyId: string) {
   return useQuery({
-    queryKey: [...resultsKeys.rally_results(rallyId), 'status'],
+    queryKey: resultsKeys.rally_results_status(rallyId),
     queryFn: async (): Promise<RallyResultsStatus | null> => {
       if (!rallyId) return null
 
-      try {
-        console.log('🔍 Fetching rally results status for:', rallyId)
+      const { data, error } = await supabase
+        .from('rally_results_status')
+        .select('*')
+        .eq('rally_id', rallyId)
+        .single()
 
-        const { data, error } = await supabase
-          .from('rally_results_status')
-          .select('*')
-          .eq('rally_id', rallyId)
-          .maybeSingle() // Use maybeSingle instead of single to handle no results gracefully
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        throw error
+      }
 
-        if (error) {
-          console.error('❌ Rally results status error:', error)
-          
-          // Handle specific error codes
-          if (error.code === 'PGRST116') {
-            // No rows found - create default status
-            console.log('📝 No status found, creating default status')
-            return {
-              rally_id: rallyId,
-              results_needed: true,
-              results_completed: false,
-              results_approved: false
-            }
-          }
-          
-          // For 406 errors or other issues, try to create the status record
-          if (error.message.includes('406') || error.message.includes('Not Acceptable')) {
-            console.warn('⚠️ 406 error detected, attempting to create status record')
-            
-            try {
-              // Try to create a new status record
-              const { data: newStatus, error: createError } = await supabase
-                .from('rally_results_status')
-                .insert({
-                  rally_id: rallyId,
-                  results_needed: true,
-                  results_completed: false,
-                  results_approved: false,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                })
-                .select()
-                .single()
-
-              if (createError) {
-                console.error('❌ Failed to create status record:', createError)
-                // Return default status instead of throwing
-                return {
-                  rally_id: rallyId,
-                  results_needed: true,
-                  results_completed: false,
-                  results_approved: false
-                }
-              }
-
-              console.log('✅ Created new status record:', newStatus)
-              return newStatus
-            } catch (createError) {
-              console.error('❌ Error creating status record:', createError)
-              // Still return default status
-              return {
-                rally_id: rallyId,
-                results_needed: true,
-                results_completed: false,
-                results_approved: false
-              }
-            }
-          }
-          
-          // For other errors, log but don't throw
-          console.warn('⚠️ Database error, using default status:', error)
-          return {
-            rally_id: rallyId,
-            results_needed: true,
-            results_completed: false,
-            results_approved: false
-          }
-        }
-
-        // If we got data, return it
-        if (data) {
-          console.log('✅ Rally results status loaded:', data)
-          return data
-        }
-
-        // No data and no error - return default
-        console.log('📝 No status data, returning default')
-        return {
-          rally_id: rallyId,
-          results_needed: true,
-          results_completed: false,
-          results_approved: false
-        }
-
-      } catch (error) {
-        console.error('❌ Unexpected error in rally results status:', error)
-        // Always return a default status instead of throwing
-        return {
-          rally_id: rallyId,
-          results_needed: true,
-          results_completed: false,
-          results_approved: false
-        }
+      return data || {
+        rally_id: rallyId,
+        results_needed_since: new Date().toISOString(),
+        results_completed: false,
+        results_approved: false
       }
     },
-    staleTime: 30 * 1000,
-    retry: (failureCount, error) => {
-      // Don't retry on 406 errors or similar HTTP errors
-      if (error?.message?.includes('406') || 
-          error?.message?.includes('Not Acceptable')) {
-        return false
-      }
-      return failureCount < 3
-    },
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    enabled: !!rallyId,
+    staleTime: 2 * 60 * 1000,
   })
 }
 
+/**
+ * Approve results for a rally - FIXED: Proper update/insert logic
+ */
 export function useApproveResults() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (rallyId: string) => {
-      try {
-        console.log('🔄 Starting results approval for rally:', rallyId)
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        throw new Error('Kasutaja pole autentitud')
+      }
 
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        if (userError || !user) {
-          throw new Error('User not authenticated')
-        }
+      // Verify rally exists and is completed
+      const { data: rally, error: rallyError } = await supabase
+        .from('rallies')
+        .select('id, name, status')
+        .eq('id', rallyId)
+        .single()
 
-        // Verify rally exists and is completed
-        const { data: rally, error: rallyError } = await supabase
-          .from('rallies')
-          .select('id, name, status')
-          .eq('id', rallyId)
-          .single()
+      if (rallyError || !rally || rally.status !== 'completed') {
+        throw new Error('Rally peab olema lõppenud enne tulemuste kinnitamist')
+      }
 
-        if (rallyError || !rally) {
-          throw new Error('Rally not found')
-        }
+      // Check if there are results to approve
+      const { data: allResults, error: resultsError } = await supabase
+        .from('rally_results')
+        .select('id, overall_position, total_points, extra_points')
+        .eq('rally_id', rallyId)
 
-        if (rally.status !== 'completed') {
-          throw new Error('Rally must be completed before approving results')
-        }
+      if (resultsError || !allResults || allResults.length === 0) {
+        throw new Error('Rallis pole osalejaid')
+      }
 
-        console.log('✅ Rally validation passed, checking results...')
+      const hasAnyResults = allResults.some(result => 
+        result.overall_position !== null || 
+        (result.total_points !== null && result.total_points > 0) ||
+        (result.extra_points !== null && result.extra_points > 0)
+      )
 
-        // Check if there are participants to approve results for
-        const { data: allResults, error: resultsError } = await supabase
-          .from('rally_results')
-          .select('id, overall_position, total_points, extra_points')
+      if (!hasAnyResults) {
+        throw new Error('Tulemusi pole veel sisestatud. Sisestage enne kinnitamist vähemalt mõned tulemused.')
+      }
+
+      // FIXED: Check if record exists first, then update or insert
+      const { data: existingStatus, error: checkError } = await supabase
+        .from('rally_results_status')
+        .select('rally_id')
+        .eq('rally_id', rallyId)
+        .maybeSingle()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw new Error(`Error checking status: ${checkError.message}`)
+      }
+
+      const statusData = {
+        results_approved: true,
+        results_completed: true,
+        approved_at: new Date().toISOString(),
+        approved_by: user.id,
+        updated_at: new Date().toISOString()
+      }
+
+      if (existingStatus) {
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('rally_results_status')
+          .update(statusData)
           .eq('rally_id', rallyId)
 
-        if (resultsError) {
-          throw new Error(`Error checking results: ${resultsError.message}`)
+        if (updateError) {
+          throw new Error(`Kinnitamine ebaõnnestus: ${updateError.message}`)
         }
-
-        if (!allResults || allResults.length === 0) {
-          throw new Error('No participants found for this rally')
-        }
-
-        // Check if ANY results have been entered (positions OR points)
-        const hasAnyResults = allResults.some(result => 
-          result.overall_position !== null || 
-          (result.total_points !== null && result.total_points > 0) ||
-          (result.extra_points !== null && result.extra_points > 0)
-        )
-
-        if (!hasAnyResults) {
-          throw new Error('No results have been entered yet. Please enter at least some positions or points before approving.')
-        }
-
-        const currentTime = new Date().toISOString()
-
-        console.log('🔄 Using upsert to handle approval...')
-
-        // FIXED: Use upsert to handle both insert and update cases
-        const { data: approvalResult, error: approvalError } = await supabase
+      } else {
+        // Insert new record
+        const { error: insertError } = await supabase
           .from('rally_results_status')
-          .upsert({
+          .insert({
             rally_id: rallyId,
-            results_needed: true,
-            results_completed: true,
-            results_completed_at: currentTime,
-            results_approved: true,
-            approved_at: currentTime,
-            approved_by: user.id,
-            results_entered_by: user.id,
-            created_at: currentTime, // This will be ignored if record exists
-            updated_at: currentTime
-          }, {
-            onConflict: 'rally_id', // This is the unique constraint column
-            ignoreDuplicates: false  // We want to update, not ignore
+            results_needed_since: new Date().toISOString(),
+            ...statusData
           })
-          .select()
 
-        if (approvalError) {
-          console.error('❌ Approval upsert error:', approvalError)
-          throw new Error(`Failed to approve results: ${approvalError.message}`)
+        if (insertError) {
+          throw new Error(`Kinnitamine ebaõnnestus: ${insertError.message}`)
         }
-
-        console.log('✅ Results approved successfully:', approvalResult)
-        return true
-      } catch (error) {
-        console.error('❌ Approve results error:', error)
-        throw error
       }
+
+      return true
     },
     onSuccess: (_, rallyId) => {
-      console.log('🎉 Results approval completed')
-      queryClient.invalidateQueries({ queryKey: [...resultsKeys.rally_results(rallyId), 'status'] })
+      // Invalidate queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: resultsKeys.rally_results_status(rallyId) })
       queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
-      queryClient.invalidateQueries({ queryKey: ['approved-rallies'] })
+      queryClient.invalidateQueries({ queryKey: resultsKeys.approved_rallies() })
     },
-    onError: (error) => {
-      console.error('❌ Failed to approve results:', error)
-      alert(`Failed to approve results: ${error.message}`)
+    onError: (error: any) => {
+      console.error('Tulemuste kinnitamine ebaõnnestus:', error)
     }
   })
 }
