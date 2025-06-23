@@ -1,4 +1,4 @@
-// Fix for useRallyResultsStatus.ts - Add proper error handling for 406 errors
+// src/components/results/hooks/useRallyResultsStatus.ts - FIXED: Proper upsert logic
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { resultsKeys } from '@/hooks/useResultsManagement'
@@ -166,6 +166,8 @@ export function useApproveResults() {
           throw new Error('Rally must be completed before approving results')
         }
 
+        console.log('✅ Rally validation passed, checking results...')
+
         // Check if there are participants to approve results for
         const { data: allResults, error: resultsError } = await supabase
           .from('rally_results')
@@ -193,8 +195,10 @@ export function useApproveResults() {
 
         const currentTime = new Date().toISOString()
 
-        // Use upsert to handle cases where record doesn't exist
-        const { error } = await supabase
+        console.log('🔄 Using upsert to handle approval...')
+
+        // FIXED: Use upsert to handle both insert and update cases
+        const { data: approvalResult, error: approvalError } = await supabase
           .from('rally_results_status')
           .upsert({
             rally_id: rallyId,
@@ -204,15 +208,21 @@ export function useApproveResults() {
             results_approved: true,
             approved_at: currentTime,
             approved_by: user.id,
+            results_entered_by: user.id,
+            created_at: currentTime, // This will be ignored if record exists
             updated_at: currentTime
+          }, {
+            onConflict: 'rally_id', // This is the unique constraint column
+            ignoreDuplicates: false  // We want to update, not ignore
           })
+          .select()
 
-        if (error) {
-          console.error('❌ Approval error:', error)
-          throw new Error(`Failed to approve results: ${error.message}`)
+        if (approvalError) {
+          console.error('❌ Approval upsert error:', approvalError)
+          throw new Error(`Failed to approve results: ${approvalError.message}`)
         }
 
-        console.log('✅ Results approved successfully for rally:', rallyId)
+        console.log('✅ Results approved successfully:', approvalResult)
         return true
       } catch (error) {
         console.error('❌ Approve results error:', error)
