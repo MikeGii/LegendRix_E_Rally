@@ -1,4 +1,4 @@
-// src/hooks/useChampionshipManagement.ts
+// src/hooks/useChampionshipManagement.ts - UPDATED: New 3-point system support
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
@@ -10,9 +10,9 @@ export interface Championship {
   game_id?: string
   game_type_id?: string
   is_active: boolean
-  status: 'ongoing' | 'completed'  // ✅ ADDED
-  completed_at?: string            // ✅ ADDED
-  completed_by?: string            // ✅ ADDED
+  status: 'ongoing' | 'completed'
+  completed_at?: string
+  completed_by?: string
   created_at: string
   created_by?: string
   updated_at: string
@@ -28,7 +28,7 @@ export interface ChampionshipRally {
   id: string
   championship_id: string
   rally_id: string
-  round_number: number  // Database value (may not match display order)
+  round_number: number
   round_name?: string
   is_active: boolean
   created_at: string
@@ -36,10 +36,11 @@ export interface ChampionshipRally {
   rally_name?: string
   rally_date?: string
   rally_status?: string
-  etapp_number?: number           // ✅ NEW: Date-based etapp number
-  display_round_number?: number   // ✅ NEW: What to show in UI
+  etapp_number?: number
+  display_round_number?: number
 }
 
+// UPDATED: New interface to match the updated championship results system
 export interface ChampionshipResults {
   participant_name: string
   user_id?: string
@@ -48,11 +49,15 @@ export interface ChampionshipResults {
     rally_id: string
     rally_name: string
     round_number: number
-    points: number
+    rally_points: number      // NEW: Rally points
+    extra_points: number      // NEW: Extra points  
+    overall_points: number    // NEW: Total points (rally + extra)
     participated: boolean
     class_position?: number
   }>
-  total_points: number
+  total_rally_points: number     // NEW: Sum of rally points
+  total_extra_points: number     // NEW: Sum of extra points
+  total_overall_points: number   // NEW: Sum of overall points
   rounds_participated: number
   championship_position?: number
 }
@@ -98,14 +103,13 @@ export function useChampionships() {
         game_name: championship.game?.name || null,
         game_type_name: championship.game_type?.name || null,
         total_rallies: championship.championship_rallies?.length || 0,
-        // ✅ ADDED: Ensure status has default value
         status: championship.status || 'ongoing'
       }))
 
       console.log(`✅ Loaded ${championships.length} championships`)
       return championships
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -120,16 +124,23 @@ export function useCreateChampionship() {
       game_id?: string
       game_type_id?: string
     }) => {
-      console.log('🔄 Creating championship...', data)
+      console.log('🔄 Creating championship:', data.name)
+      
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        throw new Error('Authentication required')
+      }
 
       const { data: championship, error } = await supabase
         .from('championships')
-        .insert([{
+        .insert({
           ...data,
-          season_year: data.season_year || new Date().getFullYear(),
-          status: 'ongoing', // ✅ ADDED: Set default status
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        }])
+          is_active: true,
+          status: 'ongoing',
+          created_by: user.id,
+          activated_at: new Date().toISOString(),
+          activated_by: user.id
+        })
         .select()
         .single()
 
@@ -138,8 +149,78 @@ export function useCreateChampionship() {
         throw error
       }
 
-      console.log('✅ Championship created:', championship.id)
+      console.log('✅ Championship created:', championship.name)
       return championship
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: championshipKeys.lists() })
+    }
+  })
+}
+
+export function useUpdateChampionship() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ 
+      id, 
+      ...championshipData 
+    }: { 
+      id: string
+      name?: string
+      description?: string
+      season_year?: number
+      game_id?: string
+      game_type_id?: string
+    }) => {
+      console.log('🔄 Updating championship:', id)
+      
+      const { data, error } = await supabase
+        .from('championships')
+        .update({
+          ...championshipData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating championship:', error)
+        throw error
+      }
+
+      console.log('✅ Championship updated:', data.name)
+      return data
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: championshipKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: championshipKeys.detail(variables.id) })
+    }
+  })
+}
+
+export function useDeleteChampionship() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (championshipId: string) => {
+      console.log('🔄 Deactivating championship:', championshipId)
+      
+      const { error } = await supabase
+        .from('championships')
+        .update({ 
+          is_active: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', championshipId)
+
+      if (error) {
+        console.error('Error deactivating championship:', error)
+        throw error
+      }
+
+      console.log('✅ Championship deactivated')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: championshipKeys.lists() })
@@ -156,42 +237,39 @@ export function useChampionshipRallies(championshipId: string) {
     queryKey: championshipKeys.rallies(championshipId),
     queryFn: async (): Promise<ChampionshipRally[]> => {
       if (!championshipId) return []
-
-      console.log('🔄 Loading championship rallies ordered by competition date...')
-
-      const { data, error } = await supabase
+      
+      console.log('🔄 Loading championship rallies for:', championshipId)
+      
+      const { data: rallies, error } = await supabase
         .from('championship_rallies')
         .select(`
           *,
-          rally:rallies(name, competition_date, status)
+          rally:rallies(
+            name, 
+            competition_date, 
+            status
+          )
         `)
         .eq('championship_id', championshipId)
         .eq('is_active', true)
-        // ❌ REMOVED: .order('round_number', { ascending: true })
+        .order('round_number', { ascending: true })
 
       if (error) {
         console.error('Error loading championship rallies:', error)
         throw error
       }
 
-      // ✅ Sort by competition_date instead of round_number
-      const sortedRallies = (data || []).sort((a, b) => {
-        const dateA = new Date((a.rally as any)?.competition_date || '1970-01-01').getTime()
-        const dateB = new Date((b.rally as any)?.competition_date || '1970-01-01').getTime()
-        return dateA - dateB
-      })
-
-      const rallies = sortedRallies.map((cr, index) => ({
+      const transformedRallies = rallies?.map((cr: any, index: number) => ({
         ...cr,
-        rally_name: (cr.rally as any)?.name || 'Unknown Rally',
-        rally_date: (cr.rally as any)?.competition_date || null,
-        rally_status: (cr.rally as any)?.status || 'unknown',
-        etapp_number: index + 1, // ✅ Assign etapp based on date order
-        display_round_number: index + 1 // ✅ Display etapp number instead of database round_number
-      }))
+        rally_name: cr.rally?.name || 'Unknown Rally',
+        rally_date: cr.rally?.competition_date,
+        rally_status: cr.rally?.status,
+        etapp_number: index + 1,
+        display_round_number: index + 1
+      })) || []
 
-      console.log(`✅ Loaded ${rallies.length} championship rallies ordered by date`)
-      return rallies
+      console.log(`✅ Championship rallies loaded: ${transformedRallies.length}`)
+      return transformedRallies
     },
     enabled: !!championshipId,
     staleTime: 5 * 60 * 1000,
@@ -208,11 +286,11 @@ export function useAddRallyToChampionship() {
       round_number: number
       round_name?: string
     }) => {
-      console.log('🔄 Adding rally to championship...', data)
-
-      const { data: championshipRally, error } = await supabase
+      console.log('🔄 Adding rally to championship...')
+      
+      const { data: result, error } = await supabase
         .from('championship_rallies')
-        .insert([data])
+        .insert(data)
         .select()
         .single()
 
@@ -222,12 +300,11 @@ export function useAddRallyToChampionship() {
       }
 
       console.log('✅ Rally added to championship')
-      return championshipRally
+      return result
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: championshipKeys.rallies(variables.championship_id) 
-      })
+      queryClient.invalidateQueries({ queryKey: championshipKeys.rallies(variables.championship_id) })
+      queryClient.invalidateQueries({ queryKey: championshipKeys.results(variables.championship_id) })
     }
   })
 }
@@ -240,11 +317,11 @@ export function useRemoveRallyFromChampionship() {
       championship_id: string
       rally_id: string
     }) => {
-      console.log('🔄 Removing rally from championship...', data)
-
+      console.log('🔄 Removing rally from championship...')
+      
       const { error } = await supabase
         .from('championship_rallies')
-        .delete()
+        .update({ is_active: false })
         .eq('championship_id', data.championship_id)
         .eq('rally_id', data.rally_id)
 
@@ -256,20 +333,15 @@ export function useRemoveRallyFromChampionship() {
       console.log('✅ Rally removed from championship')
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: championshipKeys.rallies(variables.championship_id) 
-      })
+      queryClient.invalidateQueries({ queryKey: championshipKeys.rallies(variables.championship_id) })
+      queryClient.invalidateQueries({ queryKey: championshipKeys.results(variables.championship_id) })
     }
   })
 }
 
-// ============================================================================
-// CHAMPIONSHIP ACTIVATION
-// ============================================================================
-
 export function useActivateChampionship() {
   const queryClient = useQueryClient()
-
+  
   return useMutation({
     mutationFn: async (championshipId: string) => {
       console.log('🔄 Activating championship:', championshipId)
@@ -302,6 +374,7 @@ export function useActivateChampionship() {
 
 // ============================================================================
 // CHAMPIONSHIP RESULTS CALCULATION (CLIENT-SIDE)
+// UPDATED: Support for new 3-point system
 // ============================================================================
 
 export function useChampionshipResults(championshipId: string) {
@@ -310,7 +383,7 @@ export function useChampionshipResults(championshipId: string) {
     queryFn: async (): Promise<ChampionshipResults[]> => {
       if (!championshipId) return []
 
-      console.log('🔄 Calculating championship results for:', championshipId)
+      console.log('🔄 Calculating championship results with new 3-point system for:', championshipId)
 
       // Get championship rallies
       const { data: championshipRallies, error: ralliesError } = await supabase
@@ -332,7 +405,7 @@ export function useChampionshipResults(championshipId: string) {
         return []
       }
 
-      // Get all rally results for these rallies
+      // Get all rally results for these rallies with the new 3-point structure
       const rallyIds = championshipRallies.map(cr => cr.rally_id)
       const { data: allResults, error: resultsError } = await supabase
         .from('rally_results')
@@ -342,6 +415,7 @@ export function useChampionshipResults(championshipId: string) {
           user_id,
           class_name,
           total_points,
+          extra_points,
           class_position
         `)
         .in('rally_id', rallyIds)
@@ -364,7 +438,9 @@ export function useChampionshipResults(championshipId: string) {
             user_id: result.user_id,
             class_name: result.class_name,
             rally_scores: [],
-            total_points: 0,
+            total_rally_points: 0,
+            total_extra_points: 0,
+            total_overall_points: 0,
             rounds_participated: 0
           })
         }
@@ -379,17 +455,26 @@ export function useChampionshipResults(championshipId: string) {
             r.class_name === participant.class_name
           )
 
+          // Calculate points using new 3-point system
+          const rallyPoints = rallyResult?.total_points || 0
+          const extraPoints = rallyResult?.extra_points || 0
+          const overallPoints = rallyPoints + extraPoints
+
           participant.rally_scores.push({
             rally_id: cr.rally_id,
             rally_name: cr.rally?.name || 'Unknown Rally',
             round_number: cr.round_number,
-            points: rallyResult?.total_points || 0,
-            participated: !!rallyResult,
+            rally_points: rallyPoints,
+            extra_points: extraPoints,
+            overall_points: overallPoints,
+            participated: !!rallyResult && overallPoints > 0,
             class_position: rallyResult?.class_position || undefined
           })
 
-          if (rallyResult) {
-            participant.total_points += rallyResult.total_points || 0
+          if (rallyResult && overallPoints > 0) {
+            participant.total_rally_points += rallyPoints
+            participant.total_extra_points += extraPoints
+            participant.total_overall_points += overallPoints
             participant.rounds_participated += 1
           }
         })
@@ -404,12 +489,18 @@ export function useChampionshipResults(championshipId: string) {
         resultsByClass.get(participant.class_name)!.push(participant)
       })
 
-      // Sort each class and assign positions
+      // Sort each class and assign positions using new sorting logic
       resultsByClass.forEach(classResults => {
         classResults.sort((a, b) => {
-          if (b.total_points !== a.total_points) {
-            return b.total_points - a.total_points
+          // Primary: total overall points (descending)
+          if (b.total_overall_points !== a.total_overall_points) {
+            return b.total_overall_points - a.total_overall_points
           }
+          // Secondary: total extra points (descending)
+          if (b.total_extra_points !== a.total_extra_points) {
+            return b.total_extra_points - a.total_extra_points
+          }
+          // Tertiary: rounds participated (descending)
           return b.rounds_participated - a.rounds_participated
         })
 
@@ -419,11 +510,11 @@ export function useChampionshipResults(championshipId: string) {
       })
 
       const finalResults = Array.from(participantMap.values())
-      console.log(`✅ Calculated results for ${finalResults.length} participants`)
+      console.log(`✅ Calculated results for ${finalResults.length} participants with new 3-point system`)
       return finalResults
     },
     enabled: !!championshipId,
-    staleTime: 2 * 60 * 1000, // 2 minutes - results change less frequently
+    staleTime: 2 * 60 * 1000,
   })
 }
 

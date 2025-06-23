@@ -86,30 +86,30 @@ export function useChampionshipResults(championshipId: string) {
 
         if (championshipError) throw championshipError
 
-        // Try the new database function first
+        // Try the new database function first (if it exists)
         try {
-          const { data: standings, error: standingsError } = await supabase
-            .rpc('get_championship_standings', {
-              championship_id_param: championshipId
-            }) as { data: DatabaseStanding[] | null, error: any }
+          const { data: functionResult, error: functionError } = await supabase
+            .rpc('get_championship_standings_with_extra_points', {
+              p_championship_id: championshipId
+            })
 
-          if (!standingsError && standings) {
-            console.log('✅ Using new database functions')
-            return await processWithDatabaseFunctions(championshipId, championship.name, standings)
+          if (!functionError && functionResult) {
+            console.log('✅ Using database function for championship results')
+            return functionResult
           }
-        } catch (funcError) {
-          console.warn('⚠️ New functions not available, using legacy method')
+        } catch (dbFunctionError) {
+          console.log('📝 Database function not available, using legacy calculation')
         }
 
         // Fallback to legacy calculation
-        console.log('🔄 Using legacy calculation method...')
         return await calculateLegacyResults(championshipId, championship.name)
 
       } catch (error) {
-        console.error('Error calculating championship results:', error)
+        console.error('❌ Error in championship results calculation:', error)
         throw error
       }
     },
+    enabled: !!championshipId,
     staleTime: 2 * 60 * 1000,
   })
 }
@@ -213,6 +213,8 @@ async function processWithDatabaseFunctions(
 }
 
 async function calculateLegacyResults(championshipId: string, championshipName: string): Promise<ChampionshipResults> {
+  console.log('🔄 Using legacy championship calculation for:', championshipId)
+
   // Get championship rallies
   const { data: championshipRallies, error: ralliesError } = await supabase
     .from('championship_rallies')
@@ -251,10 +253,8 @@ async function calculateLegacyResults(championshipId: string, championshipName: 
       etapp_number: index + 1
     }))
 
-  // Get all rally results
+  // Get all rally results - FIXED: Don't filter by class_position
   const rallyIds = sortedRallies.map(r => r.rally_id)
-
-  // ✅ PARANDUS: Laadi kõik vajalikud väljad
   const { data: allResults, error: resultsError } = await supabase
     .from('rally_results')
     .select(`
@@ -268,7 +268,8 @@ async function calculateLegacyResults(championshipId: string, championshipName: 
       class_position
     `)
     .in('rally_id', rallyIds)
-    .not('class_position', 'is', null)
+    .not('participant_name', 'is', null) // Only exclude null participant names
+    // REMOVED: .not('class_position', 'is', null) - This was excluding participants without class positions
 
   if (resultsError) throw resultsError
 
@@ -330,11 +331,16 @@ async function calculateLegacyResults(championshipId: string, championshipName: 
         r.class_name === participant.class_name
       )
 
-      // ✅ PARANDUS: Arvuta overall_points õigesti
+      // Calculate points using new 3-point system
       const rallyPoints = rallyResult?.total_points || 0
       const extraPoints = rallyResult?.extra_points || 0
-      const overallPoints = rallyPoints + extraPoints  // KOGUPUNKTID
-      const participated = !!rallyResult && overallPoints > 0
+      const overallPoints = rallyPoints + extraPoints
+      
+      // FIXED: Consider participant as "participated" if they have ANY points or a class position
+      const participated = !!rallyResult && (
+        overallPoints > 0 || 
+        rallyResult.class_position !== null
+      )
 
       participant.rally_scores.push({
         rally_id: rally.rally_id,
@@ -344,7 +350,7 @@ async function calculateLegacyResults(championshipId: string, championshipName: 
         competition_date: rally.competition_date,
         rally_points: rallyPoints,
         extra_points: extraPoints,
-        overall_points: overallPoints,  // ✅ PEAMINE - see kuvatakse tabelis!
+        overall_points: overallPoints,
         participated: participated,
         class_position: rallyResult?.class_position || undefined
       })
@@ -352,7 +358,7 @@ async function calculateLegacyResults(championshipId: string, championshipName: 
       if (participated) {
         participant.total_rally_points += rallyPoints
         participant.total_extra_points += extraPoints
-        participant.total_overall_points += overallPoints  // ✅ Kogupunktide summa
+        participant.total_overall_points += overallPoints
         participant.rounds_participated++
       }
     })
@@ -370,19 +376,19 @@ async function calculateLegacyResults(championshipId: string, championshipName: 
     }
   })
 
-  // ✅ PARANDUS: Sort each class and assign positions
+  // Sort each class and assign positions
   participantsByClass.forEach(classParticipants => {
     if (classParticipants && classParticipants.length > 0) {
       classParticipants.sort((a, b) => {
-        // Kõigepealt overall points
+        // Primary: total overall points (descending)
         if (b.total_overall_points !== a.total_overall_points) {
           return b.total_overall_points - a.total_overall_points
         }
-        // Siis extra points kui overall võrdne
+        // Secondary: total extra points (descending)
         if (b.total_extra_points !== a.total_extra_points) {
           return b.total_extra_points - a.total_extra_points
         }
-        // Lõpuks osaluste arv
+        // Tertiary: rounds participated (descending)
         return b.rounds_participated - a.rounds_participated
       })
 
@@ -392,10 +398,17 @@ async function calculateLegacyResults(championshipId: string, championshipName: 
     }
   })
 
+  const participants = Array.from(participantMap.values())
+
+  console.log(`✅ Championship calculation complete:`)
+  console.log(`   - Total participants: ${participants.length}`)
+  console.log(`   - Linked: ${linkedCount}, Unlinked: ${unlinkedCount}`)
+  console.log(`   - Total rounds: ${sortedRallies.length}`)
+
   return {
     championship_id: championshipId,
     championship_name: championshipName,
-    participants: Array.from(participantMap.values()),
+    participants: participants,
     total_rounds: sortedRallies.length,
     linked_participants: linkedCount,
     unlinked_participants: unlinkedCount,
