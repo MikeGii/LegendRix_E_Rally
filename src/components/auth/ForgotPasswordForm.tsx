@@ -52,34 +52,33 @@ export function ForgotPasswordForm({ onBackToLogin }: ForgotPasswordFormProps) {
     setSuccess(false)
 
     try {
-      console.log('🔄 Sending password reset email to:', data.email)
+      console.log('🔄 Sending password reset request to:', data.email)
 
-      // Option 1: Use Supabase with custom redirect and bypass template
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        data.email.trim(),
-        {
-          redirectTo: `${window.location.origin}/reset-password`,
-          captchaToken: undefined // Disable any captcha requirements
-        }
-      )
+      // Use our custom API endpoint
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email.trim()
+        })
+      })
 
-      if (resetError) {
-        console.error('❌ Password reset error:', resetError.message)
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('❌ Password reset request failed:', result.error)
         
-        // Handle specific error cases
-        if (resetError.message.includes('rate limit')) {
-          setError('Liiga palju katseid. Palun oota mõni minut ja proovi uuesti.')
-        } else if (resetError.message.includes('User not found')) {
-          // Don't reveal if user exists for security
-          setSuccess(true)
-          form.reset()
+        if (response.status === 429) {
+          setError('Parooli lähtestamise link on juba saadetud. Palun kontrolli oma e-maili või oota 1 tund.')
         } else {
-          setError('E-maili saatmine ebaõnnestus. Palun kontrolli e-maili aadressi ja proovi uuesti.')
+          setError(result.error || 'E-maili saatmine ebaõnnestus. Palun proovi uuesti.')
         }
         return
       }
 
-      console.log('✅ Password reset email sent successfully')
+      console.log('✅ Password reset request sent successfully')
       setSuccess(true)
       
       // Clear form

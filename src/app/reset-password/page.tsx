@@ -62,105 +62,58 @@ export default function ResetPasswordPage() {
     const handlePasswordReset = async () => {
       try {
         const urlParams = new URLSearchParams(window.location.search)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1))
         
         // Check for error in URL first
         const urlError = urlParams.get('error')
-        const errorCode = urlParams.get('error_code')
-        const errorDescription = urlParams.get('error_description')
-        
         if (urlError) {
-          console.error('❌ URL contains error:', { urlError, errorCode, errorDescription })
-          
-          let errorMessage = 'Parooli lähtestamise link on aegunud või vigane. Palun taotle uus link.'
-          
-          if (errorCode === 'otp_expired' || urlError === 'access_denied') {
-            errorMessage = 'Parooli lähtestamise link on aegunud. Palun taotle uus parooli lähtestamise link.'
-          }
-          
-          setError(errorMessage)
+          console.error('❌ URL contains error:', urlError)
+          setError('Parooli lähtestamise link on aegunud või vigane. Palun taotle uus link.')
           setValidating(false)
           return
         }
         
-        // Check for code parameter (Supabase's standard recovery flow)
-        const code = urlParams.get('code')
-        if (code) {
-          console.log('🔄 Found recovery code, exchanging for session...')
+        // Check for our custom token parameter
+        const token = urlParams.get('token')
+        if (token) {
+          console.log('🔄 Found custom reset token, validating...')
           
           try {
-            const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-            
-            if (error) {
-              console.error('❌ Code exchange error:', error.message)
+            // Validate token with our API
+            const response = await fetch('/api/auth/validate-reset-token', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ token })
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+              console.error('❌ Token validation failed:', result.error)
               setError('Parooli lähtestamise link on aegunud või vigane. Palun taotle uus link.')
               setValidating(false)
               return
             }
-            
-            if (data.session) {
-              console.log('✅ Recovery session created successfully')
-              // Clean up URL to remove the code parameter
-              window.history.replaceState({}, document.title, '/reset-password')
+
+            if (result.valid) {
+              console.log('✅ Custom reset token is valid')
+              // Store token for password update
+              sessionStorage.setItem('reset_token', token)
               setValidating(false)
               return
             }
-          } catch (exchangeError) {
-            console.error('❌ Code exchange exception:', exchangeError)
-            setError('Parooli lähtestamise lingi töötlemine ebaõnnestus.')
+          } catch (validationError) {
+            console.error('❌ Token validation exception:', validationError)
+            setError('Parooli lähtestamise lingi kontrollimine ebaõnnestus.')
             setValidating(false)
             return
           }
-        }
-        
-        // Check for access token in hash (alternative Supabase behavior)
-        const accessToken = hashParams.get('access_token')
-        const refreshToken = hashParams.get('refresh_token')
-        const type = hashParams.get('type')
-        
-        if (accessToken && refreshToken && type === 'recovery') {
-          console.log('🔄 Found recovery tokens in URL hash, setting session...')
-          
-          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          })
-          
-          if (sessionError) {
-            console.error('❌ Session creation error:', sessionError.message)
-            setError('Parooli lähtestamise lingi töötlemine ebaõnnestus.')
-            setValidating(false)
-            return
-          }
-          
-          if (sessionData.session) {
-            console.log('✅ Recovery session created successfully')
-            // Clean up URL
-            window.history.replaceState({}, document.title, '/reset-password')
-            setValidating(false)
-            return
-          }
-        }
-        
-        // Check for existing session
-        const { data, error: sessionError } = await supabase.auth.getSession()
-        
-        if (sessionError) {
-          console.error('❌ Session error:', sessionError.message)
-          setError('Sessiooni kontrollimisel tekkis viga.')
-          setValidating(false)
-          return
         }
 
-        if (data.session) {
-          console.log('✅ Valid session found')
-          setValidating(false)
-          return
-        }
-
-        // No valid session, code, or tokens found
-        console.error('❌ No valid session, code, or recovery tokens found')
-        setError('Parooli lähtestamise sessioon on aegunud. Palun taotle uus parooli lähtestamise link.')
+        // No valid token found
+        console.error('❌ No valid reset token found')
+        setError('Parooli lähtestamise link puudub või on vigane. Palun taotle uus link.')
         setValidating(false)
         
       } catch (err) {
@@ -188,19 +141,41 @@ export default function ResetPasswordPage() {
     setError('')
 
     try {
-      console.log('🔄 Updating user password...')
+      console.log('🔄 Updating password with custom token...')
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: data.password
+      const token = sessionStorage.getItem('reset_token')
+      if (!token) {
+        setError('Parooli lähtestamise sessioon on aegunud. Palun taotle uus link.')
+        setLoading(false)
+        return
+      }
+
+      // Use our custom API to update password
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          password: data.password
+        })
       })
 
-      if (updateError) {
-        console.error('❌ Password update error:', updateError.message)
-        setError('Parooli uuendamine ebaõnnestus. Palun proovi uuesti.')
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('❌ Password reset failed:', result.error)
+        setError(result.error || 'Parooli uuendamine ebaõnnestus. Palun proovi uuesti.')
+        setLoading(false)
         return
       }
 
       console.log('✅ Password updated successfully')
+      
+      // Clean up session storage
+      sessionStorage.removeItem('reset_token')
+      
       setSuccess(true)
 
       // Redirect to login after 3 seconds
