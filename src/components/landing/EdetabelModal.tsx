@@ -105,18 +105,24 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
   const handleChampionshipModalClose = () => {
     setIsChampionshipModalOpen(false)
     setSelectedChampionship(null)
-    onChampionshipModalToggle?.(false) // NOTIFY PARENT
+    onChampionshipModalToggle?.(false)
   }
 
-  // Use the new close handler:
-  {isChampionshipModalOpen && selectedChampionship && (
-    <ChampionshipResultsModal
-      isOpen={isChampionshipModalOpen}
-      onClose={handleChampionshipModalClose} // USE NEW HANDLER
-      championshipId={selectedChampionship.id}
-      championshipName={selectedChampionship.name}
-    />
-  )}
+  const getChampionshipStatus = (championship: PublicChampionship) => {
+    const status = (championship as any).status || 'ongoing'
+    
+    if (status === 'completed') {
+      return {
+        text: 'Lõppenud',
+        className: 'px-2 py-1 bg-red-600/20 text-red-400 rounded text-xs font-medium'
+      }
+    } else {
+      return {
+        text: 'Käimasolev',
+        className: 'px-2 py-1 bg-green-600/20 text-green-400 rounded text-xs font-medium'
+      }
+    }
+  }
 
   // Format date function
   const formatDate = (dateString: string) => {
@@ -252,7 +258,7 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
                   <p className="text-slate-400">
                     {viewType === 'rallies' 
                       ? 'Kinnitatud ralli tulemused'
-                      : 'Meistrivõistluste tulemused'
+                      : 'Koondarvestuste tulemused'
                     }
                   </p>
                 </div>
@@ -291,7 +297,7 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
                         : 'text-slate-300 hover:text-white'
                     }`}
                   >
-                    🏆 Meistrivõistlused ({publicChampionships.length})
+                    🏆 Koondarvestused ({publicChampionships.length})
                   </button>
                 </div>
 
@@ -432,60 +438,62 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {publicChampionships.map((championship) => (
-                          <div
-                            key={championship.id}
-                            onClick={() => handleChampionshipClick(championship)}
-                            className="group bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
-                                    {championship.name}
-                                  </h3>
-                                  <span className="px-2 py-1 bg-blue-600/20 text-blue-400 rounded text-xs font-medium">
-                                    {championship.season_year}
-                                  </span>
-                                  {championship.is_active && (
-                                    <span className="px-2 py-1 bg-green-600/20 text-green-400 rounded text-xs font-medium">
-                                      Aktiivne
+                        {publicChampionships.map((championship) => {
+                          const statusInfo = getChampionshipStatus(championship)
+                          
+                          return (
+                            <div
+                              key={championship.id}
+                              onClick={() => handleChampionshipClick(championship)}
+                              className="group bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+                                      {championship.name}
+                                    </h3>
+                                    <span className="px-2 py-1 bg-blue-600/20 text-blue-400 rounded text-xs font-medium">
+                                      {championship.season_year}
                                     </span>
-                                  )}
+                                    <span className={statusInfo.className}>
+                                      {statusInfo.text}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-4 text-sm text-slate-400">
+                                    {championship.game_name && (
+                                      <span className="flex items-center gap-1">
+                                        🎮 {championship.game_name}
+                                      </span>
+                                    )}
+                                    {championship.game_type_name && (
+                                      <span className="flex items-center gap-1">
+                                        🏁 {championship.game_type_name}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                
-                                <div className="flex items-center gap-4 text-sm text-slate-400">
-                                  {championship.game_name && (
-                                    <span className="flex items-center gap-1">
-                                      🎮 {championship.game_name}
-                                    </span>
-                                  )}
-                                  {championship.game_type_name && (
-                                    <span className="flex items-center gap-1">
-                                      🏁 {championship.game_type_name}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
 
-                              <div className="flex items-center gap-6 text-center">
-                                <div>
-                                  <div className="text-2xl font-bold text-white">{championship.total_rallies}</div>
-                                  <div className="text-xs text-slate-400">Etappi</div>
-                                </div>
-                                <div>
-                                  <div className="text-2xl font-bold text-blue-400">{championship.total_participants}</div>
-                                  <div className="text-xs text-slate-400">Osalejaid</div>
-                                </div>
-                                <div className="text-slate-400 group-hover:text-blue-400 transition-colors">
-                                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                  </svg>
+                                <div className="flex items-center gap-6 text-center">
+                                  <div>
+                                    <div className="text-2xl font-bold text-white">{championship.total_rallies}</div>
+                                    <div className="text-xs text-slate-400">Etappi</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-2xl font-bold text-blue-400">{championship.total_participants}</div>
+                                    <div className="text-xs text-slate-400">Osalejaid</div>
+                                  </div>
+                                  <div className="text-slate-400 group-hover:text-blue-400 transition-colors">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
                   </>

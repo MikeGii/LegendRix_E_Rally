@@ -47,8 +47,6 @@ export function useChampionshipResults(championshipId: string) {
     queryFn: async (): Promise<ChampionshipResults | null> => {
       if (!championshipId) return null
 
-      console.log('🔄 FIXED VERSION: Loading championship results directly from rally_results...')
-
       try {
         // Get championship info
         const { data: championship, error: championshipError } = await supabase
@@ -85,8 +83,6 @@ export function useChampionshipResults(championshipId: string) {
           }
         }
 
-        console.log(`Found ${championshipRallies.length} championship rallies`)
-
         // Sort rallies by date and assign etapp numbers
         const sortedRallies = championshipRallies
           .map(cr => ({
@@ -99,8 +95,6 @@ export function useChampionshipResults(championshipId: string) {
             ...rally,
             etapp_number: index + 1
           }))
-
-        console.log('Sorted rallies:', sortedRallies.map(r => `${r.rally_name} (${r.rally_id})`))
 
         // Get ALL rally results - NO FILTERING WHATSOEVER!
         const rallyIds = sortedRallies.map(r => r.rally_id)
@@ -122,12 +116,9 @@ export function useChampionshipResults(championshipId: string) {
         if (resultsError) throw resultsError
 
         const results = allResults || []
-        console.log(`📊 Found ${results.length} rally results across ${rallyIds.length} rallies`)
 
         // Debug logging - see what we got
         const uniqueParticipants = new Set(results.map(r => `${r.participant_name}|${r.class_name}`))
-        console.log(`Found ${uniqueParticipants.size} unique participants:`)
-        Array.from(uniqueParticipants).forEach(p => console.log(`  - ${p}`))
 
         // Group participants and calculate totals
         const participantMap = new Map<string, ChampionshipParticipant>()
@@ -163,7 +154,6 @@ export function useChampionshipResults(championshipId: string) {
 
           // Create or get participant
           if (!participantMap.has(participantKey)) {
-            console.log(`Creating participant: ${result.participant_name} (${participantType})`)
             
             participantMap.set(participantKey, {
               participant_key: participantKey,
@@ -185,11 +175,9 @@ export function useChampionshipResults(championshipId: string) {
           }
         })
 
-        console.log(`Created ${participantMap.size} participants (${linkedCount} linked, ${unlinkedCount} unlinked)`)
 
         // Add rally scores for each participant
         participantMap.forEach(participant => {
-          console.log(`Processing rally scores for: ${participant.participant_name}`)
           
           sortedRallies.forEach(rally => {
             // Find all results for this participant in this rally
@@ -252,7 +240,6 @@ export function useChampionshipResults(championshipId: string) {
           // Sort rally scores by etapp number
           participant.rally_scores.sort((a, b) => a.etapp_number - b.etapp_number)
           
-          console.log(`  - ${participant.participant_name}: ${participant.rounds_participated} rounds, ${participant.total_overall_points} points`)
         })
 
         // Calculate championship positions by class
@@ -266,8 +253,7 @@ export function useChampionshipResults(championshipId: string) {
 
         // Sort each class and assign positions
         participantsByClass.forEach((classParticipants, className) => {
-          console.log(`Sorting ${classParticipants.length} participants in class: ${className}`)
-          
+        
           classParticipants.sort((a, b) => {
             // Primary: total overall points (descending)
             if (b.total_overall_points !== a.total_overall_points) {
@@ -283,7 +269,6 @@ export function useChampionshipResults(championshipId: string) {
 
           classParticipants.forEach((participant, index) => {
             participant.championship_position = index + 1
-            console.log(`  ${index + 1}. ${participant.participant_name}: ${participant.total_overall_points} pts`)
           })
         })
 
@@ -293,12 +278,6 @@ export function useChampionshipResults(championshipId: string) {
         if (unlinkedCount > 0) {
           warnings.push(`${unlinkedCount} unlinked participants found`)
         }
-
-        console.log(`✅ FIXED championship calculation complete:`)
-        console.log(`   - Total participants: ${participants.length}`)
-        console.log(`   - Linked: ${linkedCount}, Unlinked: ${unlinkedCount}`)
-        console.log(`   - Total rounds: ${sortedRallies.length}`)
-        console.log(`   - Warnings: ${warnings.join(', ')}`)
 
         return {
           championship_id: championshipId,
