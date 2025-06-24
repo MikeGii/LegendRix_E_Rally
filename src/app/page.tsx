@@ -11,6 +11,7 @@ import { VerificationMessage } from '@/components/auth/VerificationMessage'
 import { CompetitionsModal } from '@/components/landing/CompetitionsModal'
 import { EdetabelModal } from '@/components/landing/EdetabelModal'
 import { usePublicUpcomingRallies } from '@/hooks/usePublicRallies'
+import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm'
 
 // Import modular landing page components
 import { HeroSection } from '@/components/landing/sections/HeroSection'
@@ -18,7 +19,7 @@ import { FeaturesSection } from '@/components/landing/sections/FeaturesSection'
 import { SupportersSection } from '@/components/landing/supporters/SupportersSection'
 import { SocialMediaSection } from '@/components/landing/sections/SocialMediaSection'
 
-type AuthView = 'login' | 'register'
+type AuthView = 'login' | 'register' | 'forgot-password'
 
 // Memoized modal state calculations
 const useModalState = (
@@ -309,12 +310,15 @@ function HomeContent() {
               {authView === 'login' ? (
                 <LoginForm 
                   onSwitchToRegister={() => setAuthView('register')}
+                  onSwitchToForgotPassword={() => setAuthView('forgot-password')} // Add this
                   onLoginStart={() => {}}
                   onLoginError={() => {}}
                   onLoginSuccess={handleLoginSuccess}
                 />
-              ) : (
+              ) : authView === 'register' ? (
                 <RegisterForm onSwitchToLogin={() => setAuthView('login')} />
+              ) : (
+                <ForgotPasswordForm onBackToLogin={() => setAuthView('login')} />
               )}
             </div>
           </div>
