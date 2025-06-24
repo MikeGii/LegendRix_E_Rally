@@ -1,4 +1,4 @@
-// src/app/sponsors/page.tsx - Updated with Unified Admin Design
+// src/app/sponsors/page.tsx - Updated with requested changes
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -15,12 +15,6 @@ interface BigSponsor {
   display_order: number
   is_active: boolean
   created_at: string
-}
-
-interface BigSponsorCarouselProps {
-  sponsors: BigSponsor[]
-  autoPlay?: boolean
-  speed?: 'slow' | 'medium' | 'fast'
 }
 
 interface StreamSupporter {
@@ -40,10 +34,6 @@ export default function SponsorsPage() {
   const [supporters, setSupporters] = useState<StreamSupporter[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  
-  // Editing state for supporters
-  const [editingSupporter, setEditingSupporter] = useState<string | null>(null)
-  const [editAmount, setEditAmount] = useState('')
 
   // Form states for adding new items
   const [newSponsor, setNewSponsor] = useState({
@@ -55,7 +45,6 @@ export default function SponsorsPage() {
 
   const [newSupporter, setNewSupporter] = useState({
     supporter_name: '',
-    donation_amount: '0', // Change from '' to '0'
     donation_month: new Date().getMonth() + 1,
     donation_year: new Date().getFullYear()
   })
@@ -146,7 +135,7 @@ export default function SponsorsPage() {
         .from('stream_supporters')
         .insert([{
           supporter_name: newSupporter.supporter_name,
-          donation_amount: parseFloat(newSupporter.donation_amount),
+          donation_amount: 0, // Set default amount to 0 since we're not collecting it
           donation_month: newSupporter.donation_month,
           donation_year: newSupporter.donation_year,
           is_active: true
@@ -160,7 +149,6 @@ export default function SponsorsPage() {
       setMessage({ type: 'success', text: 'Toetaja edukalt lisatud!' })
       setNewSupporter({
         supporter_name: '',
-        donation_amount: '',
         donation_month: new Date().getMonth() + 1,
         donation_year: new Date().getFullYear()
       })
@@ -249,10 +237,9 @@ export default function SponsorsPage() {
     )
   }
 
-  // Calculate stats
+  // Calculate stats (removed donation amount calculation)
   const activeSponsors = sponsors.filter(s => s.is_active).length
   const activeSupporters = supporters.filter(s => s.is_active).length
-  const totalDonations = supporters.reduce((sum, s) => sum + s.donation_amount, 0)
 
   return (
     <DashboardLayout>
@@ -261,12 +248,11 @@ export default function SponsorsPage() {
         {/* Unified Admin Header */}
         <AdminPageHeader
           title="Toetamised"
-          description="Halda sponsoreid ja voo toetajaid"
+          description="Halda sponsoreid ja e-spordikeskuse toetajaid"
           icon="💝"
           stats={[
             { label: 'Aktiivsed sponsorid', value: activeSponsors, color: 'green' },
-            { label: 'Aktiivsed toetajad', value: activeSupporters, color: 'blue' },
-            { label: 'Kokku annetusi', value: `€${totalDonations.toFixed(2)}`, color: 'yellow' }
+            { label: 'Aktiivsed toetajad', value: activeSupporters, color: 'blue' }
           ]}
           onRefresh={fetchData}
           isLoading={loading}
@@ -309,7 +295,7 @@ export default function SponsorsPage() {
               }`}
             >
               <span className="text-xl mr-2">💝</span>
-              Voo toetajad
+              E-Spordikeskuse toetajad
             </button>
           </div>
         </div>
@@ -397,21 +383,24 @@ export default function SponsorsPage() {
                   {sponsors.map((sponsor) => (
                     <div key={sponsor.id} className="bg-slate-900/50 rounded-xl p-4 flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <img
-                          src={sponsor.logo_url}
-                          alt={sponsor.name}
-                          className="h-12 w-auto object-contain"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/image/sponsor-placeholder.png'
-                          }}
-                        />
+                        <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center overflow-hidden">
+                          {sponsor.logo_url ? (
+                            <img 
+                              src={sponsor.logo_url} 
+                              alt={sponsor.name}
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            <span className="text-blue-400 text-xl">🏢</span>
+                          )}
+                        </div>
                         <div>
                           <h4 className="text-white font-medium">{sponsor.name}</h4>
                           <p className="text-slate-400 text-sm">Järjekord: {sponsor.display_order}</p>
                           {sponsor.website_url && (
-                            <a
-                              href={sponsor.website_url}
-                              target="_blank"
+                            <a 
+                              href={sponsor.website_url} 
+                              target="_blank" 
                               rel="noopener noreferrer"
                               className="text-blue-400 text-sm hover:underline"
                             >
@@ -423,17 +412,17 @@ export default function SponsorsPage() {
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleToggleActive(sponsor.id, sponsor.is_active, 'sponsor')}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${
                             sponsor.is_active
-                              ? 'bg-green-600/20 text-green-400 border border-green-600/30'
-                              : 'bg-gray-600/20 text-gray-400 border border-gray-600/30'
+                              ? 'bg-green-600 hover:bg-green-700 text-white'
+                              : 'bg-slate-600 hover:bg-slate-500 text-slate-300'
                           }`}
                         >
-                          {sponsor.is_active ? 'Aktiivne' : 'Mitteaktiivne'}
+                          {sponsor.is_active ? 'Aktiivne' : 'Passiivne'}
                         </button>
                         <button
                           onClick={() => handleDelete(sponsor.id, 'sponsor')}
-                          className="px-3 py-1 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-sm font-medium hover:bg-red-600/30 transition-colors duration-200"
+                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
                         >
                           Kustuta
                         </button>
@@ -445,7 +434,6 @@ export default function SponsorsPage() {
             </div>
           </div>
         ) : (
-          // Stream Supporters Tab
           <div className="space-y-6">
             {/* Add New Supporter Form */}
             <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
@@ -456,25 +444,13 @@ export default function SponsorsPage() {
                 <h3 className="text-xl font-semibold text-white">Lisa uus toetaja</h3>
               </div>
               
-              <form onSubmit={handleAddSupporter} className="grid md:grid-cols-2 gap-4">
+              <form onSubmit={handleAddSupporter} className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Toetaja nimi</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Nimi</label>
                   <input
                     type="text"
                     value={newSupporter.supporter_name}
                     onChange={(e) => setNewSupporter({ ...newSupporter, supporter_name: e.target.value })}
-                    className="w-full p-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Annetuse summa (€)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={newSupporter.donation_amount}
-                    onChange={(e) => setNewSupporter({ ...newSupporter, donation_amount: e.target.value })}
                     className="w-full p-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -504,7 +480,7 @@ export default function SponsorsPage() {
                     className="w-full p-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="md:col-span-3">
                   <button
                     type="submit"
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors duration-200"
@@ -521,7 +497,7 @@ export default function SponsorsPage() {
                 <div className="w-10 h-10 bg-pink-500/20 rounded-lg flex items-center justify-center">
                   <span className="text-pink-400 text-xl">💝</span>
                 </div>
-                <h3 className="text-xl font-semibold text-white">Voo toetajad</h3>
+                <h3 className="text-xl font-semibold text-white">E-Spordikeskuse toetajad</h3>
               </div>
               
               {loading ? (
@@ -542,7 +518,7 @@ export default function SponsorsPage() {
                         <div>
                           <h4 className="text-white font-medium">{supporter.supporter_name}</h4>
                           <p className="text-slate-400 text-sm">
-                            €{supporter.donation_amount.toFixed(2)} - {getMonthName(supporter.donation_month)} {supporter.donation_year}
+                            {getMonthName(supporter.donation_month)} {supporter.donation_year}
                           </p>
                           <p className="text-slate-500 text-xs">
                             Lisatud: {new Date(supporter.created_at).toLocaleDateString('et-EE')}
@@ -550,80 +526,22 @@ export default function SponsorsPage() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {editingSupporter === supporter.id ? (
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={editAmount}
-                              onChange={(e) => setEditAmount(e.target.value)}
-                              className="w-24 p-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm"
-                              placeholder="€"
-                            />
-                            <button
-                              onClick={async () => {
-                                try {
-                                  const { error } = await supabase
-                                    .from('stream_supporters')
-                                    .update({ donation_amount: parseFloat(editAmount) })
-                                    .eq('id', supporter.id)
-                                  
-                                  if (error) {
-                                    setMessage({ type: 'error', text: `Viga uuendamisel: ${error.message}` })
-                                  } else {
-                                    setMessage({ type: 'success', text: 'Toetaja edukalt uuendatud!' })
-                                    fetchData()
-                                  }
-                                } catch (error) {
-                                  setMessage({ type: 'error', text: 'Uuendamine ebaõnnestus' })
-                                }
-                                setEditingSupporter(null)
-                                setEditAmount('')
-                              }}
-                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm"
-                            >
-                              ✓
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingSupporter(null)
-                                setEditAmount('')
-                              }}
-                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm"
-                            >
-                              ✗
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => {
-                                setEditingSupporter(supporter.id)
-                                setEditAmount(supporter.donation_amount.toString())
-                              }}
-                              className="px-3 py-1 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-lg text-sm font-medium hover:bg-blue-600/30 transition-colors duration-200"
-                            >
-                              Muuda
-                            </button>
-                            <button
-                              onClick={() => handleToggleActive(supporter.id, supporter.is_active, 'supporter')}
-                              className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                                supporter.is_active
-                                  ? 'bg-green-600/20 text-green-400 border border-green-600/30'
-                                  : 'bg-gray-600/20 text-gray-400 border border-gray-600/30'
-                              }`}
-                            >
-                              {supporter.is_active ? 'Aktiivne' : 'Mitteaktiivne'}
-                            </button>
-                            <button
-                              onClick={() => handleDelete(supporter.id, 'supporter')}
-                              className="px-3 py-1 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-sm font-medium hover:bg-red-600/30 transition-colors duration-200"
-                            >
-                              Kustuta
-                            </button>
-                          </>
-                        )}
+                        <button
+                          onClick={() => handleToggleActive(supporter.id, supporter.is_active, 'supporter')}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                            supporter.is_active
+                              ? 'bg-green-600 hover:bg-green-700 text-white'
+                              : 'bg-slate-600 hover:bg-slate-500 text-slate-300'
+                          }`}
+                        >
+                          {supporter.is_active ? 'Aktiivne' : 'Passiivne'}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(supporter.id, 'supporter')}
+                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
+                        >
+                          Kustuta
+                        </button>
                       </div>
                     </div>
                   ))}

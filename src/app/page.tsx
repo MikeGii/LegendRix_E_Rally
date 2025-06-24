@@ -56,12 +56,6 @@ function HomeContent() {
     // Close the modal after successful login
     setShowAuthModal(false)
     setAuthView('login')
-    
-    // Wait for auth state to settle, then refresh
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    console.log('🔄 Forcing page refresh after successful login')
-    window.location.reload()
   }
 
   const handleDashboard = () => {

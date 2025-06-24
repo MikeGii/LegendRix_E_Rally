@@ -121,7 +121,7 @@ export function SupportersSection() {
       {/* Stream Supporters Section - PRESERVED EXACTLY - Only show if there are supporters */}
       {hasStreamSupporters && (
         <div className="mb-16">
-          <h3 className="text-2xl font-semibold text-white text-center mb-8">STREAMELEMENTS TOETAJAD</h3>
+          <h3 className="text-2xl font-semibold text-white text-center mb-8">E-SPORDIKESKUSE TOETAJAD</h3>
           <StreamSupportersTable />
         </div>
       )}
