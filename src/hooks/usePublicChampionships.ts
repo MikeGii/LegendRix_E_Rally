@@ -6,6 +6,7 @@ export interface PublicChampionship {
   name: string
   season_year: number
   is_active: boolean
+  status: 'ongoing' | 'completed'
   total_rallies: number
   total_participants: number
   game_name?: string
@@ -25,6 +26,7 @@ export function usePublicChampionships() {
           name,
           season_year,
           is_active,
+          status,
           game_id,
           game_type_id,
           games(name),
@@ -70,6 +72,7 @@ export function usePublicChampionships() {
           name: championship.name,
           season_year: championship.season_year,
           is_active: championship.is_active,
+          status: championship.status || 'ongoing',
           total_rallies: totalRallies,
           total_participants: participantNames.size,
           // Access games and game_types as arrays (Supabase returns them as arrays)

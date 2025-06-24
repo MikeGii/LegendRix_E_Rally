@@ -529,23 +529,44 @@ export function useCompleteChampionship() {
     mutationFn: async (championshipId: string) => {
       console.log('🔄 Completing championship:', championshipId)
 
+      // Get current user for logging purposes
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) {
         throw new Error('Authentication required')
       }
 
-      const { data, error } = await supabase.rpc('complete_championship', {
-        championship_id: championshipId,
-        admin_user_id: user.id
-      })
+      try {
+        // Simple direct update to the championships table
+        const { data, error } = await supabase
+          .from('championships')
+          .update({ 
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            completed_by: user.id
+          })
+          .eq('id', championshipId)
+          .select()
 
-      if (error) {
-        console.error('Error completing championship:', error)
-        throw error
+        if (error) {
+          console.error('Error completing championship:', error)
+          return {
+            success: false,
+            error: error.message
+          }
+        }
+
+        console.log('✅ Championship completed successfully:', data)
+        return {
+          success: true,
+          message: 'Championship marked as completed'
+        }
+      } catch (err: any) {
+        console.error('Error completing championship:', err)
+        return {
+          success: false,
+          error: err.message || 'Failed to complete championship'
+        }
       }
-
-      console.log('✅ Championship completion result:', data)
-      return data
     },
     onSuccess: (result) => {
       if (result.success) {
@@ -565,23 +586,44 @@ export function useReopenChampionship() {
     mutationFn: async (championshipId: string) => {
       console.log('🔄 Reopening championship:', championshipId)
 
+      // Get current user for logging purposes
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) {
         throw new Error('Authentication required')
       }
 
-      const { data, error } = await supabase.rpc('reopen_championship', {
-        championship_id: championshipId,
-        admin_user_id: user.id
-      })
+      try {
+        // Simple direct update to the championships table
+        const { data, error } = await supabase
+          .from('championships')
+          .update({ 
+            status: 'ongoing',
+            completed_at: null,
+            completed_by: null
+          })
+          .eq('id', championshipId)
+          .select()
 
-      if (error) {
-        console.error('Error reopening championship:', error)
-        throw error
+        if (error) {
+          console.error('Error reopening championship:', error)
+          return {
+            success: false,
+            error: error.message
+          }
+        }
+
+        console.log('✅ Championship reopened successfully:', data)
+        return {
+          success: true,
+          message: 'Championship reopened successfully'
+        }
+      } catch (err: any) {
+        console.error('Error reopening championship:', err)
+        return {
+          success: false,
+          error: err.message || 'Failed to reopen championship'
+        }
       }
-
-      console.log('✅ Championship reopen result:', data)
-      return data
     },
     onSuccess: (result) => {
       if (result.success) {
