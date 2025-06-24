@@ -6,16 +6,18 @@ import { useAuth } from '@/components/AuthProvider'
 
 interface LoginFormProps {
   onSwitchToRegister: () => void
+  onSwitchToForgotPassword: () => void // New prop
   onLoginStart?: () => void
   onLoginError?: () => void
-  onLoginSuccess?: () => void // Add callback for successful login
+  onLoginSuccess?: () => void
 }
 
 export function LoginForm({ 
   onSwitchToRegister, 
+  onSwitchToForgotPassword, // New prop
   onLoginStart = () => {}, 
   onLoginError = () => {},
-  onLoginSuccess = () => {} // New prop for login success
+  onLoginSuccess = () => {}
 }: LoginFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -70,7 +72,7 @@ export function LoginForm({
       <div>
         <input
           type="email"
-          placeholder="Email address"
+          placeholder="E-maili aadress"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
@@ -82,7 +84,7 @@ export function LoginForm({
       <div>
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Parool"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
@@ -91,33 +93,44 @@ export function LoginForm({
         />
       </div>
 
+      {/* Forgot Password Link */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={onSwitchToForgotPassword}
+          disabled={loading}
+          className="text-sm text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50 underline-offset-2 hover:underline"
+        >
+          Unustasid parooli?
+        </button>
+      </div>
+
       <button
         type="submit"
         disabled={loading}
         className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-            Signing in...
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <span>Sisselogimine...</span>
           </div>
         ) : (
-          'Sign In'
+          'Logi sisse'
         )}
       </button>
 
-      <div className="text-center">
-        <p className="text-gray-500 text-sm">
-          Don't have an account?{' '}
-          <button
-            type="button"
-            onClick={onSwitchToRegister}
-            disabled={loading}
-            className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 underline-offset-4 hover:underline disabled:opacity-50"
-          >
-            Register here
-          </button>
-        </p>
+      {/* Register Link */}
+      <div className="text-center text-sm text-gray-400">
+        Pole veel kontot?{' '}
+        <button
+          type="button"
+          onClick={onSwitchToRegister}
+          disabled={loading}
+          className="text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50 font-medium"
+        >
+          Registreeru siin
+        </button>
       </div>
     </form>
   )
