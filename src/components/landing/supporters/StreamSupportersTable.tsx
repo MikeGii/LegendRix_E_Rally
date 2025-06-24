@@ -1,4 +1,4 @@
-// src/components/landing/supporters/StreamSupportersTable.tsx
+// src/components/landing/supporters/StreamSupportersTable.tsx - Updated with web font
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -74,14 +74,7 @@ export function StreamSupportersTable() {
             key={supporter.id}
             className="text-center p-4 hover:bg-slate-800/10 transition-all duration-300 rounded-lg"
           >
-            <span 
-              className="text-white font-medium block"
-              style={{ 
-                fontFamily: '"French Script MT", "Brush Script MT", cursive',
-                fontSize: '3rem',
-                lineHeight: '1.2'
-              }}
-            >
+            <span className="text-white font-medium block supporter-name">
               {supporter.supporter_name}
             </span>
           </div>

@@ -1,7 +1,7 @@
-// src/app/page.tsx - YOUR ACTUAL VERSION with ONLY Header Blur Fix Added
+// src/app/page.tsx - OPTIMIZED VERSION: Console logging removed + Performance optimizations
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useAuth } from '@/components/AuthProvider'
@@ -15,12 +15,23 @@ import { usePublicUpcomingRallies } from '@/hooks/usePublicRallies'
 // Import modular landing page components
 import { HeroSection } from '@/components/landing/sections/HeroSection'
 import { FeaturesSection } from '@/components/landing/sections/FeaturesSection'
-import { CompactNewsSection } from '@/components/landing/sections/NewsSection'
 import { SupportersSection } from '@/components/landing/supporters/SupportersSection'
 import { SocialMediaSection } from '@/components/landing/sections/SocialMediaSection'
-import { WelcomeMessage } from '@/components/landing/WelcomeMessage'
 
 type AuthView = 'login' | 'register'
+
+// Memoized modal state calculations
+const useModalState = (
+  isCompetitionsModalOpen: boolean,
+  isEdetabelModalOpen: boolean,
+  showAuthModal: boolean,
+  isChampionshipModalOpen: boolean
+) => {
+  return useMemo(
+    () => isCompetitionsModalOpen || isEdetabelModalOpen || showAuthModal || isChampionshipModalOpen,
+    [isCompetitionsModalOpen, isEdetabelModalOpen, showAuthModal, isChampionshipModalOpen]
+  )
+}
 
 function HomeContent() {
   const { user, loading: authLoading, logout } = useAuth()
@@ -32,10 +43,15 @@ function HomeContent() {
   const [isMounted, setIsMounted] = useState(false)
   const [isChampionshipModalOpen, setIsChampionshipModalOpen] = useState(false)
 
-  // Check if any modal is open for header blur effect
-  const isAnyModalOpen = isCompetitionsModalOpen || isEdetabelModalOpen || showAuthModal || isChampionshipModalOpen
+  // Optimized modal state calculation
+  const isAnyModalOpen = useModalState(
+    isCompetitionsModalOpen,
+    isEdetabelModalOpen,
+    showAuthModal,
+    isChampionshipModalOpen
+  )
 
-  // Load upcoming rallies for competitions modal
+  // Load upcoming rallies for competitions modal - only when needed
   const { data: upcomingRallies = [], isLoading: isLoadingRallies } = usePublicUpcomingRallies(10)
 
   // Fix hydration issues
@@ -43,32 +59,32 @@ function HomeContent() {
     setIsMounted(true)
   }, [])
 
-  const handleOpenAuth = () => {
+  // Memoized event handlers to prevent unnecessary re-renders
+  const handleOpenAuth = useCallback(() => {
     setShowAuthModal(true)
-  }
+  }, [])
 
-  const handleCloseAuth = () => {
+  const handleCloseAuth = useCallback(() => {
     setShowAuthModal(false)
     setAuthView('login') // Reset to login when closing
-  }
+  }, [])
 
-  const handleLoginSuccess = async () => {
+  const handleLoginSuccess = useCallback(async () => {
     // Close the modal after successful login
     setShowAuthModal(false)
     setAuthView('login')
-  }
+  }, [])
 
-  const handleDashboard = () => {
+  const handleDashboard = useCallback(() => {
     if (user) {
       // Both admin and user now go to user-dashboard by default
       // Admins can use the view switcher in the header to access admin features
       router.push('/user-dashboard')
     }
-  }
+  }, [user, router])
 
-  const handleLogout = async () => {
-    console.log('🚪 Main page logout initiated...')
-    
+  // REMOVED CONSOLE LOG: console.log('🚪 Main page logout initiated...')
+  const handleLogout = useCallback(async () => {
     try {
       // Clear all auth state first
       await logout()
@@ -84,8 +100,6 @@ function HomeContent() {
         window.localStorage.removeItem('sb-localhost-auth-token')
       }
       
-      console.log('✅ Logout completed, forcing page reload...')
-      
       // Force a hard reload to completely reset the app state
       setTimeout(() => {
         window.location.href = '/'
@@ -96,26 +110,30 @@ function HomeContent() {
       // Force reload even if logout fails
       window.location.href = '/'
     }
-  }
+  }, [logout])
 
-  const handleOpenCompetitions = () => {
+  const handleOpenCompetitions = useCallback(() => {
     setIsCompetitionsModalOpen(true)
-  }
+  }, [])
 
-  // NEW: Handle opening Edetabel modal
-  const handleOpenEdetabel = () => {
+  const handleOpenEdetabel = useCallback(() => {
     setIsEdetabelModalOpen(true)
-  }
+  }, [])
 
   // Simple loading state to prevent hydration issues
   if (!isMounted) {
     return null // Don't render anything on server
   }
 
+  // Memoized blur classes for performance
+  const blurClasses = isAnyModalOpen 
+    ? 'pointer-events-none opacity-75 blur-sm transition-all duration-300' 
+    : ''
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
       {/* Elegant Glassmorphism Header - CONDITIONALLY DISABLED WHEN MODALS ARE OPEN */}
-      <header className={`absolute top-0 left-0 right-0 z-30 ${isAnyModalOpen ? 'pointer-events-none opacity-75 blur-sm transition-all duration-300' : ''}`}>
+      <header className={`absolute top-0 left-0 right-0 z-30 ${blurClasses}`}>
         {/* Background with gradient and blur */}
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-900/80 to-transparent backdrop-blur-2xl border-b border-white/5 shadow-2xl"></div>
         
@@ -185,7 +203,7 @@ function HomeContent() {
       </header>
 
       {/* Enhanced Cover Photo Section with Better Positioning and Smooth Transition - CONDITIONALLY DISABLED WHEN MODALS ARE OPEN */}
-      <div className={`relative w-full ${isAnyModalOpen ? 'pointer-events-none opacity-75 blur-sm transition-all duration-300' : ''}`} style={{ height: '35vh', marginTop: '100px' }}>
+      <div className={`relative w-full ${blurClasses}`} style={{ height: '35vh', marginTop: '100px' }}>
         <div className="absolute inset-0 overflow-hidden">
           <Image
             src="/cover-photo.png"
@@ -209,7 +227,7 @@ function HomeContent() {
       </div>
 
       {/* Main Content - CONDITIONALLY DISABLED WHEN MODALS ARE OPEN */}
-      <main className={`relative z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950 ${isAnyModalOpen ? 'pointer-events-none opacity-75 blur-sm transition-all duration-300' : ''}`}>
+      <main className={`relative z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950 ${blurClasses}`}>
         <div className="max-w-7xl mx-auto px-6 py-20">
           {/* Welcome Message for Logged In Users */}
           {user && (
@@ -232,7 +250,7 @@ function HomeContent() {
 
           {/* Features Section - NOW WITH EDETABEL */}
           <FeaturesSection
-            onOpenCompetitions={() => setIsCompetitionsModalOpen(true)}
+            onOpenCompetitions={handleOpenCompetitions}
             showDynamicData={true} // Näitab reaalseid andmeid
             showEdetabelModal={true} // Käsitseb modali ise
           />
@@ -312,11 +330,11 @@ function HomeContent() {
       />
 
       {/* NEW: Edetabel Modal */}
-        <EdetabelModal
-          isOpen={isEdetabelModalOpen}
-          onClose={() => setIsEdetabelModalOpen(false)}
-          onChampionshipModalToggle={setIsChampionshipModalOpen} // ADD THIS
-        />
+      <EdetabelModal
+        isOpen={isEdetabelModalOpen}
+        onClose={() => setIsEdetabelModalOpen(false)}
+        onChampionshipModalToggle={setIsChampionshipModalOpen}
+      />
     </div>
   )
 }
