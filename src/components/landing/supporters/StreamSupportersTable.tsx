@@ -29,29 +29,50 @@ export function StreamSupportersTable() {
 
   const fetchSupporters = async () => {
     try {
-      // Fetch all active supporters for current year
-      const { data: supportersData, error } = await supabase
+      const currentMonth = currentDate.getMonth() + 1
+      const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1
+      const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear
+
+      // Fetch current month supporters
+      const { data: currentData, error: currentError } = await supabase
         .from('stream_supporters')
         .select('*')
+        .eq('donation_month', currentMonth)
         .eq('donation_year', currentYear)
         .eq('is_active', true)
         .order('supporter_name', { ascending: true })
 
-      if (error) {
-        console.error('Error fetching supporters:', error)
-      } else {
-        // Group supporters by month
-        const groupedByMonth: SupportersByMonth = {}
-        
-        supportersData?.forEach(supporter => {
-          if (!groupedByMonth[supporter.donation_month]) {
-            groupedByMonth[supporter.donation_month] = []
-          }
-          groupedByMonth[supporter.donation_month].push(supporter)
-        })
-
-        setSupportersByMonth(groupedByMonth)
+      if (currentError) {
+        console.error('Error fetching current month supporters:', currentError)
       }
+
+      // Fetch previous month supporters
+      const { data: previousData, error: previousError } = await supabase
+        .from('stream_supporters')
+        .select('*')
+        .eq('donation_month', previousMonth)
+        .eq('donation_year', previousYear)
+        .eq('is_active', true)
+        .order('supporter_name', { ascending: true })
+
+      if (previousError) {
+        console.error('Error fetching previous month supporters:', previousError)
+      }
+
+      // Group supporters by month
+      const groupedByMonth: SupportersByMonth = {}
+      
+      // Add current month supporters if any
+      if (currentData && currentData.length > 0) {
+        groupedByMonth[currentMonth] = currentData
+      }
+
+      // Add previous month supporters if any
+      if (previousData && previousData.length > 0) {
+        groupedByMonth[previousMonth] = previousData
+      }
+
+      setSupportersByMonth(groupedByMonth)
     } catch (error) {
       console.error('Error fetching supporters:', error)
     } finally {
@@ -134,10 +155,18 @@ export function StreamSupportersTable() {
     )
   }
 
-  // Get months that have supporters, sorted chronologically
+  // Get months that have supporters (only current and previous month)
   const monthsWithSupporters = Object.keys(supportersByMonth)
     .map(month => parseInt(month))
-    .sort((a, b) => a - b)
+    .sort((a, b) => {
+      // Sort to show previous month first, then current month
+      const currentMonth = currentDate.getMonth() + 1
+      const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1
+      
+      if (a === previousMonth && b === currentMonth) return -1
+      if (a === currentMonth && b === previousMonth) return 1
+      return a - b
+    })
 
   // If no supporters at all
   if (monthsWithSupporters.length === 0) {
