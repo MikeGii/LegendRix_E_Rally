@@ -14,11 +14,102 @@
 
   body {
     @apply bg-black text-gray-100 antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-inter), 'Inter', sans-serif;
   }
 
   html {
     scroll-behavior: smooth;
+  }
+}
+
+/* Font utility classes */
+@layer utilities {
+  .font-script {
+    font-family: var(--font-dancing-script), 'Dancing Script', cursive;
+  }
+  
+  .font-script-fallback {
+    font-family: var(--font-dancing-script), 'Dancing Script', 'Great Vibes', 'Allura', cursive;
+  }
+}
+
+/* Supporter name styling - consistent web font implementation */
+.supporter-name {
+  font-family: var(--font-dancing-script), 'Dancing Script', cursive;
+  font-size: 2.5rem; /* Reduced from 3rem */
+  line-height: 1.1; /* Tighter line height */
+  font-weight: 500;
+  font-display: swap;
+  /* Better text handling */
+  hyphens: auto; /* Add hyphens for long words */
+  text-align: center;
+  /* Prevent text overflow */
+  max-width: 100%;
+  /* Add some compression for very wide text */
+  font-stretch: condensed;
+  letter-spacing: -0.02em; /* Slightly tighter letter spacing */
+}
+
+/* Responsive font sizing - more aggressive scaling */
+@media (max-width: 1024px) {
+  .supporter-name {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .supporter-name {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .supporter-name {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .supporter-name {
+    font-size: 1.6rem;
+  }
+}
+
+/* Alternative: Compact supporter name for very long names */
+.supporter-name-compact {
+  font-family: var(--font-dancing-script), 'Dancing Script', cursive;
+  font-size: 2rem;
+  line-height: 1.1;
+  font-weight: 500;
+  font-display: swap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  text-align: center;
+  max-width: 100%;
+  font-stretch: condensed;
+  letter-spacing: -0.05em; /* More compressed */
+  transform: scaleX(0.9); /* Horizontally compress the text */
+}
+
+/* Grid improvements for better spacing */
+.supporters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* More flexible grid */
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .supporters-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .supporters-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
   }
 }
 
@@ -35,62 +126,6 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Custom animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-/* Fade in animation for modal */
-@keyframes fadeIn {
-  from { 
-    opacity: 0; 
-    transform: scale(0.95) translateY(20px); 
-  }
-  to { 
-    opacity: 1; 
-    transform: scale(1) translateY(0); 
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.4s ease-out;
-}
-
-/* Slide up animation */
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-slideUp {
-  animation: slideUp 0.4s ease-out;
-}
-
-/* Slide in from left animation */
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-30px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.animate-slideInLeft {
-  animation: slideInLeft 0.6s ease-out;
-}
-
-/* Cover image overlay effects */
-.cover-overlay {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.3) 0%,
-    rgba(0, 0, 0, 0.1) 50%,
-    rgba(0, 0, 0, 0.4) 100%
-  );
 }
 
 /* Enhanced button hover effects */
@@ -171,6 +206,62 @@
 .glow-on-hover:hover {
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
   transform: translateY(-2px);
+}
+
+/* Custom animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Fade in animation for modal */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.95) translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Slide up animation */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.4s ease-out;
+}
+
+/* Slide in from left animation */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.6s ease-out;
+}
+
+/* Cover image overlay effects */
+.cover-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
 }
 
 /* Cover photo animation */
