@@ -10,6 +10,8 @@ import { Input, Textarea, FormGrid } from '@/components/shared/FormComponents'
 import { EnhancedImageUpload } from './shared/EnhancedImageUpload'
 import { validateNewsForm } from '@/utils/news-utils'
 import { CreateNewsInput, UpdateNewsInput, NewsArticle } from '@/types'
+import { RichTextEditor } from '@/components/shared/RichTextEditor'
+
 
 interface NewsFormModalProps {
   isOpen: boolean
@@ -200,14 +202,17 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
                 maxLength={255}
               />
 
-              <Textarea
+              {/* Rich Text Editor instead of Textarea */}
+              <RichTextEditor
                 label="Sisu"
                 value={formData.content}
-                onChange={(e) => handleInputChange('content', e.target.value)}
+                onChange={(value) => handleInputChange('content', value)}
                 error={errors.content}
                 placeholder="Kirjuta uudise sisu siia..."
                 required
-                rows={8}
+                minHeight={250}
+                toolbar="basic"
+                hint={undefined}
               />
 
               {/* Optimized Image Upload */}

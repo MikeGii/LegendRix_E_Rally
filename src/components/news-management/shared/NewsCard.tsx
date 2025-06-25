@@ -1,8 +1,9 @@
-// src/components/news-management/shared/NewsCard.tsx - COMPLETE VERSION
+// src/components/news-management/shared/NewsCard.tsx
 import { NewsArticle } from '@/types/index'
-import { formatDateEstonian, truncateText, timeAgo } from '@/utils/news-utils'
+import { formatDateEstonian, timeAgo } from '@/utils/news-utils'
 import { NewsStatusBadge } from './NewsStatusBadge'
 import { NewsImagePlaceholder } from './NewsImagePlaceholder'
+import { NewsContent } from './NewsContent'
 
 interface NewsCardProps {
   news: NewsArticle
@@ -46,9 +47,13 @@ export function NewsCard({ news, onEdit, onDelete, onClick, variant = 'public' }
                 {timeAgoText}
               </span>
             </div>
-            <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-              {truncateText(news.content, 80)}
-            </p>
+            {/* Use NewsContent component with truncation */}
+            <NewsContent 
+              content={news.content} 
+              truncate={true} 
+              maxLines={2} 
+              className="text-xs text-slate-400 leading-relaxed"
+            />
           </div>
         </div>
       </div>
@@ -75,8 +80,13 @@ export function NewsCard({ news, onEdit, onDelete, onClick, variant = 'public' }
               <div className="text-sm font-medium text-white">
                 {news.title}
               </div>
-              <div className="text-sm text-slate-400 line-clamp-1">
-                {truncateText(news.content, 80)}
+              {/* Use NewsContent for admin view */}
+              <div className="text-sm text-slate-400 line-clamp-1 max-w-md">
+                <NewsContent 
+                  content={news.content} 
+                  truncate={true} 
+                  maxLines={1}
+                />
               </div>
             </div>
           </div>
@@ -130,14 +140,16 @@ export function NewsCard({ news, onEdit, onDelete, onClick, variant = 'public' }
           <img
             src={news.cover_image_url}
             alt={news.cover_image_alt || news.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
         ) : (
-          <NewsImagePlaceholder title={news.title} className="w-full h-48" />
+          <div className="w-full h-full bg-slate-700/50 flex items-center justify-center">
+            <NewsImagePlaceholder title={news.title} />
+          </div>
         )}
         {news.is_featured && (
           <div className="absolute top-4 left-4">
-            <span className="px-3 py-1 bg-purple-600 text-white text-sm font-medium rounded-full">
+            <span className="px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded-full">
               Esiletõstetud
             </span>
           </div>
@@ -148,13 +160,16 @@ export function NewsCard({ news, onEdit, onDelete, onClick, variant = 'public' }
         <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
           {news.title}
         </h3>
-        <div className="text-slate-300 text-sm mb-4">
-          {formatDateEstonian(news.published_at || news.created_at)} 
-          {news.author_name && ` • ${news.author_name}`}
+        <div className="text-slate-400 text-sm mb-3">
+          {formatDateEstonian(news.created_at)}
         </div>
-        <p className="text-slate-300 line-clamp-3">
-          {truncateText(news.content, 120)}
-        </p>
+        {/* Use NewsContent for public view */}
+        <NewsContent 
+          content={news.content} 
+          truncate={true} 
+          maxLines={3} 
+          className="text-slate-300"
+        />
       </div>
     </div>
   )
