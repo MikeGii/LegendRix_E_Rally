@@ -15,6 +15,8 @@ interface RegisterFormData {
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void
+  onSuccess?: (message: string) => void
+  onError?: (error: string) => void
 }
 
 export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
