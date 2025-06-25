@@ -46,6 +46,9 @@ function HomeContent() {
   const [isMounted, setIsMounted] = useState(false)
   const [isChampionshipModalOpen, setIsChampionshipModalOpen] = useState(false)
   const [attemptCount, setAttemptCount] = useState(0)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  // ADDED: Track login state to prevent premature modal closing
+  const [wasLoggedIn, setWasLoggedIn] = useState(false)
 
   // Optimized modal state calculation
   const isAnyModalOpen = useModalState(
@@ -63,9 +66,10 @@ function HomeContent() {
     setIsMounted(true)
   }, [])
 
-  // Close modal when user successfully logs in
+  // UPDATED: Only close modal when user actually becomes logged in (not on failed attempts)
   useEffect(() => {
-    if (user && showAuthModal) {
+    // Only act when user state actually changes from null to user (successful login)
+    if (user && !wasLoggedIn && showAuthModal) {
       setShowAuthModal(false)
       setAuthView('login')
       setAttemptCount(0)
@@ -76,8 +80,16 @@ function HomeContent() {
         message: `Tere tulemast, ${user.name}! Oled edukalt sisse logitud.`,
         duration: 4000
       })
+      
+      setWasLoggedIn(true)
+    } else if (!user && wasLoggedIn) {
+      // User logged out
+      setWasLoggedIn(false)
+    } else if (user && !wasLoggedIn) {
+      // User was already logged in on page load
+      setWasLoggedIn(true)
     }
-  }, [user, showAuthModal, showToast])
+  }, [user, wasLoggedIn, showAuthModal, showToast])
 
   // Memoized event handlers to prevent unnecessary re-renders
   const handleOpenAuth = useCallback(() => {
@@ -91,6 +103,7 @@ function HomeContent() {
     setAttemptCount(0) // Reset attempt count
   }, [])
 
+  // UPDATED: Don't close modal here, let useEffect handle it when user state changes
   const handleLoginSuccess = useCallback(() => {
     // Modal will be closed by the useEffect when user changes
     // Success toast will also be shown there
@@ -130,15 +143,10 @@ function HomeContent() {
   }, [user, router])
 
   const handleLogout = useCallback(async () => {
+    setIsLoggingOut(true)
+    
     try {
       await logout()
-      
-      if (typeof window !== 'undefined') {
-        window.localStorage.clear()
-        window.sessionStorage.clear()
-        window.localStorage.removeItem('supabase.auth.token')
-        window.localStorage.removeItem('sb-localhost-auth-token')
-      }
       
       showToast({
         type: 'info',
@@ -211,22 +219,23 @@ function HomeContent() {
                 <>
                   <button
                     onClick={handleDashboard}
-                    className="group px-8 py-3 bg-gradient-to-r from-blue-600/15 to-blue-700/15 backdrop-blur-xl hover:from-blue-600/25 hover:to-blue-700/25 text-white rounded-2xl font-semibold transition-all duration-300 border border-blue-400/20 hover:border-blue-300/40 shadow-xl hover:shadow-blue-500/20 hover:scale-105"
+                    className="group px-6 py-3 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/40 hover:to-blue-500/30 backdrop-blur-xl text-white rounded-2xl font-semibold transition-all duration-300 border border-blue-500/20 hover:border-blue-400/40 shadow-xl hover:shadow-blue-500/20 hover:scale-105"
                   >
-                    <div className="flex items-center space-x-3">
-                      <span className="text-lg group-hover:scale-110 transition-transform duration-200">📊</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg group-hover:scale-110 transition-transform duration-200">🏠</span>
                       <span>Töölaud</span>
                     </div>
                   </button>
-                  
                   <button
                     onClick={handleLogout}
-                    disabled={authLoading}
-                    className="group px-8 py-3 bg-gradient-to-r from-red-600/15 to-red-700/15 backdrop-blur-xl hover:from-red-600/25 hover:to-red-700/25 text-white rounded-2xl font-semibold transition-all duration-300 border border-red-400/20 hover:border-red-300/40 shadow-xl hover:shadow-red-500/20 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                    disabled={isLoggingOut}
+                    className="group px-6 py-3 bg-gradient-to-r from-red-600/20 to-red-500/10 hover:from-red-600/40 hover:to-red-500/30 backdrop-blur-xl text-white rounded-2xl font-semibold transition-all duration-300 border border-red-500/20 hover:border-red-400/40 shadow-xl hover:shadow-red-500/20 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
-                    <div className="flex items-center space-x-3">
-                      <span className="text-lg group-hover:scale-110 transition-transform duration-200">🚪</span>
-                      <span>{authLoading ? 'Välja logimas...' : 'Logi Välja'}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg group-hover:scale-110 transition-transform duration-200">
+                        {isLoggingOut ? '⏳' : '🚪'}
+                      </span>
+                      <span>{isLoggingOut ? 'Välja logimas...' : 'Logi Välja'}</span>
                     </div>
                   </button>
                 </>
@@ -335,8 +344,7 @@ function HomeContent() {
                 <LoginForm 
                   onSwitchToRegister={() => setAuthView('register')}
                   onSwitchToForgotPassword={() => setAuthView('forgot-password')}
-                  onLoginStart={() => {}}
-                  onLoginError={handleLoginError}
+
                   onLoginSuccess={handleLoginSuccess}
                 />
               ) : authView === 'register' ? (
