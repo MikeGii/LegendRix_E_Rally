@@ -1,5 +1,5 @@
-// src/components/news-management/shared/NewsCard.tsx
-import { NewsArticle } from '@/types/news'
+// src/components/news-management/shared/NewsCard.tsx - COMPLETE VERSION
+import { NewsArticle } from '@/types/index'
 import { formatDateEstonian, truncateText, timeAgo } from '@/utils/news-utils'
 import { NewsStatusBadge } from './NewsStatusBadge'
 import { NewsImagePlaceholder } from './NewsImagePlaceholder'
@@ -68,7 +68,7 @@ export function NewsCard({ news, onEdit, onDelete, onClick, variant = 'public' }
               />
             ) : (
               <div className="w-12 h-12 rounded-lg bg-slate-700/50 flex items-center justify-center">
-                <span className="text-slate-400 text-xs">📰</span>
+                <NewsImagePlaceholder title={news.title} className="w-full h-full" />
               </div>
             )}
             <div>

@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from 'react'
-import { usePublicLatestNews, useNewsArticle } from '@/hooks/useNewsManagement'
+import { usePublicLatestNews, useNewsArticle } from '@/hooks/news'
 import { Modal } from '@/components/ui/Modal'
 
 // Simple time ago function

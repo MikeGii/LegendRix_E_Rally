@@ -2,11 +2,11 @@
 'use client'
 
 import { useState } from 'react'
-import { useAllNewsArticles, useDeleteNews } from '@/hooks/useNewsManagement'
+import { useAllNewsArticles, useDeleteNews } from '@/hooks/news'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { NewsFormModal } from './news-management/NewsFormModal'
-import { NewsArticle } from '@/types/news'
+import { NewsArticle } from '@/types/index'
 
 export function NewsManagement() {
   const { data: allNews = [], isLoading, refetch } = useAllNewsArticles()
