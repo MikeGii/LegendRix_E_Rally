@@ -33,8 +33,22 @@ export const timeAgo = (date: Date): string => {
   return `${Math.floor(diffInSeconds / 2592000)}k`
 }
 
+// Strip HTML tags from content
+export const stripHtml = (html: string): string => {
+  if (typeof window === 'undefined') {
+    // Server-side fallback
+    return html.replace(/<[^>]*>/g, '')
+  }
+  
+  const tmp = document.createElement('div')
+  tmp.innerHTML = html
+  return tmp.textContent || tmp.innerText || ''
+}
+
 export const truncateText = (text: string, maxLength: number): string => {
-  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
+  // First strip any HTML if present
+  const plainText = stripHtml(text)
+  return plainText.length > maxLength ? plainText.substring(0, maxLength) + '...' : plainText
 }
 
 export const getNewsStatusBadge = (news: { is_published: boolean; is_featured: boolean }) => {
@@ -97,12 +111,13 @@ const isValidUrl = (url: string): boolean => {
 
 export const generateExcerpt = (content: string, maxLength: number = 120): string => {
   // Remove any HTML tags and get plain text
-  const plainText = content.replace(/<[^>]*>/g, '')
+  const plainText = stripHtml(content)
   return truncateText(plainText, maxLength)
 }
 
 export const getReadingTime = (content: string): number => {
   const wordsPerMinute = 200
-  const words = content.trim().split(/\s+/).length
+  const plainText = stripHtml(content)
+  const words = plainText.trim().split(/\s+/).length
   return Math.ceil(words / wordsPerMinute)
 }

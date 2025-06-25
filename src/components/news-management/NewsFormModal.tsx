@@ -1,12 +1,11 @@
-// Fixed version of your NewsFormModal.tsx
-
 // src/components/news-management/NewsFormModal.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useCreateNews, useUpdateNews } from '@/hooks/news'
 import { Modal } from '@/components/ui/Modal'
-import { Input, Textarea, FormGrid } from '@/components/shared/FormComponents'
+import { Input, FormGrid } from '@/components/shared/FormComponents'
+import { RichTextEditor, stripHtml } from '@/components/shared/RichTextEditor'
 import { EnhancedImageUpload } from './shared/EnhancedImageUpload'
 import { validateNewsForm } from '@/utils/news-utils'
 import { CreateNewsInput, UpdateNewsInput, NewsArticle } from '@/types'
@@ -99,7 +98,7 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
 
   const isLoading = createNewsMutation.isPending || updateNewsMutation.isPending
 
-  // News preview component
+  // News preview component with HTML rendering
   const NewsPreview = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between pb-4 border-b border-slate-700/50">
@@ -138,9 +137,13 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
           <div className="text-slate-300 text-sm mb-4">
             {new Date().toLocaleDateString('et-EE')} • {formData.is_published ? 'Avaldatud' : 'Mustand'}
           </div>
-          <p className="text-slate-300 line-clamp-3 whitespace-pre-wrap">
-            {formData.content || 'Uudise sisu...'}
-          </p>
+          {/* Render HTML content in preview */}
+          <div 
+            className="text-slate-300 prose prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ 
+              __html: formData.content || '<p>Uudise sisu...</p>' 
+            }}
+          />
         </div>
       </div>
     </div>
@@ -201,10 +204,10 @@ export function NewsFormModal({ isOpen, onClose, editingNews }: NewsFormModalPro
               />
 
               {/* Rich Text Editor instead of Textarea */}
-              <Textarea
+              <RichTextEditor
                 label="Sisu"
                 value={formData.content}
-                onChange={(e) => handleInputChange('content', e.target.value)}
+                onChange={(value) => handleInputChange('content', value)}
                 error={errors.content}
                 placeholder="Kirjuta uudise sisu siia..."
                 required

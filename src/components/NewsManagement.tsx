@@ -7,6 +7,7 @@ import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { NewsFormModal } from './news-management/NewsFormModal'
 import { NewsArticle } from '@/types/index'
+import { stripHtml } from '@/utils/news-utils'
 
 export function NewsManagement() {
   const { data: allNews = [], isLoading, refetch } = useAllNewsArticles()
@@ -118,35 +119,21 @@ export function NewsManagement() {
               </div>
             ) : allNews.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">📰</span>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  Uudiseid pole veel loodud
-                </h3>
-                <p className="text-slate-400 mb-6">
-                  Alusta oma esimese uudise loomisega
-                </p>
-                <button
-                  onClick={handleCreateNews}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
-                >
-                  ➕ Lisa Esimene Uudis
-                </button>
+                <p className="text-slate-400">Uudiseid pole veel lisatud</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-700/30">
+                  <thead className="bg-slate-800/50">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
                         Uudis
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
-                        Staatus
+                        Olek
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
-                        Kuupäev
+                        Loodud
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
                         Autor
@@ -157,54 +144,59 @@ export function NewsManagement() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50">
-                    {allNews.map((news) => (
-                      <tr key={news.id} className="hover:bg-slate-700/20 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center space-x-4">
-                            {news.cover_image_url && (
-                              <img
-                                src={news.cover_image_url}
-                                alt={news.cover_image_alt || ''}
-                                className="w-12 h-12 rounded-lg object-cover"
-                              />
-                            )}
-                            <div>
-                              <div className="text-sm font-medium text-white">
-                                {news.title}
-                              </div>
-                              <div className="text-sm text-slate-400 line-clamp-1">
-                                {news.content.substring(0, 80)}...
+                    {allNews.map((news) => {
+                      // Strip HTML for the preview
+                      const contentPreview = stripHtml(news.content)
+                      
+                      return (
+                        <tr key={news.id} className="hover:bg-slate-700/20 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-4">
+                              {news.cover_image_url && (
+                                <img
+                                  src={news.cover_image_url}
+                                  alt={news.cover_image_alt || ''}
+                                  className="w-12 h-12 rounded-lg object-cover"
+                                />
+                              )}
+                              <div>
+                                <div className="text-sm font-medium text-white">
+                                  {news.title}
+                                </div>
+                                <div className="text-sm text-slate-400 line-clamp-1">
+                                  {contentPreview.substring(0, 80)}...
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {getStatusBadge(news)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-300">
-                          {formatDate(news.created_at)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-300">
-                          {news.author_name || 'Tundmatu'}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button
-                              onClick={() => handleEditNews(news)}
-                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors"
-                            >
-                              ✏️ Muuda
-                            </button>
-                            <button
-                              onClick={() => handleDeleteNews(news.id)}
-                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors"
-                            >
-                              🗑️ Kustuta
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-6 py-4">
+                            {getStatusBadge(news)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-300">
+                            {formatDate(news.created_at)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-300">
+                            {news.author_name || 'Tundmatu'}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <button
+                                onClick={() => handleEditNews(news)}
+                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors"
+                              >
+                                ✏️ Muuda
+                              </button>
+                              <button
+                                onClick={() => handleDeleteNews(news.id)}
+                                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors"
+                              >
+                                🗑️ Kustuta
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
