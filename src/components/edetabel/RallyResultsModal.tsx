@@ -177,7 +177,6 @@ export function RallyResultsModal({ rally, isOpen, onClose }: RallyResultsModalP
 
   const renderParticipantName = (result: any) => {
     // SECURITY FIX: Differentiate between registered users and manual participants
-    console.log('Debug result:', result);
     const isRegisteredUser = result.user_id && result.user_id !== 'manual-participant'
     const isManualParticipant = !result.user_id || result.user_id === 'manual-participant'
 
