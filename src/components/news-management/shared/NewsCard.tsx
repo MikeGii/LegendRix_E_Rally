@@ -1,9 +1,8 @@
 // src/components/news-management/shared/NewsCard.tsx
 import { NewsArticle } from '@/types/index'
-import { formatDateEstonian, timeAgo } from '@/utils/news-utils'
+import { formatDateEstonian, truncateText, timeAgo } from '@/utils/news-utils'
 import { NewsStatusBadge } from './NewsStatusBadge'
 import { NewsImagePlaceholder } from './NewsImagePlaceholder'
-import { NewsContent } from './NewsContent'
 
 interface NewsCardProps {
   news: NewsArticle
@@ -47,13 +46,9 @@ export function NewsCard({ news, onEdit, onDelete, onClick, variant = 'public' }
                 {timeAgoText}
               </span>
             </div>
-            {/* Use NewsContent component with truncation */}
-            <NewsContent 
-              content={news.content} 
-              truncate={true} 
-              maxLines={2} 
-              className="text-xs text-slate-400 leading-relaxed"
-            />
+            <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+              {truncateText(news.content, 80)}
+            </p>
           </div>
         </div>
       </div>
@@ -80,13 +75,8 @@ export function NewsCard({ news, onEdit, onDelete, onClick, variant = 'public' }
               <div className="text-sm font-medium text-white">
                 {news.title}
               </div>
-              {/* Use NewsContent for admin view */}
-              <div className="text-sm text-slate-400 line-clamp-1 max-w-md">
-                <NewsContent 
-                  content={news.content} 
-                  truncate={true} 
-                  maxLines={1}
-                />
+              <div className="text-sm text-slate-400 line-clamp-1">
+                {truncateText(news.content, 80)}
               </div>
             </div>
           </div>
@@ -163,13 +153,9 @@ export function NewsCard({ news, onEdit, onDelete, onClick, variant = 'public' }
         <div className="text-slate-400 text-sm mb-3">
           {formatDateEstonian(news.created_at)}
         </div>
-        {/* Use NewsContent for public view */}
-        <NewsContent 
-          content={news.content} 
-          truncate={true} 
-          maxLines={3} 
-          className="text-slate-300"
-        />
+        <p className="text-slate-300 line-clamp-3">
+          {truncateText(news.content, 120)}
+        </p>
       </div>
     </div>
   )
