@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { usePublicLatestNews, useNewsArticle } from '@/hooks/news'
 import { Modal } from '@/components/ui/Modal'
+import { stripHtml } from '@/utils/news-utils'
 
 // Simple time ago function
 function timeAgo(date: Date): string {
@@ -61,8 +62,8 @@ function NewsArticleModal({ isOpen, onClose, articleId }: NewsModalProps) {
 
             <div className="prose prose-invert max-w-none">
               <div 
-                className="text-slate-300 leading-relaxed whitespace-pre-wrap"
-                dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br />') }}
+                className="text-slate-300 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: article.content }}
               />
             </div>
           </div>
@@ -88,9 +89,11 @@ interface CompactNewsCardProps {
 }
 
 function CompactNewsCard({ article, onClick }: CompactNewsCardProps) {
-  const excerpt = article.content.length > 80 
-    ? article.content.substring(0, 80) + '...'
-    : article.content
+  // Strip HTML tags from content before creating excerpt
+  const plainTextContent = stripHtml(article.content)
+  const excerpt = plainTextContent.length > 80 
+    ? plainTextContent.substring(0, 80) + '...'
+    : plainTextContent
 
   const timeAgoText = timeAgo(new Date(article.created_at))
 
@@ -152,7 +155,6 @@ export function CompactNewsSection() {
           <div className="bg-slate-900/30 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6 hover:border-slate-700/50 transition-all duration-300 group">
             {/* News icon header */}
             <div className="relative mb-6">
-
               {/* Decorative glow effect - matching your QR section */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-green-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></div>
             </div>

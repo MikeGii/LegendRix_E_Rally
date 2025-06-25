@@ -1,4 +1,4 @@
-// src/components/news-management/shared/NewsCard.tsx - COMPLETE VERSION
+// src/components/news-management/shared/NewsCard.tsx
 import { NewsArticle } from '@/types/index'
 import { formatDateEstonian, truncateText, timeAgo } from '@/utils/news-utils'
 import { NewsStatusBadge } from './NewsStatusBadge'
@@ -130,14 +130,16 @@ export function NewsCard({ news, onEdit, onDelete, onClick, variant = 'public' }
           <img
             src={news.cover_image_url}
             alt={news.cover_image_alt || news.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
         ) : (
-          <NewsImagePlaceholder title={news.title} className="w-full h-48" />
+          <div className="w-full h-full bg-slate-700/50 flex items-center justify-center">
+            <NewsImagePlaceholder title={news.title} />
+          </div>
         )}
         {news.is_featured && (
           <div className="absolute top-4 left-4">
-            <span className="px-3 py-1 bg-purple-600 text-white text-sm font-medium rounded-full">
+            <span className="px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded-full">
               Esiletõstetud
             </span>
           </div>
@@ -148,9 +150,8 @@ export function NewsCard({ news, onEdit, onDelete, onClick, variant = 'public' }
         <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
           {news.title}
         </h3>
-        <div className="text-slate-300 text-sm mb-4">
-          {formatDateEstonian(news.published_at || news.created_at)} 
-          {news.author_name && ` • ${news.author_name}`}
+        <div className="text-slate-400 text-sm mb-3">
+          {formatDateEstonian(news.created_at)}
         </div>
         <p className="text-slate-300 line-clamp-3">
           {truncateText(news.content, 120)}
