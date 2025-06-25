@@ -1,5 +1,7 @@
+// src/components/DashboardLayout.tsx - Updated with Unified Header Design
 'use client'
 
+import Image from 'next/image'
 import { useAuth } from './AuthProvider'
 import { useView } from './ViewProvider'
 import { BurgerMenu } from './navigation/BurgerMenu'
@@ -91,28 +93,43 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
-      {/* Enhanced Navigation Header */}
-      <nav className="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/30 shadow-2xl">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex justify-between items-center h-16">
-            {/* Left Section: Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-xl backdrop-blur-sm flex items-center justify-center border border-blue-400/20">
-                <span className="text-blue-400 font-bold text-lg">🏁</span>
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-white tracking-wide">LegendRix E-Rally</h1>
-                <p className="text-xs text-slate-400 -mt-1">
-                  {actualCurrentView === 'admin' ? 'Admin Panel' : 'Kasutaja Töölaud'}
-                </p>
-              </div>
+      {/* Enhanced Navigation Header - NOW WITH UNIFIED DESIGN */}
+      <nav className="sticky top-0 z-30">
+        {/* Background with blur effect - matching landing page */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-900/80 to-transparent backdrop-blur-2xl border-b border-white/5 shadow-2xl"></div>
+        
+        <div className="relative max-w-6xl mx-auto px-6">
+          <div className="flex justify-between items-center h-20 py-6">
+            {/* Left Section: Logo - EXACTLY LIKE LANDING PAGE */}
+            <div className="flex items-center space-x-4">
+              <a 
+                href="/"
+                className="flex items-center space-x-4 group"
+              >
+                <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/20 bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-sm p-1 group-hover:ring-white/30 transition-all">
+                  <div className="w-full h-full rounded-xl overflow-hidden relative">
+                    <Image
+                      src="/image/rally-cover.png"
+                      alt="LegendRix Rally"
+                      fill
+                      className="object-cover"
+                      priority
+                      sizes="56px"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-white drop-shadow-xl tracking-wide">LegendRix</h1>
+                  <p className="text-sm text-blue-300/90 drop-shadow-lg font-medium -mt-1">E-Spordikeskus</p>
+                </div>
+              </a>
             </div>
             
             {/* Right Section: View Switcher + Burger Menu */}
             <div className="flex items-center space-x-4">
               {/* View Switcher for Admins */}
               {canSwitchView && (
-                <div className="hidden md:flex bg-slate-700/50 rounded-xl p-1">
+                <div className="hidden md:flex bg-slate-800/50 rounded-xl p-1 backdrop-blur-sm">
                   <button
                     onClick={() => handleViewSwitch('user')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -147,7 +164,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="md:hidden">
                   <button
                     onClick={() => handleViewSwitch(actualCurrentView === 'admin' ? 'user' : 'admin')}
-                    className="p-2 bg-slate-700/50 rounded-lg text-slate-300 hover:text-white hover:bg-slate-600/50 transition-all duration-200"
+                    className="p-2 bg-slate-700/50 rounded-lg text-slate-300 hover:text-white hover:bg-slate-600/50 transition-all duration-200 backdrop-blur-sm"
                   >
                     {actualCurrentView === 'admin' ? '🏁' : '👑'}
                   </button>
