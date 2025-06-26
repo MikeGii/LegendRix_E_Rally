@@ -39,7 +39,7 @@ export function UserWelcomeHeader({ userName, isAdminAsUser }: UserWelcomeHeader
               {isAdminAsUser && <span className="text-purple-400 ml-2">(Admin)</span>}
             </h1>
             <p className="text-slate-400 mt-1">
-              {isAdminAsUser ? 'Administraator • Sõitja režiim' : 'E-WRC Ralli Meistrivõistlused'}
+              {isAdminAsUser ? 'Administraator • Sõitja režiim' : ''}
             </p>
           </div>
         </div>

@@ -77,11 +77,18 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
       priority: 'primary'
     },
     {
+      icon: '👥',
+      label: 'Tiimid',
+      description: 'Tiimide haldamine',
+      action: () => navigateTo('/teams'),
+      priority: 'primary'
+    },
+    {
       icon: '🏁',
       label: 'Registreeri Rallile',
       description: 'Uue ralli registreerimine',
       action: () => navigateTo('/registration'),
-      priority: 'secondary'
+      priority: 'primary'
     },
     {
       icon: '⚙️',

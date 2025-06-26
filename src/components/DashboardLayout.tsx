@@ -73,7 +73,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         '/championships',
         '/results',
         '/participant-linking',
-        '/sponsors'
+        '/sponsors',
+        '/teams-manager'
       ]
       
       // Check if current path is any admin page
@@ -140,7 +141,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   >
                     <div className="flex items-center space-x-2">
                       <span>🏁</span>
-                      <span>Driver</span>
+                      <span>Võistleja</span>
                     </div>
                   </button>
                   <button

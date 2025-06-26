@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { useGames, useGameTypes, useGameEvents, useGameClasses, useEventTracks } from '@/hooks/useGameManagement'
+import { useGameVehicles } from '@/hooks/useGameVehicles'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { Tab } from '@/types'
 import { GamesTab } from './game-management/GamesTab'
@@ -10,6 +11,7 @@ import { GameTypesTab } from './game-management/GameTypesTab'
 import { GameEventsTab } from './game-management/GameEventsTab'
 import { EventTracksTab } from './game-management/EventTracksTab'
 import { GameClassesTab } from './game-management/GameClassesTab'
+import { GameVehiclesTab } from './game-management/GameVehiclesTab'
 
 export function GameManagement() {
   const [activeTab, setActiveTab] = useState('games')
@@ -22,6 +24,7 @@ export function GameManagement() {
   const { data: gameEvents = [] } = useGameEvents(selectedGameId)
   const { data: gameClasses = [] } = useGameClasses(selectedGameId)
   const { data: eventTracks = [] } = useEventTracks(selectedEventId)
+  const { data: gameVehicles = [] } = useGameVehicles(selectedGameId)
 
   const tabs: Tab[] = [
     { 
@@ -53,6 +56,12 @@ export function GameManagement() {
       label: 'Game Classes', 
       icon: '🎯', 
       count: gameClasses.length 
+    },
+    { 
+      id: 'vehicles', 
+      label: 'Sõidukid', 
+      icon: '🚗', 
+      count: gameVehicles.length 
     }
   ]
 
@@ -100,6 +109,15 @@ export function GameManagement() {
         return (
           <GameClassesTab 
             gameClasses={gameClasses}
+            games={games}
+            selectedGameId={selectedGameId}
+            onGameChange={setSelectedGameId}
+          />
+        )
+      case 'vehicles':
+        return (
+          <GameVehiclesTab 
+            gameVehicles={gameVehicles}
             games={games}
             selectedGameId={selectedGameId}
             onGameChange={setSelectedGameId}
