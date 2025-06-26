@@ -61,7 +61,9 @@ function TeamsPageContent() {
 
       {/* Team Members List - Only show if user has a team */}
       {userTeamData?.team && (
-        <TeamMembersList teamId={userTeamData.team.id} />
+        <TeamMembersList 
+          teamId={userTeamData.team.id}
+        />
       )}
     </div>
   )
