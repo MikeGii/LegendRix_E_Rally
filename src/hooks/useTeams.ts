@@ -25,6 +25,13 @@ export interface CreateTeamInput {
   max_members_count: number
 }
 
+export interface UpdateTeamInput {
+  id: string
+  team_name?: string
+  manager_id?: string
+  max_members_count?: number
+}
+
 // Query keys for teams
 export const teamKeys = {
   all: ['teams'] as const,
@@ -123,10 +130,13 @@ export function useCreateTeam() {
         throw error
       }
 
-      // Update the manager's is_manager status
+      // Update the manager's is_manager and has_team status
       const { error: updateError } = await supabase
         .from('users')
-        .update({ is_manager: true })
+        .update({ 
+          is_manager: true,
+          has_team: true 
+        })
         .eq('id', input.manager_id)
 
       if (updateError) {
@@ -135,6 +145,110 @@ export function useCreateTeam() {
 
       console.log('✅ Team created successfully')
       return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.all })
+    },
+  })
+}
+
+// Hook to update a team
+export function useUpdateTeam() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (input: UpdateTeamInput) => {
+      console.log('🔄 Updating team:', input)
+      
+      const { id, ...updateData } = input
+      
+      // If changing manager, we need to handle old and new manager status
+      if (updateData.manager_id) {
+        // Get current team data to find old manager
+        const { data: currentTeam } = await supabase
+          .from('teams')
+          .select('manager_id')
+          .eq('id', id)
+          .single()
+        
+        if (currentTeam && currentTeam.manager_id !== updateData.manager_id) {
+          // Remove is_manager from old manager (but keep has_team if they're still a member)
+          await supabase
+            .from('users')
+            .update({ is_manager: false })
+            .eq('id', currentTeam.manager_id)
+          
+          // Add is_manager and has_team to new manager
+          await supabase
+            .from('users')
+            .update({ 
+              is_manager: true,
+              has_team: true 
+            })
+            .eq('id', updateData.manager_id)
+        }
+      }
+      
+      const { data, error } = await supabase
+        .from('teams')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating team:', error)
+        throw error
+      }
+
+      console.log('✅ Team updated successfully')
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.all })
+    },
+  })
+}
+
+// Hook to delete a team
+export function useDeleteTeam() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (teamId: string) => {
+      console.log('🔄 Deleting team:', teamId)
+      
+      // Get team data to find manager and members
+      const { data: team } = await supabase
+        .from('teams')
+        .select('manager_id')
+        .eq('id', teamId)
+        .single()
+      
+      if (team) {
+        // Remove is_manager and has_team from manager
+        await supabase
+          .from('users')
+          .update({ 
+            is_manager: false,
+            has_team: false 
+          })
+          .eq('id', team.manager_id)
+        
+        // TODO: In future, also update has_team for all team members
+      }
+      
+      const { error } = await supabase
+        .from('teams')
+        .delete()
+        .eq('id', teamId)
+
+      if (error) {
+        console.error('Error deleting team:', error)
+        throw error
+      }
+
+      console.log('✅ Team deleted successfully')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teamKeys.all })
