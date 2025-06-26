@@ -62,8 +62,6 @@ export function useUserTeamStatus() {
       if (!user?.id) {
         return { hasTeam: false }
       }
-
-      console.log('🔄 Checking team status for user:', user.id)
       
       const { data, error } = await supabase
         .from('users')
@@ -75,15 +73,13 @@ export function useUserTeamStatus() {
         console.error('Error fetching team status:', error)
         throw error
       }
-
-      console.log('✅ Team status:', data?.has_team)
       
       return {
         hasTeam: data?.has_team || false
       }
     },
     enabled: !!user?.id,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * 1000,
   })
 }
 
@@ -98,36 +94,49 @@ export function useUserTeam() {
         return null
       }
 
-      console.log('🔄 Fetching user team info:', user.id)
-      
-      // First check if user is a manager
-      const { data: managerTeam, error: managerError } = await supabase
-        .from('teams')
+      // Check team_members table for user's team
+      const { data: teamMember, error: memberError } = await supabase
+        .from('team_members')
         .select(`
-          *,
-          manager:users!teams_manager_id_fkey(
-            id,
-            name,
-            player_name,
-            is_manager
-          )
+          team_id,
+          role,
+          status
         `)
-        .eq('manager_id', user.id)
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
         .single()
 
-      if (managerTeam && !managerError) {
-        console.log('✅ User is team manager')
-        return {
-          team: managerTeam as Team,
-          isManager: true
+      if (teamMember && !memberError) {
+        // Fetch the full team data separately
+        const { data: team, error: teamError } = await supabase
+          .from('teams')
+          .select(`
+            *,
+            manager:users!teams_manager_id_fkey(
+              id,
+              name,
+              player_name
+            ),
+            game:games!teams_game_id_fkey(
+              id,
+              name
+            ),
+            game_class:game_classes!teams_class_id_fkey(
+              id,
+              name
+            )
+          `)
+          .eq('id', teamMember.team_id)
+          .single()
+
+        if (team && !teamError) {
+          return {
+            team: team as Team,
+            isManager: teamMember.role === 'manager'
+          }
         }
       }
-
-      // TODO: In future, check if user is a team member
-      // For now, if user has has_team=true but is not a manager,
-      // we'll need to implement team_members table lookup
       
-      console.log('❌ User team not found')
       return null
     },
     enabled: !!user?.id,
@@ -140,8 +149,6 @@ export function useTeams() {
   return useQuery({
     queryKey: teamKeys.lists(),
     queryFn: async () => {
-      console.log('🔄 Fetching all teams...')
-      
       const { data, error } = await supabase
         .from('teams')
         .select(`
@@ -166,8 +173,6 @@ export function useTeams() {
         console.error('Error fetching teams:', error)
         throw error
       }
-
-      console.log(`✅ Teams loaded: ${data?.length || 0}`)
       
       return data as Team[]
     },
@@ -178,18 +183,17 @@ export function useTeams() {
 // Hook to create a team
 export function useCreateTeam() {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   
   return useMutation({
     mutationFn: async (input: CreateTeamInput) => {
-      console.log('🔄 Creating team:', input)
-      
       const { data, error } = await supabase
         .from('teams')
         .insert([{
           team_name: input.team_name,
           manager_id: input.manager_id,
           max_members_count: input.max_members_count,
-          members_count: 1,  // Manager counts as first member
+          members_count: 0,  // Will be updated by trigger
           game_id: input.game_id,
           class_id: input.class_id
         }])
@@ -199,6 +203,22 @@ export function useCreateTeam() {
       if (error) {
         console.error('Error creating team:', error)
         throw error
+      }
+
+      // Insert manager as team member
+      const { error: memberError } = await supabase
+        .from('team_members')
+        .insert([{
+          user_id: input.manager_id,
+          team_id: data.id,
+          role: 'manager',
+          status: 'approved'
+        }])
+
+      if (memberError) {
+        console.error('Error adding manager as team member:', memberError)
+        // Should rollback team creation here in production
+        throw memberError
       }
 
       // Update the manager's is_manager and has_team status
@@ -214,11 +234,12 @@ export function useCreateTeam() {
         console.error('Error updating manager status:', updateError)
       }
 
-      console.log('✅ Team created successfully')
       return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teamKeys.all })
+      queryClient.invalidateQueries({ queryKey: teamKeys.userTeam(user?.id || '') })
+      queryClient.invalidateQueries({ queryKey: teamKeys.userTeamStatus(user?.id || '') })
     },
   })
 }
@@ -229,8 +250,6 @@ export function useUpdateTeam() {
   
   return useMutation({
     mutationFn: async (input: UpdateTeamInput) => {
-      console.log('🔄 Updating team:', input)
-      
       const { id, ...updateData } = input
       
       // If changing manager, we need to handle old and new manager status
@@ -243,13 +262,27 @@ export function useUpdateTeam() {
           .single()
         
         if (currentTeam && currentTeam.manager_id !== updateData.manager_id) {
-          // Remove is_manager from old manager (but keep has_team if they're still a member)
+          // Update old manager in team_members
+          await supabase
+            .from('team_members')
+            .update({ role: 'member' })
+            .eq('user_id', currentTeam.manager_id)
+            .eq('team_id', id)
+          
+          // Remove is_manager from old manager
           await supabase
             .from('users')
             .update({ is_manager: false })
             .eq('id', currentTeam.manager_id)
           
-          // Add is_manager and has_team to new manager
+          // Update new manager in team_members
+          await supabase
+            .from('team_members')
+            .update({ role: 'manager' })
+            .eq('user_id', updateData.manager_id)
+            .eq('team_id', id)
+          
+          // Add is_manager to new manager
           await supabase
             .from('users')
             .update({ 
@@ -272,7 +305,6 @@ export function useUpdateTeam() {
         throw error
       }
 
-      console.log('✅ Team updated successfully')
       return data
     },
     onSuccess: () => {
@@ -284,31 +316,29 @@ export function useUpdateTeam() {
 // Hook to delete a team
 export function useDeleteTeam() {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   
   return useMutation({
     mutationFn: async (teamId: string) => {
-      console.log('🔄 Deleting team:', teamId)
+      // Get all team members to update their has_team status
+      const { data: members } = await supabase
+        .from('team_members')
+        .select('user_id')
+        .eq('team_id', teamId)
       
-      // Get team data to find manager and members
-      const { data: team } = await supabase
-        .from('teams')
-        .select('manager_id')
-        .eq('id', teamId)
-        .single()
-      
-      if (team) {
-        // Remove is_manager and has_team from manager
+      if (members && members.length > 0) {
+        // Update has_team and is_manager for all members
+        const userIds = members.map(m => m.user_id)
         await supabase
           .from('users')
           .update({ 
-            is_manager: false,
-            has_team: false 
+            has_team: false,
+            is_manager: false 
           })
-          .eq('id', team.manager_id)
-        
-        // TODO: In future, also update has_team for all team members
+          .in('id', userIds)
       }
       
+      // Delete team (team_members will be cascade deleted)
       const { error } = await supabase
         .from('teams')
         .delete()
@@ -318,11 +348,11 @@ export function useDeleteTeam() {
         console.error('Error deleting team:', error)
         throw error
       }
-
-      console.log('✅ Team deleted successfully')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teamKeys.all })
+      queryClient.invalidateQueries({ queryKey: teamKeys.userTeam(user?.id || '') })
+      queryClient.invalidateQueries({ queryKey: teamKeys.userTeamStatus(user?.id || '') })
     },
   })
 }
@@ -335,8 +365,6 @@ export function useUserSearch(searchTerm: string) {
       if (searchTerm.length < 3) {
         return []
       }
-
-      console.log('🔄 Searching users:', searchTerm)
       
       const { data, error } = await supabase
         .from('users')
@@ -349,10 +377,147 @@ export function useUserSearch(searchTerm: string) {
         throw error
       }
 
-      console.log(`✅ Found ${data?.length || 0} users`)
       return data || []
     },
     enabled: searchTerm.length >= 3,
     staleTime: 10 * 1000,
+  })
+}
+
+// Hook to apply for a team
+export function useApplyForTeam() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  
+  return useMutation({
+    mutationFn: async (teamId: string) => {
+      if (!user?.id) {
+        throw new Error('User not authenticated')
+      }
+
+      // Check if user already has a team
+      const { data: existingMembership } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (existingMembership) {
+        throw new Error('Sa kuulud juba mõnda tiimi')
+      }
+
+      // Apply for team
+      const { data, error } = await supabase
+        .from('team_members')
+        .insert([{
+          user_id: user.id,
+          team_id: teamId,
+          role: 'member',
+          status: 'pending'
+        }])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error applying for team:', error)
+        throw error
+      }
+
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.all })
+      queryClient.invalidateQueries({ queryKey: teamKeys.userTeamStatus(user?.id || '') })
+    },
+  })
+}
+
+// Hook to get team applications (for managers)
+export function useTeamApplications(teamId: string) {
+  return useQuery({
+    queryKey: ['team-applications', teamId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select(`
+          id,
+          user_id,
+          applied_at,
+          users (
+            name,
+            player_name,
+            email
+          )
+        `)
+        .eq('team_id', teamId)
+        .eq('status', 'pending')
+        .order('applied_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching applications:', error)
+        throw error
+      }
+
+      // Transform the data
+      return (data || []).map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        applied_at: item.applied_at,
+        user: Array.isArray(item.users) ? item.users[0] : item.users
+      }))
+    },
+    enabled: !!teamId,
+    staleTime: 30 * 1000,
+  })
+}
+
+// Hook to approve/reject applications
+export function useHandleApplication() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ applicationId, action, teamId }: {
+      applicationId: string
+      action: 'approve' | 'reject'
+      teamId: string
+    }) => {
+      const newStatus = action === 'approve' ? 'approved' : 'rejected'
+      
+      // Get the user_id from the application
+      const { data: application } = await supabase
+        .from('team_members')
+        .select('user_id')
+        .eq('id', applicationId)
+        .single()
+      
+      if (!application) {
+        throw new Error('Application not found')
+      }
+      
+      // Update the application status
+      const { error } = await supabase
+        .from('team_members')
+        .update({ status: newStatus })
+        .eq('id', applicationId)
+
+      if (error) {
+        console.error('Error updating application:', error)
+        throw error
+      }
+
+      // If approved, update user's has_team status
+      if (action === 'approve') {
+        await supabase
+          .from('users')
+          .update({ has_team: true })
+          .eq('id', application.user_id)
+      }
+
+      return { applicationId, action }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['team-applications', variables.teamId] })
+      queryClient.invalidateQueries({ queryKey: teamKeys.all })
+    },
   })
 }

@@ -1,12 +1,26 @@
 // src/components/teams/TeamHeaderSection.tsx
 'use client'
 
-import { useUserTeamStatus, useUserTeam, useTeams } from '@/hooks/useTeams'
+import { useState } from 'react'
+import { useUserTeamStatus, useUserTeam, useTeams, useApplyForTeam, Team } from '@/hooks/useTeams'
 import { useAuth } from '@/components/AuthProvider'
+import { TeamApplicationModal } from './TeamApplicationModal'
 
 // Available Teams Table Component
 function AvailableTeamsTable() {
   const { data: teams = [], isLoading } = useTeams()
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+  const applyForTeamMutation = useApplyForTeam()
+
+  const handleApply = async (teamId: string) => {
+    try {
+      await applyForTeamMutation.mutateAsync(teamId)
+      alert('Taotlus edukalt saadetud!')
+      setSelectedTeam(null)
+    } catch (error: any) {
+      alert(error.message || 'Viga taotluse saatmisel')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -68,7 +82,7 @@ function AvailableTeamsTable() {
                 <td className="py-4 px-4 text-center text-slate-300">{team.max_members_count}</td>
                 <td className="py-4 px-4 text-center">
                   <button
-                    onClick={() => console.log('Apply to team:', team.id)}
+                    onClick={() => setSelectedTeam(team)}
                     disabled={team.members_count >= team.max_members_count}
                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
                       team.members_count >= team.max_members_count
@@ -84,6 +98,15 @@ function AvailableTeamsTable() {
           </tbody>
         </table>
       </div>
+
+      {/* Application Modal */}
+      {selectedTeam && (
+        <TeamApplicationModal
+          team={selectedTeam}
+          onClose={() => setSelectedTeam(null)}
+          onApply={handleApply}
+        />
+      )}
     </div>
   )
 }
