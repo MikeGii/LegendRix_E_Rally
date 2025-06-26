@@ -73,7 +73,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         '/championships',
         '/results',
         '/participant-linking',
-        '/sponsors'
+        '/sponsors',
+        '/teams-manager'
       ]
       
       // Check if current path is any admin page

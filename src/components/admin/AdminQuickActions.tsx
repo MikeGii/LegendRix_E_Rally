@@ -199,23 +199,23 @@ export function AdminQuickActions() {
           </div>
         </button>
 
-        {/* Quick Settings Shortcuts */}
+        {/* Teams Management */}
         <button
-          onClick={() => handleNavigation('/user-dashboard')}
+          onClick={() => handleNavigation('/teams-manager')}
           className="group p-6 bg-gradient-to-br from-slate-500/20 to-slate-600/20 backdrop-blur-xl border border-slate-500/30 hover:border-slate-400/50 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-slate-500/25 text-left"
         >
           <div className="flex items-start space-x-4">
             <div className="flex-shrink-0">
               <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                <span className="text-2xl">🏠</span>
+                <span className="text-2xl">👥</span>
               </div>
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-white group-hover:text-white/90 transition-colors duration-200">
-                Kasutaja Vaade
+                Tiimipealikute Manageerimine
               </h3>
               <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-                Lülitu kasutaja töölauale
+                Halda tiimide pealikuid ja õigusi
               </p>
             </div>
           </div>
