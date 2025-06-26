@@ -183,14 +183,29 @@ export function TeamHeaderSection() {
             }
           </p>
         </div>
-
         {/* Team Info */}
         <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Team Name */}
             <div>
               <p className="text-sm text-slate-400 mb-1">Tiimi nimi</p>
               <p className="text-lg font-medium text-white">{team.team_name}</p>
+            </div>
+
+            {/* Competition Class */}
+            <div>
+              <p className="text-sm text-slate-400 mb-1">Võistlusklass</p>
+              <p className="text-lg font-medium text-white">
+                {team.game_class?.name || 'Määramata'}
+              </p>
+            </div>
+
+            {/* Team Vehicle */}
+            <div>
+              <p className="text-sm text-slate-400 mb-1">Tiimi sõiduk</p>
+              <p className="text-lg font-medium text-white">
+                {team.vehicle?.vehicle_name || 'Määramata'}
+              </p>
             </div>
 
             {/* Members Count */}

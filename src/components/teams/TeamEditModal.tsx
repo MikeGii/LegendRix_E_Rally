@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { Team, useUpdateTeam, useUserSearch } from '@/hooks/useTeams'
+import { useVehiclesForGame } from '@/hooks/useGameVehicles'
 
 interface TeamEditModalProps {
   team: Team
@@ -20,9 +21,11 @@ export function TeamEditModal({ team, onClose }: TeamEditModalProps) {
     } : null
   )
   const [maxMembers, setMaxMembers] = useState(team.max_members_count)
+  const [selectedVehicleId, setSelectedVehicleId] = useState(team.vehicle_id || '')
   const [showDropdown, setShowDropdown] = useState(false)
 
   const { data: searchResults = [] } = useUserSearch(managerSearch)
+  const { data: gameVehicles = [], isLoading: vehiclesLoading } = useVehiclesForGame(team.game_id)
   const updateTeamMutation = useUpdateTeam()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +41,8 @@ export function TeamEditModal({ team, onClose }: TeamEditModalProps) {
         id: team.id,
         team_name: teamName,
         manager_id: selectedManager.id,
-        max_members_count: maxMembers
+        max_members_count: maxMembers,
+        vehicle_id: selectedVehicleId || undefined
       })
 
       alert('Tiim edukalt uuendatud!')
@@ -86,6 +90,51 @@ export function TeamEditModal({ team, onClose }: TeamEditModalProps) {
             />
           </div>
 
+          {/* Game Info - Read Only */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Mäng
+            </label>
+            <div className="px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-400">
+              {team.game?.name || 'Määramata'}
+            </div>
+          </div>
+
+          {/* Class Info - Read Only */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Klass
+            </label>
+            <div className="px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-400">
+              {team.game_class?.name || 'Määramata'}
+            </div>
+          </div>
+
+          {/* Vehicle Selection */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Sõiduk
+            </label>
+            <select
+              value={selectedVehicleId}
+              onChange={(e) => setSelectedVehicleId(e.target.value)}
+              disabled={vehiclesLoading}
+              className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">Sõiduk määramata</option>
+              {gameVehicles.map((vehicle) => (
+                <option key={vehicle.id} value={vehicle.id}>
+                  {vehicle.vehicle_name}
+                </option>
+              ))}
+            </select>
+            {gameVehicles.length === 0 && !vehiclesLoading && (
+              <p className="text-sm text-yellow-400 mt-1">
+                Sellele mängule pole sõidukeid lisatud
+              </p>
+            )}
+          </div>
+
           {/* Team Manager Search */}
           <div className="relative">
             <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -97,32 +146,29 @@ export function TeamEditModal({ team, onClose }: TeamEditModalProps) {
               onChange={(e) => {
                 setManagerSearch(e.target.value)
                 setShowDropdown(true)
-                if (e.target.value !== (team.manager?.player_name || team.manager?.name)) {
-                  setSelectedManager(null)
-                }
               }}
               onFocus={() => setShowDropdown(true)}
               className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-              placeholder="Sisesta vähemalt 3 tähte otsinguks"
+              placeholder="Otsi kasutajat"
             />
-            
+
             {/* Search Results Dropdown */}
-            {showDropdown && managerSearch.length >= 3 && searchResults.length > 0 && !selectedManager && (
-              <div className="absolute z-10 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+            {showDropdown && searchResults.length > 0 && (
+              <div className="absolute z-10 w-full mt-2 bg-slate-800 border border-slate-600 rounded-xl shadow-xl max-h-48 overflow-y-auto">
                 {searchResults.map((user) => (
                   <button
                     key={user.id}
                     type="button"
                     onClick={() => selectManager(user)}
-                    className="w-full px-4 py-3 text-left hover:bg-slate-700/50 transition-colors duration-200 flex items-center justify-between group"
+                    className="w-full px-4 py-3 text-left hover:bg-slate-700 transition-colors first:rounded-t-xl last:rounded-b-xl"
                   >
-                    <div>
-                      <p className="text-white font-medium">{user.name}</p>
+                    <div className="text-white font-medium">
+                      {user.name}
                       {user.player_name && (
-                        <p className="text-slate-400 text-sm">🎮 {user.player_name}</p>
+                        <span className="text-slate-400 ml-2">({user.player_name})</span>
                       )}
                     </div>
-                    <span className="text-slate-500 group-hover:text-slate-300">→</span>
+                    <div className="text-sm text-slate-400">{user.email}</div>
                   </button>
                 ))}
               </div>
@@ -130,9 +176,10 @@ export function TeamEditModal({ team, onClose }: TeamEditModalProps) {
 
             {/* Selected Manager Display */}
             {selectedManager && (
-              <div className="mt-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                <p className="text-green-400 text-sm">
-                  ✅ Valitud: {selectedManager.name}
+              <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <p className="text-sm text-blue-400">Valitud pealik:</p>
+                <p className="text-white font-medium">
+                  {selectedManager.name}
                   {selectedManager.player_name && ` (${selectedManager.player_name})`}
                 </p>
               </div>
@@ -146,33 +193,28 @@ export function TeamEditModal({ team, onClose }: TeamEditModalProps) {
             </label>
             <input
               type="number"
-              min={Math.max(2, team.members_count)}
+              min="2"
               max="10"
               value={maxMembers}
               onChange={(e) => setMaxMembers(parseInt(e.target.value))}
               className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
               required
             />
-            {team.members_count > 2 && (
-              <p className="mt-1 text-xs text-slate-400">
-                Miinimum: {team.members_count} (praegune liikmete arv)
-              </p>
-            )}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end space-x-4 pt-4">
+          <div className="flex space-x-4 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200"
+              className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200"
             >
               Tühista
             </button>
             <button
               type="submit"
               disabled={updateTeamMutation.isPending}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/50 text-white rounded-xl font-medium transition-all duration-200 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/50 text-white rounded-xl font-medium transition-all duration-200 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {updateTeamMutation.isPending ? 'Uuendan...' : 'Salvesta muudatused'}
             </button>

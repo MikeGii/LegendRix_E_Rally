@@ -14,6 +14,7 @@ export interface Team {
   max_members_count: number
   game_id?: string
   class_id?: string
+  vehicle_id?: string
   manager?: {
     id: string
     name: string
@@ -27,6 +28,10 @@ export interface Team {
     id: string
     name: string
   }
+  vehicle?: {
+    id: string
+    vehicle_name: string
+  }
 }
 
 export interface CreateTeamInput {
@@ -35,6 +40,7 @@ export interface CreateTeamInput {
   max_members_count: number
   game_id: string
   class_id: string
+  vehicle_id?: string
 }
 
 export interface UpdateTeamInput {
@@ -42,6 +48,7 @@ export interface UpdateTeamInput {
   team_name?: string
   manager_id?: string
   max_members_count?: number
+  vehicle_id?: string
 }
 
 // Query keys for teams
@@ -85,7 +92,7 @@ export function useUserTeamStatus() {
   })
 }
 
-// Hook to get user's team information
+// Hook to fetch user's team data
 export function useUserTeam() {
   const { user } = useAuth()
   
@@ -95,51 +102,54 @@ export function useUserTeam() {
       if (!user?.id) {
         return null
       }
-
-      // Check team_members table for user's team
-      const { data: teamMember, error: memberError } = await supabase
+      
+      // First get the team membership
+      const { data: membership, error: membershipError } = await supabase
         .from('team_members')
-        .select(`
-          team_id,
-          role,
-          status
-        `)
+        .select('team_id, role')
         .eq('user_id', user.id)
         .eq('status', 'approved')
         .single()
 
-      if (teamMember && !memberError) {
-        // Fetch the full team data separately
-        const { data: team, error: teamError } = await supabase
-          .from('teams')
-          .select(`
-            *,
-            manager:users!teams_manager_id_fkey(
-              id,
-              name,
-              player_name
-            ),
-            game:games!teams_game_id_fkey(
-              id,
-              name
-            ),
-            game_class:game_classes!teams_class_id_fkey(
-              id,
-              name
-            )
-          `)
-          .eq('id', teamMember.team_id)
-          .single()
-
-        if (team && !teamError) {
-          return {
-            team: team as Team,
-            isManager: teamMember.role === 'manager'
-          }
-        }
+      if (membershipError || !membership) {
+        return null
       }
-      
-      return null
+
+      // Then get the full team data
+      const { data: team, error: teamError } = await supabase
+        .from('teams')
+        .select(`
+          *,
+          manager:users!teams_manager_id_fkey(
+            id,
+            name,
+            player_name
+          ),
+          game:games!teams_game_id_fkey(
+            id,
+            name
+          ),
+          game_class:game_classes!teams_class_id_fkey(
+            id,
+            name
+          ),
+          vehicle:game_vehicles!teams_vehicle_id_fkey(
+            id,
+            vehicle_name
+          )
+        `)
+        .eq('id', membership.team_id)
+        .single()
+
+      if (teamError || !team) {
+        console.error('Error fetching team:', teamError)
+        return null
+      }
+
+      return {
+        team: team as Team,
+        isManager: membership.role === 'manager'
+      }
     },
     enabled: !!user?.id,
     staleTime: 30 * 1000,
@@ -167,6 +177,10 @@ export function useTeams() {
           game_class:game_classes!teams_class_id_fkey(
             id,
             name
+          ),
+          vehicle:game_vehicles!teams_vehicle_id_fkey(
+            id,
+            vehicle_name
           )
         `)
         .order('team_name', { ascending: true })
@@ -197,7 +211,8 @@ export function useCreateTeam() {
           max_members_count: input.max_members_count,
           members_count: 0,  // Will be updated by trigger
           game_id: input.game_id,
-          class_id: input.class_id
+          class_id: input.class_id,
+          vehicle_id: input.vehicle_id || null
         }])
         .select()
         .single()
@@ -382,7 +397,7 @@ export function useUserSearch(searchTerm: string) {
       return data || []
     },
     enabled: searchTerm.length >= 3,
-    staleTime: 10 * 1000,
+    staleTime: 30 * 1000,
   })
 }
 
@@ -402,20 +417,38 @@ export function useApplyForTeam() {
         .from('team_members')
         .select('id')
         .eq('user_id', user.id)
+        .eq('status', 'approved')
         .single()
 
       if (existingMembership) {
-        throw new Error('Sa kuulud juba mõnda tiimi')
+        throw new Error('Sa oled juba tiimi liige')
       }
 
-      // Apply for team
+      // Check if user already applied to this team
+      const { data: existingApplication } = await supabase
+        .from('team_members')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .eq('team_id', teamId)
+        .single()
+
+      if (existingApplication) {
+        if (existingApplication.status === 'pending') {
+          throw new Error('Sa oled juba kandideerinud sellesse tiimi')
+        } else if (existingApplication.status === 'rejected') {
+          throw new Error('Sinu taotlus sellesse tiimi on tagasi lükatud')
+        }
+      }
+
+      // Create application
       const { data, error } = await supabase
         .from('team_members')
         .insert([{
           user_id: user.id,
           team_id: teamId,
           role: 'member',
-          status: 'pending'
+          status: 'pending',
+          applied_at: new Date().toISOString()
         }])
         .select()
         .single()
@@ -428,13 +461,12 @@ export function useApplyForTeam() {
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: teamKeys.all })
-      queryClient.invalidateQueries({ queryKey: teamKeys.userTeamStatus(user?.id || '') })
+      queryClient.invalidateQueries({ queryKey: ['team-applications'] })
     },
   })
 }
 
-// Hook to get team applications (for managers)
+// Hook to fetch team applications (for managers)
 export function useTeamApplications(teamId: string) {
   return useQuery({
     queryKey: ['team-applications', teamId],
@@ -443,9 +475,9 @@ export function useTeamApplications(teamId: string) {
         .from('team_members')
         .select(`
           id,
-          user_id,
           applied_at,
-          users (
+          user:users(
+            id,
             name,
             player_name,
             email
@@ -453,19 +485,18 @@ export function useTeamApplications(teamId: string) {
         `)
         .eq('team_id', teamId)
         .eq('status', 'pending')
-        .order('applied_at', { ascending: false })
+        .order('applied_at', { ascending: true })
 
       if (error) {
-        console.error('Error fetching applications:', error)
+        console.error('Error fetching team applications:', error)
         throw error
       }
 
       // Transform the data
       return (data || []).map(item => ({
         id: item.id,
-        user_id: item.user_id,
         applied_at: item.applied_at,
-        user: Array.isArray(item.users) ? item.users[0] : item.users
+        user: Array.isArray(item.user) ? item.user[0] : item.user
       }))
     },
     enabled: !!teamId,

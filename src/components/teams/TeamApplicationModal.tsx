@@ -108,12 +108,12 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
                 <p className="text-white font-medium">{team.game_class?.name || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-sm text-slate-400 mb-1">Kohti täidetud</p>
-                <p className="text-white font-medium">{team.members_count} / {team.max_members_count}</p>
+                <p className="text-sm text-slate-400 mb-1">Tiimi sõiduk</p>
+                <p className="text-white font-medium">{team.vehicle?.vehicle_name || 'Määramata'}</p>
               </div>
               <div>
-                <p className="text-sm text-slate-400 mb-1">Vabu kohti</p>
-                <p className="text-white font-medium">{team.max_members_count - team.members_count}</p>
+                <p className="text-sm text-slate-400 mb-1">Kohti täidetud</p>
+                <p className="text-white font-medium">{team.members_count} / {team.max_members_count}</p>
               </div>
             </div>
           </div>
@@ -180,6 +180,9 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
               <ol className="space-y-3 text-sm text-slate-300 list-decimal list-inside">
                 <li>
                   Iga tiimi liige on kohustatud võistlustel kasutama tiimile määratud sõidukit. Vastasel juhul tiimiliikme tulemused ei lähe arvesse ja korduva rikkumise korral tiimiliige kustutatakse tiimi nimekirjast administraatorite poolt.
+                </li>
+                <li>
+                  Iga tiimi liige on kohustatud osalema tiimi poolt määratud võistlusklassis. Hooaja kestel ei ole lubatud vahetada võidusõidu klassi.
                 </li>
                 <li>
                   Tiimi manageerijal on tiimi üle otsustav roll.

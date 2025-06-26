@@ -63,10 +63,14 @@ export function TeamsList() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
+
                   <h3 className="text-lg font-medium text-white">{team.team_name}</h3>
                   <div className="mt-2 space-y-1">
                     <p className="text-sm text-slate-400">
                       🎮 {team.game?.name || 'Mäng määramata'} - {team.game_class?.name || 'Klass määramata'}
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      🚗 Sõiduk: {team.vehicle?.vehicle_name || 'Määramata'}
                     </p>
                     <p className="text-sm text-slate-400">
                       👤 Pealik: {team.manager?.name}
