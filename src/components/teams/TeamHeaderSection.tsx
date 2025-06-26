@@ -1,7 +1,7 @@
 // src/components/teams/TeamHeaderSection.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUserTeamStatus, useUserTeam, useTeams, useApplyForTeam, Team } from '@/hooks/useTeams'
 import { useAuth } from '@/components/AuthProvider'
 import { TeamApplicationModal } from './TeamApplicationModal'
@@ -113,8 +113,16 @@ function AvailableTeamsTable() {
 
 export function TeamHeaderSection() {
   const { user } = useAuth()
-  const { data: teamStatus, isLoading: statusLoading } = useUserTeamStatus()
-  const { data: userTeamData, isLoading: teamLoading } = useUserTeam()
+  const { data: teamStatus, isLoading: statusLoading, refetch: refetchStatus } = useUserTeamStatus()
+  const { data: userTeamData, isLoading: teamLoading, refetch: refetchTeam } = useUserTeam()
+
+  // Refetch team status when component mounts or user changes
+  useEffect(() => {
+    if (user?.id) {
+      refetchStatus()
+      refetchTeam()
+    }
+  }, [user?.id, refetchStatus, refetchTeam])
 
   if (statusLoading || teamLoading) {
     return (

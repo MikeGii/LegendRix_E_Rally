@@ -6,6 +6,7 @@ import { DashboardLayout } from '@/components/DashboardLayout'
 import { ViewProvider } from '@/components/ViewProvider'
 import { TeamHeaderSection } from '@/components/teams/TeamHeaderSection'
 import { TeamApplicationsSection } from '@/components/teams/TeamApplicationsSection'
+import { TeamMembersList } from '@/components/teams/TeamMembersList'
 import { useUserTeam } from '@/hooks/useTeams'
 
 export default function TeamsPage() {
@@ -45,6 +46,11 @@ function TeamsPageContent() {
 
       {/* Team Header Section Component */}
       <TeamHeaderSection />
+
+      {/* Team Members List - Only show if user has a team */}
+      {userTeamData?.team && (
+        <TeamMembersList teamId={userTeamData.team.id} />
+      )}
     </div>
   )
 }

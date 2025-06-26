@@ -63,19 +63,21 @@ export function useUserTeamStatus() {
         return { hasTeam: false }
       }
       
-      const { data, error } = await supabase
-        .from('users')
-        .select('has_team')
-        .eq('id', user.id)
+      // Check team_members table for approved membership
+      const { data: membership, error } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
         .single()
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
         console.error('Error fetching team status:', error)
         throw error
       }
       
       return {
-        hasTeam: data?.has_team || false
+        hasTeam: !!membership
       }
     },
     enabled: !!user?.id,
@@ -511,12 +513,17 @@ export function useHandleApplication() {
           .from('users')
           .update({ has_team: true })
           .eq('id', application.user_id)
+        
+        // Also invalidate the approved user's team status
+        queryClient.invalidateQueries({ queryKey: teamKeys.userTeamStatus(application.user_id) })
+        queryClient.invalidateQueries({ queryKey: teamKeys.userTeam(application.user_id) })
       }
 
       return { applicationId, action }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['team-applications', variables.teamId] })
+      queryClient.invalidateQueries({ queryKey: ['team-members', variables.teamId] })
       queryClient.invalidateQueries({ queryKey: teamKeys.all })
     },
   })
