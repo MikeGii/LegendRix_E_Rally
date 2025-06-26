@@ -140,7 +140,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   >
                     <div className="flex items-center space-x-2">
                       <span>🏁</span>
-                      <span>Driver</span>
+                      <span>Võistleja</span>
                     </div>
                   </button>
                   <button
