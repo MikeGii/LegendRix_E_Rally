@@ -37,6 +37,7 @@ export const teamKeys = {
   all: ['teams'] as const,
   lists: () => [...teamKeys.all, 'list'] as const,
   userTeamStatus: (userId: string) => [...teamKeys.all, 'user-status', userId] as const,
+  userTeam: (userId: string) => [...teamKeys.all, 'user-team', userId] as const,
 }
 
 // Hook to check if user has a team
@@ -71,6 +72,54 @@ export function useUserTeamStatus() {
     },
     enabled: !!user?.id,
     staleTime: 30 * 1000, // 30 seconds
+  })
+}
+
+// Hook to get user's team information
+export function useUserTeam() {
+  const { user } = useAuth()
+  
+  return useQuery({
+    queryKey: teamKeys.userTeam(user?.id || ''),
+    queryFn: async () => {
+      if (!user?.id) {
+        return null
+      }
+
+      console.log('🔄 Fetching user team info:', user.id)
+      
+      // First check if user is a manager
+      const { data: managerTeam, error: managerError } = await supabase
+        .from('teams')
+        .select(`
+          *,
+          manager:users!teams_manager_id_fkey(
+            id,
+            name,
+            player_name,
+            is_manager
+          )
+        `)
+        .eq('manager_id', user.id)
+        .single()
+
+      if (managerTeam && !managerError) {
+        console.log('✅ User is team manager')
+        return {
+          team: managerTeam as Team,
+          isManager: true
+        }
+      }
+
+      // TODO: In future, check if user is a team member
+      // For now, if user has has_team=true but is not a manager,
+      // we'll need to implement team_members table lookup
+      
+      console.log('❌ User team not found')
+      return null
+    },
+    enabled: !!user?.id,
+    staleTime: 30 * 1000,
   })
 }
 
