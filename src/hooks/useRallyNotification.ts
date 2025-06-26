@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 interface RallyNotificationParams {
   rallyId: string
   testEmail?: string // For testing purposes
+  isReminder?: boolean // For reminder notifications
 }
 
 interface RallyNotificationResponse {

@@ -97,6 +97,30 @@ export function RallyManagement() {
     }
   }
 
+    const handleSendReminder = async (rally: Rally) => {
+    const useTestEmail = false
+    const testEmail = useTestEmail ? 'ewrc.admin@ideemoto.ee' : undefined
+    
+    const confirmMessage = useTestEmail 
+      ? `Kas olete kindel, et soovite saata korduvteavituse TESTI meilile ${testEmail}?`
+      : 'Kas olete kindel, et soovite saata korduvteavituse KÕIGILE kasutajatele?'
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        console.log('📧 Sending reminder for rally:', rally.id)
+        await rallyNotificationMutation.mutateAsync({ 
+          rallyId: rally.id,
+          testEmail: testEmail,
+          isReminder: true
+        })
+        alert('Korduvteavitus saadetud!')
+      } catch (error) {
+        console.error('Error sending reminder:', error)
+        alert('Korduvteavituse saatmine ebaõnnestus. Palun proovi uuesti.')
+      }
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'upcoming': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
@@ -309,6 +333,7 @@ export function RallyManagement() {
                 {/* Rally Actions - Show when selected */}
                 {selectedRally === rally.id && (
                   <div className="space-y-3 pt-4 border-t border-slate-700/30">
+                    {/* Edit and Delete buttons on same row */}
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={(e) => {
@@ -323,23 +348,36 @@ export function RallyManagement() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
+                          handleDeleteRally(rally.id)
+                        }}
+                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-all duration-200"
+                      >
+                        🗑️ Kustuta ralli
+                      </button>
+                    </div>
+                    
+                    {/* Notification buttons on same row */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
                           handleSendNotification(rally)
                         }}
                         className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-all duration-200"
                       >
                         📧 Teavita
                       </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSendReminder(rally)
+                        }}
+                        className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-all duration-200"
+                      >
+                        🔔 Korduvteavitus
+                      </button>
                     </div>
-                    
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteRally(rally.id)
-                      }}
-                      className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-all duration-200"
-                    >
-                      🗑️ Kustuta ralli
-                    </button>
                   </div>
                 )}
               </div>

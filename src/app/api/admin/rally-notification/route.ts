@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 import { generateRallyNotificationEmail } from '@/lib/email-templates/rallyNotificationTemplate'
+import { generateRallyReminderEmail } from '@/lib/email-templates/rallyReminderTemplate'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,7 +26,7 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(request: NextRequest) {
   try {
-    const { rallyId, testEmail } = await request.json()
+    const { rallyId, testEmail, isReminder = false } = await request.json()
 
     if (!rallyId) {
       return NextResponse.json(
@@ -165,7 +166,9 @@ export async function POST(request: NextRequest) {
       events: formattedEvents
     }
 
-    const { subject, html: htmlContent } = generateRallyNotificationEmail(emailData)
+      const { subject, html: htmlContent } = isReminder 
+      ? generateRallyReminderEmail(emailData)
+      : generateRallyNotificationEmail(emailData)
 
     // Send emails
     let successCount = 0
