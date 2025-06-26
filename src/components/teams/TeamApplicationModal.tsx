@@ -174,12 +174,7 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
                       {/* Member Info */}
                       <div className="flex-1">
                         <p className="text-white font-medium">
-                          {member.user.name}
-                          {member.user.player_name && (
-                            <span className="text-sm text-slate-400 ml-2">
-                              ({member.user.player_name})
-                            </span>
-                          )}
+                          {member.user.player_name}
                         </p>
                         <p className="text-sm text-slate-400">
                           {member.role === 'manager' ? 'Tiimi pealik' : 'Liige'}

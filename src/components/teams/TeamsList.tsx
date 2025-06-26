@@ -73,8 +73,7 @@ export function TeamsList() {
                       🚗 Sõiduk: {team.vehicle?.vehicle_name || 'Määramata'}
                     </p>
                     <p className="text-sm text-slate-400">
-                      👤 Pealik: {team.manager?.name}
-                      {team.manager?.player_name && ` (${team.manager.player_name})`}
+                      👤 Pealik: {team.manager?.player_name}
                     </p>
                     <p className="text-sm text-slate-400">
                       👥 Liikmeid: {team.members_count} / {team.max_members_count}

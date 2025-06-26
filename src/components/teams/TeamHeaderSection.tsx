@@ -80,10 +80,7 @@ function AvailableTeamsTable({ onSelectTeam }: { onSelectTeam: (team: Team) => v
                           <span className="text-xs">👤</span>
                         </div>
                         <div>
-                          <p className="text-sm text-slate-300">{team.manager?.name}</p>
-                          {team.manager?.player_name && (
-                            <p className="text-xs text-slate-500">@{team.manager.player_name}</p>
-                          )}
+                          <p className="text-sm text-slate-300">{team.manager?.player_name}</p>
                         </div>
                       </div>
                     </td>
@@ -309,7 +306,7 @@ export function TeamHeaderSection() {
                 <div className="flex-1">
                   <p className="text-sm text-slate-400 mb-1">Tiimi pealik</p>
                   <p className="text-lg font-semibold text-white">
-                    {isManager ? 'Sina' : team.manager?.name || 'Teadmata'}
+                    {isManager ? 'Sina' : team.manager?.player_name || 'Teadmata'}
                   </p>
                   {!isManager && team.manager?.player_name && (
                     <p className="text-sm text-slate-500 mt-1">
