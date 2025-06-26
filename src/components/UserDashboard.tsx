@@ -5,6 +5,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { useView } from '@/components/ViewProvider'
 import { useAllRallies, useFeaturedRallies, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
 import { UserWelcomeHeader } from '@/components/user/UserWelcomeHeader'
+import { UserQuickMenu } from '@/components/user/UserQuickMenu'
 import { UserStatusBanner } from '@/components/user/UserStatusBanner'
 import { UpcomingRalliesSection } from '@/components/user/UpcomingRalliesSection'
 import { FeaturedRalliesSection } from '@/components/user/FeaturedRalliesSection'
@@ -77,6 +78,9 @@ export function UserDashboard() {
           userName={user.name}
           isAdminAsUser={isAdminAsUser}
         />
+
+        {/* Quick Menu */}
+        <UserQuickMenu />
 
         {/* Status Banner - only show if there's an issue to address */}
         {status && (
