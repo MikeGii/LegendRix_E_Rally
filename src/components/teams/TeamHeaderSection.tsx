@@ -34,6 +34,7 @@ function AvailableTeamsTable() {
           <thead>
             <tr className="border-b border-slate-700/50">
               <th className="text-left py-3 px-4 text-sm font-medium text-slate-300">Tiimi nimi</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-slate-300">Mäng / Klass</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-slate-300">Tiimi pealik</th>
               <th className="text-center py-3 px-4 text-sm font-medium text-slate-300">Liikmete arv</th>
               <th className="text-center py-3 px-4 text-sm font-medium text-slate-300">Max liikmeid</th>
@@ -49,6 +50,12 @@ function AvailableTeamsTable() {
                 }`}
               >
                 <td className="py-4 px-4 text-white font-medium">{team.team_name}</td>
+                <td className="py-4 px-4 text-slate-300">
+                  <div>
+                    <p className="text-sm">{team.game?.name || 'N/A'}</p>
+                    <p className="text-xs text-slate-400">{team.game_class?.name || 'N/A'}</p>
+                  </div>
+                </td>
                 <td className="py-4 px-4 text-slate-300">
                   {team.manager?.name}
                   {team.manager?.player_name && (

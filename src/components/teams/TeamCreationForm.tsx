@@ -3,21 +3,26 @@
 
 import { useState } from 'react'
 import { useCreateTeam, useUserSearch } from '@/hooks/useTeams'
+import { useGames, useGameClasses } from '@/hooks/useGames'
 
 export function TeamCreationForm() {
   const [teamName, setTeamName] = useState('')
   const [managerSearch, setManagerSearch] = useState('')
   const [selectedManager, setSelectedManager] = useState<{id: string, name: string, player_name?: string} | null>(null)
   const [maxMembers, setMaxMembers] = useState(5)
+  const [selectedGameId, setSelectedGameId] = useState('')
+  const [selectedClassId, setSelectedClassId] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
 
   const { data: searchResults = [] } = useUserSearch(managerSearch)
+  const { data: games = [], isLoading: gamesLoading } = useGames()
+  const { data: gameClasses = [], isLoading: classesLoading } = useGameClasses(selectedGameId)
   const createTeamMutation = useCreateTeam()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!teamName || !selectedManager) {
+    if (!teamName || !selectedManager || !selectedGameId || !selectedClassId) {
       alert('Palun täida kõik väljad')
       return
     }
@@ -26,7 +31,9 @@ export function TeamCreationForm() {
       await createTeamMutation.mutateAsync({
         team_name: teamName,
         manager_id: selectedManager.id,
-        max_members_count: maxMembers
+        max_members_count: maxMembers,
+        game_id: selectedGameId,
+        class_id: selectedClassId
       })
 
       // Reset form
@@ -34,6 +41,8 @@ export function TeamCreationForm() {
       setManagerSearch('')
       setSelectedManager(null)
       setMaxMembers(5)
+      setSelectedGameId('')
+      setSelectedClassId('')
       
       alert('Tiim edukalt loodud!')
     } catch (error) {
@@ -45,6 +54,11 @@ export function TeamCreationForm() {
     setSelectedManager(user)
     setManagerSearch(user.player_name || user.name)
     setShowDropdown(false)
+  }
+
+  const handleGameChange = (gameId: string) => {
+    setSelectedGameId(gameId)
+    setSelectedClassId('') // Reset class when game changes
   }
 
   return (
@@ -62,6 +76,49 @@ export function TeamCreationForm() {
           placeholder="Sisesta tiimi nimi"
           required
         />
+      </div>
+
+      {/* Game Selection */}
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-2">
+          Mäng
+        </label>
+        <select
+          value={selectedGameId}
+          onChange={(e) => handleGameChange(e.target.value)}
+          className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+          required
+        >
+          <option value="">Vali mäng</option>
+          {games.map((game) => (
+            <option key={game.id} value={game.id}>
+              {game.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Game Class Selection */}
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-2">
+          Mängu klass
+        </label>
+        <select
+          value={selectedClassId}
+          onChange={(e) => setSelectedClassId(e.target.value)}
+          disabled={!selectedGameId || classesLoading}
+          className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          required
+        >
+          <option value="">
+            {!selectedGameId ? 'Vali esmalt mäng' : 'Vali klass'}
+          </option>
+          {gameClasses.map((gameClass) => (
+            <option key={gameClass.id} value={gameClass.id}>
+              {gameClass.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Team Manager Search */}

@@ -12,10 +12,20 @@ export interface Team {
   team_name: string
   members_count: number
   max_members_count: number
+  game_id?: string
+  class_id?: string
   manager?: {
     id: string
     name: string
     player_name?: string
+  }
+  game?: {
+    id: string
+    name: string
+  }
+  game_class?: {
+    id: string
+    name: string
   }
 }
 
@@ -23,6 +33,8 @@ export interface CreateTeamInput {
   team_name: string
   manager_id: string
   max_members_count: number
+  game_id: string
+  class_id: string
 }
 
 export interface UpdateTeamInput {
@@ -138,6 +150,14 @@ export function useTeams() {
             id,
             name,
             player_name
+          ),
+          game:games!teams_game_id_fkey(
+            id,
+            name
+          ),
+          game_class:game_classes!teams_class_id_fkey(
+            id,
+            name
           )
         `)
         .order('team_name', { ascending: true })
@@ -169,7 +189,9 @@ export function useCreateTeam() {
           team_name: input.team_name,
           manager_id: input.manager_id,
           max_members_count: input.max_members_count,
-          members_count: 1  // Manager counts as first member
+          members_count: 1,  // Manager counts as first member
+          game_id: input.game_id,
+          class_id: input.class_id
         }])
         .select()
         .single()
