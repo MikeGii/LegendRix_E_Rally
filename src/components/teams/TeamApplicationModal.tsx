@@ -23,6 +23,7 @@ interface TeamApplicationModalProps {
 export function TeamApplicationModal({ team, onClose, onApply }: TeamApplicationModalProps) {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [rulesAccepted, setRulesAccepted] = useState(false)
 
   useEffect(() => {
     fetchTeamMembers()
@@ -166,6 +167,49 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
               </div>
             )}
           </div>
+
+          {/* Rules Section */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Taotluse reeglid</h3>
+            
+            <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50">
+              <p className="text-sm text-slate-300 mb-4 font-medium">
+                Liitudes tiimiga olen kohustatud järgima võistluse registreerimisvormi reegleid lisaks siin välja toodud reeglitele:
+              </p>
+              
+              <ol className="space-y-3 text-sm text-slate-300 list-decimal list-inside">
+                <li>
+                  Iga tiimi liige on kohustatud võistlustel kasutama tiimile määratud sõidukit. Vastasel juhul tiimiliikme tulemused ei lähe arvesse ja korduva rikkumise korral tiimiliige kustutatakse tiimi nimekirjast administraatorite poolt.
+                </li>
+                <li>
+                  Tiimi manageerijal on tiimi üle otsustav roll.
+                </li>
+                <li>
+                  Iga tiimi liige peab kinni pidama mängu heast tavast ja peab arvestama enda tiimi manageerija korraldusi.
+                </li>
+                <li>
+                  Kui manageerija korraldused või tegevuskava tundub pahatahtlik või ei arvestata head tava siis palun ühendust võtta administraatoriga.
+                </li>
+              </ol>
+              
+              {/* Checkbox */}
+              <div className="mt-6 flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  id="accept-rules"
+                  checked={rulesAccepted}
+                  onChange={(e) => setRulesAccepted(e.target.checked)}
+                  className="mt-1 w-5 h-5 rounded border-slate-600 bg-slate-700/50 text-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-0 focus:ring-offset-transparent cursor-pointer"
+                />
+                <label 
+                  htmlFor="accept-rules" 
+                  className="text-sm text-slate-300 cursor-pointer select-none"
+                >
+                  Kinnitan, et olen tutvunud reeglitega ja nõustun nendega
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
@@ -183,7 +227,13 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
               </button>
               <button
                 onClick={() => onApply(team.id)}
-                className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg shadow-green-500/25"
+                disabled={!rulesAccepted}
+                className={`px-6 py-3 text-white rounded-xl font-medium transition-all duration-200 shadow-lg ${
+                  rulesAccepted 
+                    ? 'bg-green-600 hover:bg-green-700 shadow-green-500/25 cursor-pointer' 
+                    : 'bg-slate-600 cursor-not-allowed opacity-50'
+                }`}
+                title={!rulesAccepted ? 'Palun nõustu reeglitega' : ''}
               >
                 Saada taotlus
               </button>
