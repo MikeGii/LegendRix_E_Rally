@@ -1,8 +1,85 @@
 // src/components/teams/TeamHeaderSection.tsx
 'use client'
 
-import { useUserTeamStatus, useUserTeam } from '@/hooks/useTeams'
+import { useUserTeamStatus, useUserTeam, useTeams } from '@/hooks/useTeams'
 import { useAuth } from '@/components/AuthProvider'
+
+// Available Teams Table Component
+function AvailableTeamsTable() {
+  const { data: teams = [], isLoading } = useTeams()
+
+  if (isLoading) {
+    return (
+      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
+        <div className="flex justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-400">Laadin saadaolevaid tiime...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (teams.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
+      <h3 className="text-xl font-semibold text-white mb-6">Saadaolevad tiimid</h3>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-slate-700/50">
+              <th className="text-left py-3 px-4 text-sm font-medium text-slate-300">Tiimi nimi</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-slate-300">Tiimi pealik</th>
+              <th className="text-center py-3 px-4 text-sm font-medium text-slate-300">Liikmete arv</th>
+              <th className="text-center py-3 px-4 text-sm font-medium text-slate-300">Max liikmeid</th>
+              <th className="text-center py-3 px-4 text-sm font-medium text-slate-300">Tegevus</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teams.map((team, index) => (
+              <tr 
+                key={team.id}
+                className={`border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors ${
+                  index % 2 === 0 ? 'bg-slate-900/20' : ''
+                }`}
+              >
+                <td className="py-4 px-4 text-white font-medium">{team.team_name}</td>
+                <td className="py-4 px-4 text-slate-300">
+                  {team.manager?.name}
+                  {team.manager?.player_name && (
+                    <span className="text-sm text-slate-400 ml-1">
+                      ({team.manager.player_name})
+                    </span>
+                  )}
+                </td>
+                <td className="py-4 px-4 text-center text-slate-300">{team.members_count}</td>
+                <td className="py-4 px-4 text-center text-slate-300">{team.max_members_count}</td>
+                <td className="py-4 px-4 text-center">
+                  <button
+                    onClick={() => console.log('Apply to team:', team.id)}
+                    disabled={team.members_count >= team.max_members_count}
+                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                      team.members_count >= team.max_members_count
+                        ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+                        : 'bg-green-600/20 hover:bg-green-600/30 text-green-400 hover:text-green-300'
+                    }`}
+                  >
+                    {team.members_count >= team.max_members_count ? 'Täis' : 'Kandideeri'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
 
 export function TeamHeaderSection() {
   const { user } = useAuth()
@@ -25,18 +102,24 @@ export function TeamHeaderSection() {
   // User has no team
   if (!teamStatus?.hasTeam) {
     return (
-      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12">
-        <div className="text-center">
-          <div className="w-24 h-24 bg-red-500/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <span className="text-5xl">🚫</span>
+      <div className="space-y-8">
+        {/* No Team Message */}
+        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-red-500/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <span className="text-5xl">🚫</span>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-4">
+              Sa ei ole veel seotud ühegi tiimiga
+            </h2>
+            <p className="text-slate-400 max-w-2xl mx-auto">
+              Liitu mõne olemasoleva tiimiga või loo oma tiim, et hakata võistlema koos teistega.
+            </p>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Sa ei ole veel seotud ühegi tiimiga
-          </h2>
-          <p className="text-slate-400 max-w-2xl mx-auto">
-            Liitu mõne olemasoleva tiimiga või loo oma tiim, et hakata võistlema koos teistega.
-          </p>
         </div>
+
+        {/* Available Teams Table */}
+        <AvailableTeamsTable />
       </div>
     )
   }

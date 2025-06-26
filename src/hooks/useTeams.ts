@@ -169,7 +169,7 @@ export function useCreateTeam() {
           team_name: input.team_name,
           manager_id: input.manager_id,
           max_members_count: input.max_members_count,
-          members_count: 0
+          members_count: 1  // Manager counts as first member
         }])
         .select()
         .single()
