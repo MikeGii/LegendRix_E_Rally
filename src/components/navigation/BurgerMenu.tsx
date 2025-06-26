@@ -88,7 +88,7 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
       label: 'Registreeri Rallile',
       description: 'Uue ralli registreerimine',
       action: () => navigateTo('/registration'),
-      priority: 'secondary'
+      priority: 'primary'
     },
     {
       icon: '⚙️',
