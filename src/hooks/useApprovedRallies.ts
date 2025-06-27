@@ -1,4 +1,4 @@
-// src/hooks/useApprovedRallies.ts - PARANDATUD klassi ja osaleja nimede loogikas
+// src/hooks/useApprovedRallies.ts - PARANDATUD klassi ja osaleja nimede loogikas + is_public tugi
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
@@ -14,6 +14,7 @@ export interface ApprovedRally {
   approved_by: string
   total_participants: number
   participants_with_results: number
+  is_public: boolean
 }
 
 export interface ApprovedRallyResult {
@@ -29,12 +30,12 @@ export interface ApprovedRallyResult {
   registration_date?: string
 }
 
-// Hook to get all approved rallies (public access)
+// Hook to get all approved rallies (admin view - shows all)
 export function useApprovedRallies() {
   return useQuery({
     queryKey: ['approved-rallies'],
     queryFn: async (): Promise<ApprovedRally[]> => {
-      console.log('🔄 Laadin heakskiidetud rallyeid avalikuks vaatamiseks...')
+      console.log('🔄 Laadin kõiki heakskiidetud rallyeid...')
 
       const { data, error } = await supabase
         .from('approved_rallies')
@@ -50,6 +51,77 @@ export function useApprovedRallies() {
       return data || []
     },
     staleTime: 5 * 60 * 1000, // 5 minutit - avalikud andmed võivad kauem vahemälus olla
+  })
+}
+
+// NEW HOOK: Get only PUBLIC approved rallies (for landing page)
+export function usePublicApprovedRallies() {
+  return useQuery({
+    queryKey: ['public-approved-rallies'],
+    queryFn: async (): Promise<ApprovedRally[]> => {
+      console.log('🔄 Laadin avalikuks märgitud heakskiidetud rallyeid...')
+
+      // First, get rally IDs that are marked as public
+      const { data: publicRallyStatus, error: statusError } = await supabase
+        .from('rally_results_status')
+        .select('rally_id')
+        .eq('results_approved', true)
+        .eq('is_public', true)
+
+      if (statusError) {
+        console.error('Viga avalike rally staatuste laadimisel:', statusError)
+        throw statusError
+      }
+
+      if (!publicRallyStatus || publicRallyStatus.length === 0) {
+        console.log('Avalikke rallyeid ei leitud')
+        return []
+      }
+
+      // Get the rally IDs
+      const publicRallyIds = publicRallyStatus.map(status => status.rally_id)
+
+      // Now get the approved rallies that are in the public list
+      const { data, error } = await supabase
+        .from('approved_rallies')
+        .select('*')
+        .in('id', publicRallyIds)
+        .order('competition_date', { ascending: false })
+
+      if (error) {
+        console.error('Viga avalike heakskiidetud rallyede laadimisel:', error)
+        throw error
+      }
+
+      console.log(`✅ Laaditud ${data?.length || 0} avalikuks märgitud heakskiidetud rallyeid`)
+      return data || []
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+// Hook to check if a specific rally is public
+export function useIsRallyPublic(rallyId: string) {
+  return useQuery({
+    queryKey: ['rally-is-public', rallyId],
+    queryFn: async (): Promise<boolean> => {
+      if (!rallyId) return false
+
+      const { data, error } = await supabase
+        .from('rally_results_status')
+        .select('is_public')
+        .eq('rally_id', rallyId)
+        .eq('results_approved', true)
+        .single()
+
+      if (error || !data) {
+        return false
+      }
+
+      return data.is_public || false
+    },
+    enabled: !!rallyId,
+    staleTime: 5 * 60 * 1000,
   })
 }
 

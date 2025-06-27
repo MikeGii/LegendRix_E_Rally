@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useApprovedRallies } from '@/hooks/useApprovedRallies'
+import { usePublicApprovedRallies } from '@/hooks/useApprovedRallies' // Changed to use public hook
 import { usePublicChampionships, PublicChampionship } from '@/hooks/usePublicChampionships'
 import { RallyResultsModal } from '@/components/edetabel/RallyResultsModal'
 import { ChampionshipResultsModal } from '@/components/edetabel/ChampionshipResultsModal'
@@ -10,7 +10,7 @@ import type { ApprovedRally } from '@/hooks/useApprovedRallies'
 interface EdetabelModalProps {
   isOpen: boolean
   onClose: () => void
-  onChampionshipModalToggle?: (isOpen: boolean) => void // ADD THIS
+  onChampionshipModalToggle?: (isOpen: boolean) => void
 }
 
 export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: EdetabelModalProps) {
@@ -26,15 +26,15 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
   const [isChampionshipModalOpen, setIsChampionshipModalOpen] = useState(false)
   const [selectedChampionship, setSelectedChampionship] = useState<PublicChampionship | null>(null)
 
-  // Data hooks
-  const { data: approvedRallies = [], isLoading } = useApprovedRallies()
+  // Data hooks - UPDATED to use public hook
+  const { data: publicRallies = [], isLoading } = usePublicApprovedRallies() // Changed from useApprovedRallies
   const { data: publicChampionships = [], isLoading: isLoadingChampionships } = usePublicChampionships()
 
   // Pagination settings
   const RALLIES_PER_PAGE = 10
 
   // Filter and sort rallies
-  const filteredRallies = approvedRallies
+  const filteredRallies = publicRallies // Changed from approvedRallies
     .filter(rally => {
       const matchesGame = !gameFilter || rally.game_name === gameFilter
       const matchesSearch = !searchTerm || 
@@ -70,9 +70,9 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
   }
 
   // Get unique games for filter
-  const availableGames = Array.from(new Set(approvedRallies.map(r => r.game_name))).sort()
-  const totalParticipants = approvedRallies.reduce((sum, rally) => sum + rally.total_participants, 0)
-  const selectedRally = approvedRallies.find(r => r.id === selectedRallyId)
+  const availableGames = Array.from(new Set(publicRallies.map(r => r.game_name))).sort()
+  const totalParticipants = publicRallies.reduce((sum, rally) => sum + rally.total_participants, 0)
+  const selectedRally = publicRallies.find(r => r.id === selectedRallyId)
 
   // Handle close function properly
   const handleClose = () => {
@@ -97,9 +97,8 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
   const handleChampionshipClick = (championship: PublicChampionship) => {
     setSelectedChampionship(championship)
     setIsChampionshipModalOpen(true)
-    onChampionshipModalToggle?.(true) // ADD THIS LINE
+    onChampionshipModalToggle?.(true)
   }
-
 
   // Create championship close handler:
   const handleChampionshipModalClose = () => {
@@ -257,8 +256,8 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
                   </h2>
                   <p className="text-slate-400">
                     {viewType === 'rallies' 
-                      ? 'Kinnitatud ralli tulemused'
-                      : 'Koondarvestuste tulemused'
+                      ? 'Avalikud ralli tulemused'  // Updated text to indicate public results
+                      : 'Avalikud koondarvestuste tulemused'
                     }
                   </p>
                 </div>
@@ -287,7 +286,7 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
                         : 'text-slate-300 hover:text-white'
                     }`}
                   >
-                    🏁 Rallid ({approvedRallies.length})
+                    🏁 Rallid ({publicRallies.length})
                   </button>
                   <button
                     onClick={() => setViewType('championships')}
@@ -353,11 +352,11 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
                     {isLoading ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="w-8 h-8 border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
-                        <span className="ml-3 text-slate-400">Laen rallide andmeid...</span>
+                        <span className="ml-3 text-slate-400">Laen avalike rallide andmeid...</span>
                       </div>
                     ) : filteredRallies.length === 0 ? (
                       <div className="text-center py-12">
-                        <span className="text-slate-400">Ühtegi rallit ei leitud</span>
+                        <span className="text-slate-400">Ühtegi avalikku rallit ei leitud</span>
                       </div>
                     ) : (
                       <>
@@ -430,11 +429,11 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
                     {isLoadingChampionships ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="w-8 h-8 border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
-                        <span className="ml-3 text-slate-400">Laen meistrivõistluste andmeid...</span>
+                        <span className="ml-3 text-slate-400">Laen avalike meistrivõistluste andmeid...</span>
                       </div>
                     ) : publicChampionships.length === 0 ? (
                       <div className="text-center py-12">
-                        <span className="text-slate-400">Ühtegi meistrivõistlust ei leitud</span>
+                        <span className="text-slate-400">Ühtegi avalikku meistrivõistlust ei leitud</span>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -517,11 +516,7 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
       {selectedChampionship && (
         <ChampionshipResultsModal
           isOpen={isChampionshipModalOpen}
-          onClose={() => {
-            setIsChampionshipModalOpen(false)
-            setSelectedChampionship(null)
-            onChampionshipModalToggle?.(false) // ADD THIS LINE
-          }}
+          onClose={handleChampionshipModalClose}
           championshipId={selectedChampionship.id}
           championshipName={selectedChampionship.name}
         />
