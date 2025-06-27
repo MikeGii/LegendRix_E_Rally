@@ -20,16 +20,22 @@ interface RallyEmailData {
   events: RallyEvent[]
 }
 
-// Format dates for Estonian locale
+// Format dates for Estonian locale and timezone
 const formatEstonianDate = (dateString: string): string => {
   const date = new Date(dateString)
-  return date.toLocaleDateString('et-EE', {
+  
+  // Convert to Estonian timezone (UTC+2 or UTC+3 depending on DST)
+  const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
-  })
+    minute: '2-digit',
+    timeZone: 'Europe/Tallinn', // Estonian timezone
+    hour12: false // Use 24-hour format
+  }
+  
+  return date.toLocaleString('et-EE', options)
 }
 
 export function generateRallyNotificationEmail(data: RallyEmailData): { subject: string; html: string } {
@@ -112,7 +118,7 @@ export function generateRallyNotificationEmail(data: RallyEmailData): { subject:
                   <span style="color: #94a3b8; font-weight: 600; width: 160px; display: flex; align-items: center;">
                     <span style="margin-right: 8px;">🏁</span>Võistluse kuupäev:
                   </span>
-                  <span style="color: #ef4444; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);">
+                  <span style="color: #3b82f6; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">
                     ${formatEstonianDate(rally.competition_date)}
                   </span>
                 </div>
@@ -199,7 +205,7 @@ export function generateRallyNotificationEmail(data: RallyEmailData): { subject:
                 Küsimused? Võta meiega ühendust meie Discord serveris või e-posti teel.
               </p>
               <p style="color: #64748b; font-size: 14px; margin: 0; font-weight: 400;">
-                LegendRix E-Rally Championship • Powered by EWRC
+                LegendRix E-Rally Championship • Powered by LegendRix
               </p>
             </div>
           </div>

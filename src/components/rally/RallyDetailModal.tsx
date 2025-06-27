@@ -1,9 +1,10 @@
-// src/components/rally/RallyDetailModal.tsx - COMPLETE FIXED VERSION
+// src/components/rally/RallyDetailModal.tsx - REDESIGNED WITH FUTURISTIC BLACK-RED-GRAY THEME
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { TransformedRally, useUserRallyRegistrations, UserRallyRegistration } from '@/hooks/useOptimizedRallies'
-import { useRallyRegistrations } from '@/hooks/useRallyRegistrations'
+import { useRallyRegistrations, RallyRegistration } from '@/hooks/useRallyRegistrations'
 import { 
   getRallyStatus, 
   getStatusDisplayText, 
@@ -28,36 +29,34 @@ interface SimpleRallyTrack {
   track_order: number
 }
 
-// FIXED: Interface with correct props
 interface RallyDetailModalProps {
   rally: TransformedRally | null
   onClose: () => void
   onRegister?: () => void
-  userRegistration?: UserRallyRegistration  // ADDED: Optional userRegistration prop
-  onUnregister?: () => void  // ADDED: Optional onUnregister prop
+  userRegistration?: UserRallyRegistration
+  onUnregister?: () => void
 }
 
 export function RallyDetailModal({ rally, onClose, onRegister, userRegistration: propUserRegistration, onUnregister }: RallyDetailModalProps) {
   const [activeTab, setActiveTab] = useState<'info' | 'participants'>('info')
+  const [isClosing, setIsClosing] = useState(false)
+  const modalRef = useRef<HTMLDivElement>(null)
   
   if (!rally) return null
 
-  // FIXED: Calculate real-time status with proper parameters
+  // Calculate real-time status
   const realTimeStatus = getRallyStatus({
     competition_date: rally.competition_date,
     registration_deadline: rally.registration_deadline
-    // REMOVED: status parameter as it's not needed for calculation
   })
 
   const registrationAllowed = canRegisterToRally({
     competition_date: rally.competition_date,
     registration_deadline: rally.registration_deadline
-    // REMOVED: status parameter as it's not needed for calculation
   })
 
   const isPastRally = isRallyInPast({
     competition_date: rally.competition_date
-    // REMOVED: status parameter as it's not needed for calculation
   })
   
   // Get user's registrations to check if already registered
@@ -66,453 +65,436 @@ export function RallyDetailModal({ rally, onClose, onRegister, userRegistration:
   // Get all participants for this rally
   const { data: participants = [], isLoading: isLoadingParticipants } = useRallyRegistrations(rally?.id || '')
 
-  // FIXED: Check if user is already registered for this rally (use different variable name)
+  // Check if user is already registered for this rally
   const currentUserRegistration = propUserRegistration || userRegistrations.find(
     reg => reg.rally_id === rally.id && 
            (reg.status === 'registered' || reg.status === 'confirmed')
   )
   const isUserRegistered = !!currentUserRegistration
 
-  // ENHANCED: Calculate rally statistics
-  const calculateStatistics = () => {
-    const events = safeEvents || []
-    
-    // Calculate unique countries/events count
-    const uniqueCountries = events.length
-    
-    // Calculate total tracks count and total length
-    let totalTracks = 0
-    let totalLength = 0
-    
-    events.forEach(event => {
-      if (event.tracks) {
-        totalTracks += event.tracks.length
-        event.tracks.forEach(track => {
-          if (track.length_km) {
-            totalLength += track.length_km
-          }
-        })
-      }
-    })
-    
-    return {
-      countries: uniqueCountries,
-      tracks: totalTracks,
-      totalLength: Math.round(totalLength * 10) / 10 // Round to 1 decimal place
-    }
-  }
+  // Get status styles for futuristic theme
+  const statusInfo = getStatusDisplayText(realTimeStatus)
+  const statusColor = getStatusColor(realTimeStatus)
   
-  const getStatusColorLocal = (status: string) => {
-    switch (status) {
-      case 'upcoming':
-        return 'text-blue-400 bg-blue-500/20 border-blue-500/30'
-      case 'registration_open':
-        return 'text-green-400 bg-green-500/20 border-green-500/30'
-      case 'registration_closed':
-        return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30'
-      case 'active':
-        return 'text-orange-400 bg-orange-500/20 border-orange-500/30'
-      case 'completed':
-        return 'text-purple-400 bg-purple-500/20 border-purple-500/30'
-      case 'cancelled':
-        return 'text-red-400 bg-red-500/20 border-red-500/30'
-      default:
-        return 'text-slate-400 bg-slate-500/20 border-slate-500/30'
-    }
-  }
-
-  const getStatusTextLocal = (status: string) => {
-    switch (status) {
-      case 'upcoming': return 'Tulemas'
-      case 'registration_open': return 'Registreerimine avatud'
-      case 'registration_closed': return 'Registreerimine suletud'
-      case 'active': return 'Käimasolev'
-      case 'completed': return 'Lõppenud'
-      case 'cancelled': return 'Tühistatud'
-      default: return status
-    }
-  }
-
-  // Group participants by class - WITH PROPER TYPING
-  const participantsByClass: Record<string, any[]> = {}
-  participants.forEach(participant => {
-    const className = participant.class_name || 'Tundmatu klass'
-    if (!participantsByClass[className]) {
-      participantsByClass[className] = []
-    }
-    participantsByClass[className].push(participant)
-  })
-
-  // Sort participants within each class by registration date
-  Object.keys(participantsByClass).forEach(className => {
-    participantsByClass[className].sort((a: any, b: any) => 
-      new Date(a.registration_date).getTime() - new Date(b.registration_date).getTime()
-    )
-  })
-
-  const totalParticipants = participants.length
-
-  // SAFE TYPE HANDLING FOR EVENTS
-  const safeEvents: SimpleRallyEvent[] = []
-  if (rally.events && Array.isArray(rally.events)) {
-    rally.events.forEach((event: any) => {
-      if (event && typeof event === 'object') {
-        const safeTracks: SimpleRallyTrack[] = []
-        if (event.tracks && Array.isArray(event.tracks)) {
-          event.tracks.forEach((track: any) => {
-            if (track && typeof track === 'object') {
-              safeTracks.push({
-                id: track.id || '',
-                name: track.name || '',
-                surface_type: track.surface_type,
-                length_km: track.length_km,
-                track_order: track.track_order || 0
-              })
-            }
-          })
+  const getStatusStyles = (color: string) => {
+    switch (color) {
+      case 'bg-green-500/20 text-green-400 border-green-500/30':
+        return {
+          bg: 'bg-gradient-to-r from-green-900/30 to-green-800/20',
+          border: 'border-green-500/30',
+          text: 'text-green-400',
+          glow: 'shadow-[0_0_20px_rgba(34,197,94,0.3)]'
         }
-        safeEvents.push({
-          event_id: event.event_id || '',
-          event_name: event.event_name || '',
-          event_order: event.event_order || 0,
-          tracks: safeTracks
-        })
+      case 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30':
+        return {
+          bg: 'bg-gradient-to-r from-yellow-900/30 to-yellow-800/20',
+          border: 'border-yellow-500/30',
+          text: 'text-yellow-400',
+          glow: 'shadow-[0_0_20px_rgba(234,179,8,0.3)]'
+        }
+      case 'bg-orange-500/20 text-orange-400 border-orange-500/30':
+        return {
+          bg: 'bg-gradient-to-r from-orange-900/30 to-orange-800/20',
+          border: 'border-orange-500/30',
+          text: 'text-orange-400',
+          glow: 'shadow-[0_0_20px_rgba(249,115,22,0.3)]'
+        }
+      case 'bg-red-500/20 text-red-400 border-red-500/30':
+        return {
+          bg: 'bg-gradient-to-r from-red-900/30 to-red-800/20',
+          border: 'border-red-500/30',
+          text: 'text-red-400',
+          glow: 'shadow-[0_0_20px_rgba(239,68,68,0.3)]'
+        }
+      default:
+        return {
+          bg: 'bg-gradient-to-r from-gray-900/30 to-gray-800/20',
+          border: 'border-gray-500/30',
+          text: 'text-gray-400',
+          glow: ''
+        }
+    }
+  }
+
+  const styles = getStatusStyles(statusColor)
+
+  // Handle escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose()
       }
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [])
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [])
+
+  const handleClose = () => {
+    setIsClosing(true)
+    setTimeout(() => {
+      onClose()
+    }, 300)
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleString('et-EE', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Tallinn'
     })
   }
 
-  // ENHANCED: Calculate statistics after safeEvents is defined
-  const statistics = calculateStatistics()
+  // Safe event and track data - FIXED property names
+  const rallyEventsData = rally.events || [] // Changed from rally_events to events
+  const safeEvents: SimpleRallyEvent[] = rallyEventsData
+    .map(re => ({
+      event_id: re.event_id || '',
+      event_name: re.event_name || 'Tundmatu etapp', // Changed from re.events?.name
+      event_order: re.event_order || 0,
+      tracks: (re.tracks || []) // Changed from re.rally_tracks
+        .map(rt => ({
+          id: rt.id || '',
+          name: rt.name || 'Tundmatu rada', // Changed from rt.tracks?.name
+          surface_type: rt.surface_type || undefined,
+          length_km: rt.length_km || undefined,
+          track_order: rt.track_order || 0
+        }))
+        .sort((a, b) => a.track_order - b.track_order)
+    }))
+    .sort((a, b) => a.event_order - b.event_order)
 
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-2xl border border-slate-700/50 w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="bg-slate-800 border-b border-slate-700/50 p-6 flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-              <span className="text-blue-400 text-xl">🏁</span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">{rally.name}</h2>
-              <p className="text-slate-400">{rally.game_name} • {rally.game_type_name}</p>
-            </div>
+  const modalContent = (
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        onClick={handleClose}
+      />
+      
+      {/* Modal */}
+      <div 
+        ref={modalRef}
+        className={`relative w-full max-w-3xl max-h-[85vh] bg-black/90 backdrop-blur-xl rounded-2xl shadow-[0_0_50px_rgba(255,0,64,0.3)] overflow-hidden flex flex-col ${isClosing ? 'animate-slideOut' : 'animate-slideIn'}`}
+      >
+        {/* Header with gradient */}
+        <div className="relative bg-gradient-to-r from-red-900/30 to-gray-900/30 border-b border-gray-800 px-6 py-4">
+          {/* Grid pattern overlay */}
+          <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
+          
+          <div className="relative z-10 flex items-center justify-between">
+            <h2 className="text-2xl font-black text-white font-['Orbitron'] uppercase tracking-wider">
+              {rally.name}
+            </h2>
+            <button
+              onClick={handleClose}
+              className="p-2 rounded-lg hover:bg-gray-800/50 transition-all duration-300 group"
+            >
+              <svg className="w-6 h-6 text-gray-400 group-hover:text-red-400 group-hover:rotate-90 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
           
+          {/* Status badge - FIXED */}
+          <div className="mt-3">
+            <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold font-['Orbitron'] uppercase tracking-wider ${styles.bg} ${styles.border} ${styles.text} ${styles.glow} border backdrop-blur-sm`}>       
+              {getStatusDisplayText(realTimeStatus)}
+            </span>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-gray-800">
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
+            onClick={() => setActiveTab('info')}
+            className={`flex-1 px-6 py-3 text-sm font-['Orbitron'] uppercase tracking-wider transition-all duration-300 ${
+              activeTab === 'info'
+                ? 'text-red-400 border-b-2 border-red-500 bg-red-900/10'
+                : 'text-gray-400 hover:text-red-400 hover:bg-gray-800/30'
+            }`}
           >
-            <span className="text-slate-400 text-2xl">×</span>
+            Ralli info
+          </button>
+          <button
+            onClick={() => setActiveTab('participants')}
+            className={`flex-1 px-6 py-3 text-sm font-['Orbitron'] uppercase tracking-wider transition-all duration-300 ${
+              activeTab === 'participants'
+                ? 'text-red-400 border-b-2 border-red-500 bg-red-900/10'
+                : 'text-gray-400 hover:text-red-400 hover:bg-gray-800/30'
+            }`}
+          >
+            Osalejad ({participants.length})
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="border-b border-slate-700/50 shrink-0">
-          <nav className="flex">
-            <button
-              onClick={() => setActiveTab('info')}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'info'
-                  ? 'border-blue-500 text-blue-400'
-                  : 'border-transparent text-slate-400 hover:text-white'
-              }`}
-            >
-              ℹ️ Rally info
-            </button>
-            <button
-              onClick={() => setActiveTab('participants')}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'participants'
-                  ? 'border-blue-500 text-blue-400'
-                  : 'border-transparent text-slate-400 hover:text-white'
-              }`}
-            >
-              👥 Osalejad ({totalParticipants})
-            </button>
-          </nav>
-        </div>
-
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'info' ? (
-            <div className="space-y-6">
-              {/* Status and Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-slate-400">Staatus</label>
-                    <div className="mt-1">
-                      {/* FIXED: Use realTimeStatus instead of rally.status */}
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColorLocal(realTimeStatus)}`}>
-                        {getStatusTextLocal(realTimeStatus)}
-                      </span>
-                      {isUserRegistered && (
-                        <span className="ml-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border bg-green-500/20 text-green-400 border-green-500/30">
-                          Registreeritud
-                        </span>
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="p-6">
+            {activeTab === 'info' ? (
+              <div className="space-y-6">
+                {/* Rally Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Game info */}
+                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                    <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Mäng</label>
+                    <p className="text-white font-medium mt-1">{rally.game_name || 'N/A'}</p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                    <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Tüüp</label>
+                    <p className="text-white font-medium mt-1">{rally.game_type_name || 'N/A'}</p>
+                  </div>
+                  
+                  {/* Dates */}
+                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                    <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Võistluse aeg</label>
+                    <p className="text-white font-medium mt-1">{formatDate(rally.competition_date)}</p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                    <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Registreerimine kuni</label>
+                    <p className="text-white font-medium mt-1">{formatDate(rally.registration_deadline)}</p>
+                  </div>
+                  
+                  {/* Participants */}
+                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                    <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Osalejaid</label>
+                    <div className="flex items-baseline space-x-2 mt-1">
+                      <span className="text-2xl font-bold text-white font-['Orbitron']">{participants.length}</span>
+                      {rally.max_participants && (
+                        <span className="text-gray-500">/ {rally.max_participants}</span>
                       )}
                     </div>
+                    {rally.max_participants && (
+                      <div className="mt-2">
+                        <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-red-600 to-red-500 rounded-full transition-all duration-500"
+                            style={{ width: `${(participants.length / rally.max_participants) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-slate-400">Võistluse kuupäev</label>
-                    <p className="text-white font-medium">
-                      {new Date(rally.competition_date).toLocaleDateString('et-EE', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-slate-400">Registreerimise tähtaeg</label>
-                    <p className="text-white font-medium">
-                      {new Date(rally.registration_deadline).toLocaleDateString('et-EE', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-slate-400">Mäng</label>
-                    <p className="text-white font-medium">{rally.game_name}</p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-slate-400">Kategooria</label>
-                    <p className="text-white font-medium">{rally.game_type_name}</p>
-                  </div>
-
+                  
+                  {/* Available spots */}
                   {rally.max_participants && (
-                    <div>
-                      <label className="text-sm font-medium text-slate-400">Osalejate arv</label>
-                      <p className="text-white font-medium">
-                        {totalParticipants} / {rally.max_participants}
+                    <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                      <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Vabu kohti</label>
+                      <p className={`text-2xl font-bold font-['Orbitron'] mt-1 ${
+                        rally.max_participants - participants.length > 0 ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {Math.max(0, rally.max_participants - participants.length)}
                       </p>
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* ENHANCED: Description - MOVED UP as requested */}
-              {rally.description && (
-                <div>
-                  <label className="text-sm font-medium text-slate-400">Kirjeldus</label>
-                  <div className="mt-2 p-4 bg-slate-700/30 rounded-lg">
-                    <p className="text-slate-300 whitespace-pre-wrap">{rally.description}</p>
+                {/* Description */}
+                {rally.description && (
+                  <div>
+                    <label className="text-sm font-bold text-white font-['Orbitron'] uppercase tracking-wider mb-3 block">Kirjeldus</label>
+                    <div className="p-4 bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl border border-gray-800">
+                      <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{rally.description}</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* ENHANCED: Rules - MOVED UNDER DESCRIPTION as requested */}
-              {rally.rules && (
-                <div>
-                  <label className="text-sm font-medium text-slate-400">Reeglid</label>
-                  <div className="mt-2 p-4 bg-slate-700/30 rounded-lg">
-                    <p className="text-slate-300 whitespace-pre-wrap">{rally.rules}</p>
+                {/* Rules */}
+                {rally.rules && (
+                  <div>
+                    <label className="text-sm font-bold text-white font-['Orbitron'] uppercase tracking-wider mb-3 block">Reeglid</label>
+                    <div className="p-4 bg-gradient-to-br from-red-900/20 to-gray-900/30 rounded-xl border border-red-500/30">
+                      <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{rally.rules}</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Events and Tracks */}
-              {safeEvents.length > 0 && (
-                <div>
-                  <label className="text-sm font-medium text-slate-400">Etapid ja rajad</label>
-                  <div className="mt-2 space-y-4">
-                    {safeEvents.map((event, eventIndex) => (
-                      <div key={event.event_id || eventIndex} className="bg-slate-700/30 rounded-lg p-4">
-                        <h4 className="text-white font-medium mb-2">
-                          {eventIndex + 1}. {event.event_name}
-                        </h4>
-                        {event.tracks && event.tracks.length > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {event.tracks.map((track, trackIndex) => (
-                              <div key={track.id || trackIndex} className="bg-slate-600/30 rounded p-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-slate-300">
-                                    {trackIndex + 1}. {track.name}
-                                  </span>
-                                  <div className="flex items-center space-x-2 text-xs">
+                {/* Events and Tracks */}
+                {safeEvents.length > 0 && (
+                  <div>
+                    <label className="text-sm font-bold text-white font-['Orbitron'] uppercase tracking-wider mb-3 block">
+                      Etapid ja rajad
+                    </label>
+                    <div className="space-y-3">
+                      {safeEvents.map((event, eventIndex) => (
+                        <div key={event.event_id || eventIndex} className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                          <h4 className="text-white font-bold mb-3 flex items-center space-x-2">
+                            <span className="w-8 h-8 bg-red-600/20 rounded-lg flex items-center justify-center text-red-400 font-['Orbitron'] text-sm">
+                              {eventIndex + 1}
+                            </span>
+                            <span>{event.event_name}</span>
+                          </h4>
+                          {event.tracks && event.tracks.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {event.tracks.map((track, trackIndex) => (
+                                <div key={track.id || trackIndex} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-300 font-medium">
+                                      <span className="text-gray-500 mr-2">{trackIndex + 1}.</span>
+                                      {track.name}
+                                    </span>
                                     {track.length_km && (
-                                      <span className="text-slate-400">{track.length_km}km</span>
-                                    )}
-                                    {track.surface_type && (
-                                      <span className="text-slate-400 capitalize">{track.surface_type}</span>
+                                      <span className="text-xs text-gray-500 font-['Orbitron']">
+                                        {track.length_km} km
+                                      </span>
                                     )}
                                   </div>
+                                  {track.surface_type && (
+                                    <span className="text-xs text-gray-500 mt-1 block">
+                                      {track.surface_type}
+                                    </span>
+                                  )}
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* ENHANCED: NEW Statistics Row - Added below Events and Tracks as requested */}
-              {statistics.tracks > 0 && (
-                <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-xl p-6">
-                  <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
-                    📊 Võistluste statistika
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Countries/Events Count */}
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span className="text-2xl">🌍</span>
-                      </div>
-                      <div className="text-2xl font-bold text-blue-400">{statistics.countries}</div>
-                      <div className="text-sm text-slate-400">
-                        {statistics.countries === 1 ? 'Riik' : 'Riigid'}
-                      </div>
-                    </div>
-
-                    {/* Tracks Count */}
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span className="text-2xl">🛣️</span>
-                      </div>
-                      <div className="text-2xl font-bold text-yellow-400">{statistics.tracks}</div>
-                      <div className="text-sm text-slate-400">
-                        {statistics.tracks === 1 ? 'Rada' : 'Rajad'}
-                      </div>
-                    </div>
-
-                    {/* Total Length */}
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span className="text-2xl">📏</span>
-                      </div>
-                      <div className="text-2xl font-bold text-green-400">
-                        {statistics.totalLength}
-                        <span className="text-lg text-slate-400 ml-1">km</span>
-                      </div>
-                      <div className="text-sm text-slate-400">Kogu pikkus</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Participants Section - PRESERVED ORIGINAL FUNCTIONALITY */}
-              {isLoadingParticipants ? (
-                <div className="text-center py-12">
-                  <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-slate-400">Laadin osalejaid...</p>
-                </div>
-              ) : totalParticipants === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-4xl text-slate-500">👥</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">Osalejaid pole veel</h3>
-                  <p className="text-slate-400">
-                    Registreerimine on veel avatud!
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-white">
-                    Registreeritud osalejad ({totalParticipants})
-                  </h3>
-                  
-                  {Object.keys(participantsByClass).map((className) => (
-                    <div key={className} className="bg-slate-700/30 rounded-lg p-4">
-                      <h4 className="text-white font-medium mb-3 flex items-center space-x-2">
-                        <span className="w-6 h-6 bg-purple-500/20 rounded-full flex items-center justify-center text-purple-400 text-xs">
-                          {participantsByClass[className].length}
-                        </span>
-                        <span>{className}</span>
-                      </h4>
-                      
-                      <div className="space-y-2">
-                        {participantsByClass[className].map((participant: any, index: number) => (
-                          <div
-                            key={participant.id || index}
-                            className="flex items-center justify-between p-3 bg-slate-600/30 rounded-lg"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <span className="w-8 h-8 bg-slate-700/50 rounded-full flex items-center justify-center text-slate-300 text-sm font-medium">
-                                {index + 1}
-                              </span>
-                              <div>
-                                <p className="text-white font-medium">
-                                  {participant.user_player_name || participant.user_name || 'Tundmatu kasutaja'}
-                                </p>
-                                <p className="text-xs text-slate-400">
-                                  Registreeritud: {new Date(participant.registration_date).toLocaleDateString('et-EE')}
-                                </p>
-                              </div>
+                              ))}
                             </div>
-                            <div>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
-                                participant.status === 'confirmed'
-                                  ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                                  : participant.status === 'registered'
-                                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                                  : 'bg-slate-500/20 text-slate-400 border-slate-500/30'
-                              }`}>
-                                {participant.status === 'confirmed' ? 'Kinnitatud' :
-                                 participant.status === 'registered' ? 'Registreeritud' :
-                                 participant.status}
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Participants Tab */
+              <div>
+                {isLoadingParticipants ? (
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center space-x-2 text-gray-500">
+                      <div className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin"></div>
+                      <span className="font-['Orbitron'] text-xs uppercase tracking-wider">Laadin osalejaid...</span>
+                    </div>
+                  </div>
+                ) : participants.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-800">
+                      <span className="text-3xl opacity-50">👥</span>
+                    </div>
+                    <p className="text-gray-500">Veel pole ühtegi osalejat registreerunud</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Group participants by class */}
+                    {(() => {
+                      // Group participants by class
+                      const participantsByClass = participants.reduce((acc, participant) => {
+                        const className = participant.class_name || 'Klass määramata'
+                        if (!acc[className]) {
+                          acc[className] = []
+                        }
+                        acc[className].push(participant)
+                        return acc
+                      }, {} as Record<string, RallyRegistration[]>)
+
+                      // Sort classes alphabetically
+                      const sortedClasses = Object.keys(participantsByClass).sort()
+
+                      return sortedClasses.map((className, classIndex) => {
+                        const classParticipants = participantsByClass[className]
+                        // Sort participants within each class by registration date
+                        const sortedParticipants = [...classParticipants].sort((a, b) => 
+                          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                        )
+
+                        return (
+                          <div key={className} className="space-y-3">
+                            {/* Class header */}
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h4 className="text-sm font-bold text-white font-['Orbitron'] uppercase tracking-wider">
+                                {className}
+                              </h4>
+                              <div className="flex-1 h-px bg-gradient-to-r from-red-500/50 via-gray-500/30 to-transparent"></div>
+                              <span className="text-xs text-gray-500 font-['Orbitron']">
+                                {sortedParticipants.length} osalejat
                               </span>
                             </div>
+
+                            {/* Participants in this class */}
+                            <div className="space-y-2">
+                              {sortedParticipants.map((participant, index) => (
+                                <div
+                                  key={participant.id}
+                                  className="flex items-center justify-between p-4 bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl border border-gray-800 hover:border-gray-700 transition-all duration-300"
+                                  style={{ animationDelay: `${(classIndex * 50) + (index * 30)}ms` }}
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-red-600/20 to-gray-600/20 rounded-lg flex items-center justify-center text-white font-bold font-['Orbitron']">
+                                      {index + 1}
+                                    </div>
+                                    <div>
+                                      <p className="text-white font-medium">
+                                        {participant.user_player_name || participant.user_name || 'Tundmatu'}
+                                      </p>
+                                      {/* Team info if needed - currently not in RallyRegistration type */}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs text-gray-600">
+                                      {new Date(participant.created_at).toLocaleDateString('et-EE')}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                        )
+                      })
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Footer Actions - PRESERVED ORIGINAL FUNCTIONALITY */}
-        <div className="border-t border-slate-700/50 p-6 bg-slate-800/50 shrink-0">
-          <div className="flex justify-between items-center">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
-            >
-              Sulge
-            </button>
-            
-            {/* FIXED: Use real-time status for registration check */}
-            {onRegister && !isUserRegistered && registrationAllowed && (
+        {/* Footer with action buttons */}
+        <div className="flex-shrink-0 border-t border-gray-800 px-6 py-4 bg-gradient-to-r from-gray-900/50 to-black/50">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-gray-500 font-['Orbitron']">
+              ID: {rally.id.slice(0, 8)}...
+            </div>
+            <div className="flex items-center space-x-3">
+              {!isPastRally && registrationAllowed && onRegister && !isUserRegistered && (
+                <button
+                  onClick={onRegister}
+                  className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-['Orbitron'] uppercase tracking-wider text-sm font-bold hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-[0_0_20px_rgba(255,0,64,0.4)] hover:shadow-[0_0_30px_rgba(255,0,64,0.6)] hover:scale-105"
+                >
+                  Registreeri
+                </button>
+              )}
+              {isUserRegistered && onUnregister && currentUserRegistration && (
+                <button
+                  onClick={() => onUnregister()}
+                  className="px-6 py-2 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg font-['Orbitron'] uppercase tracking-wider text-sm font-bold hover:from-orange-700 hover:to-orange-800 transition-all duration-300 shadow-[0_0_20px_rgba(251,146,60,0.4)] hover:shadow-[0_0_30px_rgba(251,146,60,0.6)] hover:scale-105"
+                >
+                  Tühista registreering
+                </button>
+              )}
               <button
-                onClick={onRegister}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                onClick={handleClose}
+                className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg font-['Orbitron'] uppercase tracking-wider text-sm font-bold transition-all duration-300 border border-gray-700 hover:border-gray-600"
               >
-                Registreeru
+                Sulge
               </button>
-            )}
-
-            {/* ADDED: Unregister button if available */}
-            {onUnregister && isUserRegistered && !isPastRally && (
-              <button
-                onClick={onUnregister}
-                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-              >
-                Tühista registreerimine
-              </button>
-            )}
+            </div>
           </div>
         </div>
       </div>
     </div>
   )
+
+  // Use portal to render modal at document root
+  return typeof window !== 'undefined' ? createPortal(modalContent, document.body) : null
 }
