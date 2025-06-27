@@ -1,4 +1,4 @@
-// src/components/landing/sections/FeaturesSection.tsx - MERGED VERSION
+// src/components/landing/sections/FeaturesSection.tsx - Futuristic Theme
 'use client'
 
 import { useState } from 'react'
@@ -7,9 +7,9 @@ import { EdetabelModal } from '../EdetabelModal'
 
 interface FeaturesSectionProps {
   onOpenCompetitions: () => void
-  onOpenEdetabel?: () => void // Optional - if not provided, will use internal modal
-  showDynamicData?: boolean // Whether to show real data from API
-  showEdetabelModal?: boolean // Whether to handle edetabel modal internally
+  onOpenEdetabel?: () => void
+  showDynamicData?: boolean
+  showEdetabelModal?: boolean
 }
 
 export function FeaturesSection({ 
@@ -35,49 +35,74 @@ export function FeaturesSection({
 
   return (
     <>
-      <div className="grid md:grid-cols-3 gap-8 mb-20">
+      <div className="grid md:grid-cols-2 gap-8 mb-32 py-16 relative max-w-4xl mx-auto">
+        {/* Background accent lines */}
+        <div className="absolute inset-0 -top-20 -bottom-20 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/4 w-px h-32 bg-gradient-to-b from-transparent via-red-500/20 to-transparent"></div>
+          <div className="absolute top-1/2 right-1/4 w-px h-32 bg-gradient-to-b from-transparent via-purple-500/20 to-transparent"></div>
+        </div>
+
         {/* Võistlused - CLICKABLE */}
         <button
           onClick={onOpenCompetitions}
-          className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-10 text-center hover:bg-slate-800/50 hover:border-slate-700/50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 cursor-pointer group"
+          className="group relative futuristic-card rounded-2xl p-8 text-center transition-all duration-300 hover:scale-105 overflow-hidden"
         >
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-blue-600/30 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-2 ring-blue-500/20 group-hover:ring-blue-400/30 transition-all duration-300">
-            <span className="text-4xl">🏁</span>
+          {/* Hover glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-red-500/0 to-red-500/0 group-hover:from-red-500/10 group-hover:to-transparent transition-all duration-300"></div>
+          
+          <div className="relative z-10">
+            <div className="w-16 h-16 mx-auto mb-4 relative">
+              <div className="absolute inset-0 bg-red-500 blur-2xl opacity-30 group-hover:opacity-50 transition-opacity"></div>
+              <div className="relative w-full h-full bg-gradient-to-br from-red-500/20 to-red-600/30 rounded-2xl flex items-center justify-center ring-2 ring-red-500/30 group-hover:ring-red-400/50 transition-all duration-300">
+                <span className="text-4xl">🏁</span>
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-4 font-['Orbitron'] uppercase tracking-wide group-hover:text-glow-red transition-all">
+              Võistlused
+            </h3>
+            <p className="text-gray-500 leading-relaxed group-hover:text-gray-400 transition-colors duration-300">
+              Osalege regulaarsetes turniirides ja meistrivõistlustes erinevates ralli mängudes.
+            </p>
+            <div className="mt-6 text-red-400 font-['Orbitron'] text-sm uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+              Vaata rohkem →
+            </div>
           </div>
-          <h3 className="text-2xl font-semibold text-white mb-4">Võistlused</h3>
-          <p className="text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors duration-300">
-            Osalege regulaarsetes turniirides ja meistrivõistlustes erinevates ralli mängudes.
-          </p>
         </button>
 
-        {/* Edetabel - CLICKABLE */}
+        {/* Edetabelid - CLICKABLE */}
         <button
           onClick={handleEdetabelClick}
-          className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-10 text-center hover:bg-slate-800/50 hover:border-slate-700/50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 cursor-pointer group"
+          className="group relative futuristic-card rounded-2xl p-8 text-center transition-all duration-300 hover:scale-105 overflow-hidden"
         >
-          <div className="w-20 h-20 bg-gradient-to-br from-green-500/20 to-green-600/30 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-2 ring-green-500/20 group-hover:ring-green-400/30 transition-all duration-300">
-            <span className="text-4xl">🏆</span>
+          {/* Hover glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-purple-500/0 group-hover:from-purple-500/10 group-hover:to-transparent transition-all duration-300"></div>
+          
+          <div className="relative z-10">
+            <div className="w-16 h-16 mx-auto mb-4 relative">
+              <div className="absolute inset-0 bg-purple-500 blur-2xl opacity-30 group-hover:opacity-50 transition-opacity"></div>
+              <div className="relative w-full h-full bg-gradient-to-br from-purple-500/20 to-purple-600/30 rounded-2xl flex items-center justify-center ring-2 ring-purple-500/30 group-hover:ring-purple-400/50 transition-all duration-300">
+                <span className="text-4xl">🏆</span>
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-4 font-['Orbitron'] uppercase tracking-wide group-hover:text-glow-purple transition-all">
+              Edetabelid
+            </h3>
+            <p className="text-gray-500 leading-relaxed group-hover:text-gray-400 transition-colors duration-300">
+              Jälgige parimaid sõitjaid ja võrrelge oma tulemusi teiste mängijatega reaalajas.
+            </p>
+            {shouldShowData && (
+              <div className="mt-4 text-purple-400 text-sm">
+                <span className="font-bold">{approvedRallies.length}</span> avalikku rallit
+              </div>
+            )}
+            <div className="mt-6 text-purple-400 font-['Orbitron'] text-sm uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+              Vaata rohkem →
+            </div>
           </div>
-          <h3 className="text-2xl font-semibold text-white mb-4">Edetabel</h3>
-          <p className="text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors duration-300">
-            Vaata kinnitatud ralli tulemusi ja võrdle osalejate sooritusi.
-
-          </p>
         </button>
-
-        {/* Auhinnad */}
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-10 text-center hover:bg-slate-800/50 hover:border-slate-700/50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
-          <div className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-purple-600/30 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-2 ring-purple-500/20">
-            <span className="text-4xl">🏆</span>
-          </div>
-          <h3 className="text-2xl font-semibold text-white mb-4">Auhinnad</h3>
-          <p className="text-slate-400 leading-relaxed">
-            Võitke põnevaid auhindu ja tunnustust oma saavutuste eest.
-          </p>
-        </div>
       </div>
 
-      {/* Edetabel Modal - only render if showEdetabelModal is true */}
+      {/* Edetabel Modal */}
       {showEdetabelModal && (
         <EdetabelModal
           isOpen={isEdetabelModalOpen}

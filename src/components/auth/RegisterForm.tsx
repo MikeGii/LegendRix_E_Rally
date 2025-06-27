@@ -1,3 +1,4 @@
+// src/components/auth/RegisterForm.tsx - Futuristic theme with enhanced effects
 'use client'
 
 import { useState } from 'react'
@@ -9,7 +10,7 @@ interface RegisterFormData {
   email: string
   password: string
   confirmPassword: string
-  playerName: string  // New field
+  playerName: string
   agreeToRules: boolean
 }
 
@@ -66,20 +67,20 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
       if (result.success) {
         setMessage({
           type: 'success',
-          text: 'Registration successful! Check your email to verify your account.'
+          text: 'Registreerimine õnnestus! Kontrolli oma e-maili konto kinnitamiseks.'
         })
         // Clear form after successful registration
       } else {
         setMessage({
           type: 'error',
-          text: result.error || 'Registration failed'
+          text: result.error || 'Registreerimine ebaõnnestus'
         })
       }
     } catch (error) {
       console.error('Registration submission error:', error)
       setMessage({
         type: 'error',
-        text: 'Registration failed. Please try again.'
+        text: 'Registreerimine ebaõnnestus. Palun proovi uuesti.'
       })
     }
     
@@ -88,174 +89,208 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {/* Message display with futuristic styling */}
       {message && (
-        <div className={`p-3 rounded-lg border ${
+        <div className={`relative p-4 rounded-xl overflow-hidden ${
           message.type === 'success' 
-            ? 'bg-green-900/50 border-green-700 text-green-300' 
-            : 'bg-red-900/50 border-red-700 text-red-300'
+            ? 'bg-green-900/20' 
+            : 'bg-red-900/20'
         }`}>
-          <p className="text-sm text-center">{message.text}</p>
+          {/* Animated background gradient */}
+          <div className={`absolute inset-0 ${
+            message.type === 'success'
+              ? 'bg-gradient-to-r from-green-500/0 via-green-500/20 to-green-500/0'
+              : 'bg-gradient-to-r from-red-500/0 via-red-500/20 to-red-500/0'
+          } animate-pulse`}></div>
+          
+          {/* Border effect */}
+          <div className={`absolute inset-0 rounded-xl border ${
+            message.type === 'success'
+              ? 'border-green-500/50'
+              : 'border-red-500/50'
+          }`}></div>
+          
+          {/* Content */}
+          <div className="relative flex items-start space-x-3">
+            <div className={`flex-shrink-0 w-5 h-5 mt-0.5 ${
+              message.type === 'success' ? 'text-green-400' : 'text-red-400'
+            }`}>
+              {message.type === 'success' ? '✓' : '!'}
+            </div>
+            <p className={`${
+              message.type === 'success' ? 'text-green-200' : 'text-red-200'
+            } font-medium`}>{message.text}</p>
+          </div>
         </div>
       )}
 
-      <div>
+      {/* Name Field */}
+      <div className="relative group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-purple-600 rounded-xl opacity-0 group-hover:opacity-30 blur transition duration-300"></div>
         <input
           type="text"
-          placeholder="Full name"
+          placeholder="Nimi"
           disabled={isLoading}
           autoComplete="name"
           {...register('name', {
-            required: 'Name is required',
+            required: 'Nimi on kohustuslik',
             minLength: {
               value: 2,
-              message: 'Name must be at least 2 characters'
+              message: 'Nimi peab olema vähemalt 2 tähte pikk'
             }
           })}
-          className="w-full px-4 py-3 bg-gray-900/80 border border-gray-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 focus:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative w-full px-4 py-3 bg-black/60 backdrop-blur-md border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         />
         {errors.name && (
           <p className="mt-2 text-sm text-red-400">{errors.name.message}</p>
         )}
       </div>
 
-      <div>
+      {/* Email Field */}
+      <div className="relative group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-purple-600 rounded-xl opacity-0 group-hover:opacity-30 blur transition duration-300"></div>
         <input
           type="email"
-          placeholder="Email address"
+          placeholder="E-maili aadress"
           disabled={isLoading}
           autoComplete="email"
           {...register('email', {
-            required: 'Email is required',
+            required: 'E-maili aadress on kohustuslik',
             pattern: {
-              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-              message: 'Invalid email address'
+              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+              message: 'Palun sisesta kehtiv e-maili aadress'
             }
           })}
-          className="w-full px-4 py-3 bg-gray-900/80 border border-gray-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 focus:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative w-full px-4 py-3 bg-black/60 backdrop-blur-md border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         />
         {errors.email && (
           <p className="mt-2 text-sm text-red-400">{errors.email.message}</p>
         )}
       </div>
 
-      {/* New Player Name Field */}
-      <div>
+      {/* Player Name Field */}
+      <div className="relative group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-purple-600 rounded-xl opacity-0 group-hover:opacity-30 blur transition duration-300"></div>
         <input
           type="text"
-          placeholder="Mängija nimi - *Steam, Xbox, PS"
+          placeholder="Mängija nimi"
           disabled={isLoading}
           autoComplete="username"
           {...register('playerName', {
-            required: 'Player name is required',
+            required: 'Mängija nimi on kohustuslik',
             minLength: {
               value: 3,
-              message: 'Player name must be at least 3 characters'
+              message: 'Mängija nimi peab olema vähemalt 3 tähte pikk'
             },
             maxLength: {
-              value: 100,
-              message: 'Player name must be less than 100 characters'
+              value: 20,
+              message: 'Mängija nimi ei tohi olla pikem kui 20 tähte'
             },
             pattern: {
               value: /^[a-zA-Z0-9_\-\.]+$/,
-              message: 'Player name can only contain letters, numbers, underscores, hyphens, and dots'
+              message: 'Mängija nimi võib sisaldada ainult tähti, numbreid, alakriipse, sidekriipse ja punkte'
             }
           })}
-          className="w-full px-4 py-3 bg-gray-900/80 border border-gray-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 focus:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative w-full px-4 py-3 bg-black/60 backdrop-blur-md border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         />
         {errors.playerName && (
           <p className="mt-2 text-sm text-red-400">{errors.playerName.message}</p>
         )}
-        <p className="mt-1 text-xs text-gray-400">
-          Enter your gaming platform username (Steam, Xbox, PlayStation, etc.)
+        <p className="mt-1 text-xs text-gray-500">
+          Sisesta oma mänguplatvormi kasutajanimi (Steam, Xbox, PlayStation, jne)
         </p>
       </div>
 
-      <div>
+      {/* Password Field */}
+      <div className="relative group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-purple-600 rounded-xl opacity-0 group-hover:opacity-30 blur transition duration-300"></div>
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Parool"
           disabled={isLoading}
           autoComplete="new-password"
           {...register('password', {
-            required: 'Password is required',
+            required: 'Parool on kohustuslik',
             minLength: {
               value: 6,
-              message: 'Password must be at least 6 characters'
+              message: 'Parool peab olema vähemalt 6 tähemärki pikk'
             }
           })}
-          className="w-full px-4 py-3 bg-gray-900/80 border border-gray-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 focus:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative w-full px-4 py-3 bg-black/60 backdrop-blur-md border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         />
         {errors.password && (
           <p className="mt-2 text-sm text-red-400">{errors.password.message}</p>
         )}
       </div>
 
-      <div>
+      {/* Confirm Password Field */}
+      <div className="relative group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-purple-600 rounded-xl opacity-0 group-hover:opacity-30 blur transition duration-300"></div>
         <input
           type="password"
-          placeholder="Confirm password"
+          placeholder="Kinnita parool"
           disabled={isLoading}
           autoComplete="new-password"
           {...register('confirmPassword', {
-            required: 'Please confirm your password',
-            validate: (value) => value === password || 'Passwords do not match'
+            required: 'Palun kinnita oma parool',
+            validate: (value) => value === password || 'Paroolid ei kattu'
           })}
-          className="w-full px-4 py-3 bg-gray-900/80 border border-gray-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 focus:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative w-full px-4 py-3 bg-black/60 backdrop-blur-md border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         />
         {errors.confirmPassword && (
           <p className="mt-2 text-sm text-red-400">{errors.confirmPassword.message}</p>
         )}
       </div>
 
-      {/* Rules Agreement Section */}
-      <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-5 space-y-4">
-        <h3 className="text-base font-semibold text-white mb-3">
-          Kasutajakonto loomisega kinnitan et olen tutvunud veebisaidi reeglitega:
-        </h3>
+      {/* Rules Section with futuristic styling */}
+      <div className="relative bg-black/40 backdrop-blur-md border border-gray-800 rounded-xl p-6 space-y-4">
+        {/* Animated corner accents */}
+        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-red-500/50"></div>
+        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-red-500/50"></div>
+        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-red-500/50"></div>
+        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-red-500/50"></div>
         
-        <div className="space-y-3 text-sm text-slate-300 leading-relaxed max-h-32 overflow-y-auto pr-2">
+        <h3 className="font-['Orbitron'] font-bold text-red-400 uppercase tracking-wider mb-3">Reeglid</h3>
+        
+        <div className="space-y-3 text-sm text-gray-300">
           <div className="flex items-start space-x-3">
-            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">1.</span>
-            <p>Võistlustel osalemiseks pean ennast eelnevalt registreerima kasutades selleks registreerimisvormi, mis asub töölaual.</p>
+            <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">1.</span>
+            <p>EWRC on sõbralik keskkond, kus pole kohta vihkamisele, kiusamisele ja rassismile.</p>
           </div>
           
           <div className="flex items-start space-x-3">
-            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">2.</span>
-            <p>Võistlustele registreerides ja vähemalt 3 korral mitte osaledes ennast registreerimisnimekirjast kustutamast võidakse minu konto jäädavalt blokeerida.</p>
+            <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">2.</span>
+            <p>EWRC meeskonnal on õigus tühistada konto, mis rikub reegleid.</p>
           </div>
           
           <div className="flex items-start space-x-3">
-            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">3.</span>
-            <p>Võistlustel võib olla piiratud koht arvi ja kehtib reegel, et esimesena registreerunud pääsevad võistlema.</p>
+            <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">3.</span>
+            <p>Iga võistleja vastutab oma andmete, paroolide ja konto turvalisuse eest.</p>
           </div>
           
           <div className="flex items-start space-x-3">
-            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">4.</span>
-            <p>Võistlustel osaledes olen viisakas ja järgin vastava mängu reegleid.</p>
+            <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">4.</span>
+            <p>Võistlustel sõitmiseks peab olema EWRC konto ja olema võistlusele registreeritud.</p>
           </div>
           
           <div className="flex items-start space-x-3">
-            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">5.</span>
+            <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">5.</span>
             <p>Võistlustel peab kasutama sama mängija nime, mis on registreerimise juures märgitud.</p>
           </div>
           
-          <div className="flex items-start space-x-3">
-            <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">6.</span>
-            <p>EWRC korraldajatel on õigus tühistada registreerimine või kõrvaldada võistleja mis tahes põhjusel.</p>
-          </div>
         </div>
 
-        <div className="flex items-start space-x-3 pt-3">
+        <div className="flex items-start space-x-3 pt-3 border-t border-gray-800">
           <input
             type="checkbox"
             id="agreeToRules"
             disabled={isLoading}
             {...register('agreeToRules', {
-              required: 'You must agree to the rules to register'
+              required: 'Reeglitega nõustumine on kohustuslik'
             })}
-            className="mt-1 w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 disabled:opacity-50"
+            className="mt-1 w-4 h-4 bg-black/60 border-gray-700 rounded text-red-500 focus:ring-red-500/50 focus:ring-2 disabled:opacity-50"
           />
-          <label htmlFor="agreeToRules" className="text-sm text-slate-300 cursor-pointer">
+          <label htmlFor="agreeToRules" className="text-sm text-gray-300 cursor-pointer">
             Olen tutvunud ja nõustun eelnimetatud reeglitega
           </label>
         </div>
@@ -264,25 +299,50 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         )}
       </div>
 
+      {/* Submit Button with futuristic design */}
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+        className="relative w-full group overflow-hidden rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isLoading ? 'Creating account...' : 'Create account'}
+        {/* Background layers */}
+        <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-purple-600 transition-all duration-300 group-hover:scale-105"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        
+        {/* Animated border */}
+        <div className="absolute inset-0 rounded-xl">
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+        </div>
+        
+        {/* Content */}
+        <div className="relative px-4 py-3 flex items-center justify-center space-x-2">
+          {isLoading ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span className="font-['Orbitron'] font-bold text-white tracking-wider">REGISTREERIMINE...</span>
+            </>
+          ) : (
+            <span className="font-['Orbitron'] font-bold text-white tracking-wider">LOO KONTO</span>
+          )}
+        </div>
+        
+        {/* Hover effect overlay */}
+        <div className="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
       </button>
 
+      {/* Switch to Login with enhanced styling */}
       <div className="text-center">
-        <p className="text-slate-400 text-sm">
-          Already have an account?{' '}
-          <button 
-            type="button"
-            onClick={onSwitchToLogin}
-            className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
-          >
-            Sign in
-          </button>
-        </p>
+        <span className="text-gray-500 text-sm">Juba on konto?</span>{' '}
+        <button 
+          type="button"
+          onClick={onSwitchToLogin}
+          disabled={isLoading}
+          className="relative text-red-400 hover:text-red-300 font-medium transition-all duration-300 disabled:opacity-50 group"
+        >
+          <span className="relative z-10">Logi sisse</span>
+          <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-red-500 to-purple-600 group-hover:w-full transition-all duration-300"></span>
+        </button>
       </div>
     </form>
   )

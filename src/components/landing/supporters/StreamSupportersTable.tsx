@@ -1,4 +1,4 @@
-// src/components/landing/supporters/StreamSupportersTable.tsx - Updated with web font
+// src/components/landing/supporters/StreamSupportersTable.tsx - Futuristic Theme
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -45,8 +45,8 @@ export function StreamSupportersTable() {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-slate-600 border-t-pink-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Laadin toetajaid...</p>
+          <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Laadin toetajaid...</p>
         </div>
       </div>
     )
@@ -56,25 +56,25 @@ export function StreamSupportersTable() {
   if (supporters.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="w-24 h-24 bg-slate-700/30 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span className="text-slate-500 text-4xl">💝</span>
+        <div className="w-24 h-24 bg-gray-800/30 rounded-full flex items-center justify-center mx-auto mb-6">
+          <span className="text-gray-600 text-4xl">💝</span>
         </div>
-        <h3 className="text-xl font-semibold text-white mb-2">Toetajaid pole veel</h3>
-        <p className="text-slate-400">Esimesed toetajad ilmuvad siia, kui keegi on toetuse teinud.</p>
+        <h3 className="text-xl font-bold text-white mb-2 font-['Orbitron']">Toetajaid pole veel</h3>
+        <p className="text-gray-500">Esimesed toetajad ilmuvad siia, kui keegi on toetuse teinud.</p>
       </div>
     )
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      {/* Simple transparent table with 3 columns */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+    <div className="w-full max-w-6xl mx-auto">
+      {/* Clean grid layout without boxes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 p-6">
         {supporters.map((supporter, index) => (
           <div 
             key={supporter.id}
-            className="text-center p-4 hover:bg-slate-800/10 transition-all duration-300 rounded-lg"
+            className="text-center"
           >
-            <span className="text-white font-medium block supporter-name">
+            <span className="inline-block text-xl md:text-2xl font-black font-['Orbitron'] uppercase tracking-wider hover:scale-110 transform transition-all duration-300 cursor-default supporter-glow">
               {supporter.supporter_name}
             </span>
           </div>
