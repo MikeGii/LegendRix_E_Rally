@@ -1,4 +1,4 @@
-// src/components/landing/supporters/SupportersSection.tsx - Futuristic Theme
+// src/components/landing/supporters/SupportersSection.tsx - Updated QR Block
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -63,9 +63,8 @@ export function SupportersSection() {
   if (hasStreamSupporters === null) {
     return (
       <div className="mb-32 py-16 relative">
-        {/* Background Effects */}
+        {/* Background Effects - removed purple lines */}
         <div className="absolute inset-0 -top-20 -bottom-20 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/3 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent"></div>
           <div className="absolute bottom-1/3 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent"></div>
         </div>
 
@@ -97,7 +96,7 @@ export function SupportersSection() {
           <div className="text-center">
             <h3 className="text-2xl font-bold text-white mb-6 font-['Orbitron'] uppercase">Toeta Meid</h3>
             <div className="max-w-md mx-auto">
-              <div className="futuristic-card rounded-2xl p-8">
+              <div className="rounded-2xl p-8">
                 <div className="animate-pulse">
                   <div className="bg-gray-800 rounded-2xl w-48 h-48 mx-auto mb-4"></div>
                   <div className="h-4 bg-gray-800 rounded w-3/4 mx-auto"></div>
@@ -115,9 +114,8 @@ export function SupportersSection() {
 
   return (
     <div className="mb-32 relative">
-      {/* Background Effects */}
+      {/* Background Effects - removed purple lines */}
       <div className="absolute inset-0 -top-20 -bottom-20 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent"></div>
         <div className="absolute bottom-1/3 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent"></div>
       </div>
 
@@ -140,7 +138,7 @@ export function SupportersSection() {
 
       {/* Stream Supporters Section - Only show if there are supporters */}
       {hasStreamSupporters && (
-        <div className="mb-16">
+        <div className="mb-48">
           <h3 className="text-2xl font-bold text-white text-center mb-8 font-['Orbitron'] uppercase tracking-wider">
             E-SPORDIKESKUSE TOETAJAD
           </h3>
@@ -150,18 +148,18 @@ export function SupportersSection() {
 
       {/* Two-column layout for QR Code + News - Equal Heights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        {/* QR Code Section with futuristic styling */}
+        {/* QR Code Section - no grey background, red text */}
         <div className="text-center h-full">
           <h3 className="text-2xl font-bold text-white mb-6 font-['Orbitron'] uppercase">Toeta Meid</h3>
           <div className="max-w-md mx-auto h-full">
-            <div className="group relative futuristic-card rounded-2xl p-8 hover:scale-105 transition-all duration-300 overflow-hidden h-full flex flex-col">
-              {/* Hover glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 to-orange-500/0 group-hover:from-orange-500/10 group-hover:to-transparent transition-all duration-300"></div>
+            <div className="group relative rounded-2xl p-8 hover:scale-105 transition-all duration-300 overflow-hidden h-full flex flex-col border border-red-500/20 hover:border-red-500/40">
+              {/* Hover glow effect - red theme */}
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/0 to-red-500/0 group-hover:from-red-500/10 group-hover:to-transparent transition-all duration-300"></div>
               
               {/* QR Code Container */}
               <div className="relative mb-6 z-10 flex-shrink-0">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-orange-500 blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                  <div className="absolute inset-0 bg-red-500 blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
                   <div className="relative bg-white rounded-2xl p-4 mx-auto w-fit shadow-2xl">
                     <img
                       src="/image/streamlineqr.png"
@@ -183,15 +181,15 @@ export function SupportersSection() {
                     href="https://streamelements.com/legend_rix/tip"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-orange-400 font-['Orbitron'] hover:text-orange-300 hover:underline transition-colors duration-200 block"
+                    className="text-xs text-red-400 font-['Orbitron'] hover:text-red-300 hover:underline transition-colors duration-200 block"
                   >
                     streamelements.com/legend_rix/tip
                   </a>
-                  <p className="text-gray-400 leading-relaxed mt-4">
+                  <p className="text-red-400 font-['Orbitron'] leading-relaxed mt-4 text-sm uppercase tracking-wider">
                     Skaneeri QR-koodi, et toetada meie laiv tegemisi ja e-spordi kogukonda.
                   </p>
                 </div>
-                <div className="text-orange-400 font-['Orbitron'] text-sm uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="text-red-500 font-['Orbitron'] text-sm uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
                   Toeta meid →
                 </div>
               </div>
