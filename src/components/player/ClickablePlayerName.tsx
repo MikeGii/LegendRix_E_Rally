@@ -1,7 +1,7 @@
-// src/components/player/ClickablePlayerName.tsx - SECURE VERSION
+// src/components/player/ClickablePlayerName.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { PublicPlayerProfileModal } from './PublicPlayerProfileModal'
 
 interface ClickablePlayerNameProps {
@@ -27,6 +27,7 @@ export function ClickablePlayerName({
   participantType = 'registered' // Default to registered for backward compatibility
 }: ClickablePlayerNameProps) {
   const [showProfile, setShowProfile] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -59,6 +60,7 @@ export function ClickablePlayerName({
   return (
     <>
       <button
+        ref={buttonRef}
         onClick={handleClick}
         className={`hover:text-blue-400 hover:underline transition-colors cursor-pointer ${className}`}
         title={`Vaata ${playerName} profiili`}
@@ -70,6 +72,7 @@ export function ClickablePlayerName({
         userId={userId}
         isOpen={showProfile}
         onClose={handleClose}
+        anchorElement={buttonRef.current}
       />
     </>
   )
