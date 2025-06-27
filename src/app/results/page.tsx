@@ -1,4 +1,4 @@
-// src/app/results/page.tsx - SAFE UPDATE: Preserves existing functionality
+// src/app/results/page.tsx - FIXED: Use ClassSeparatedParticipantsTable for approved results
 'use client'
 
 import { useState } from 'react'
@@ -18,6 +18,7 @@ import { RallySelector } from '@/components/results/RallySelector'
 import { RallyHeader } from '@/components/results/RallyHeader'
 import { ResultsEntryInterface } from '@/components/results/ResultsEntryInterface'
 import { TeamResultsInterface } from '@/components/results/TeamResultsInterface'
+import { ClassSeparatedParticipantsTable } from '@/components/results/components/ClassSeparatedParticipantsTable'
 
 // Import existing components for approved results view
 import { useApprovedRallyResults } from '@/hooks/useApprovedRallies'
@@ -71,6 +72,27 @@ function ResultsPageContent() {
   // Check if we're viewing team results
   const isViewingTeamResults = currentTab === 'team' && teamRallies.some(r => r.id === selectedRally)
 
+  // Transform approved results to match participant format for ClassSeparatedParticipantsTable
+  const approvedParticipants = approvedResults.map(result => ({
+    id: result.id,
+    user_id: result.user_id,
+    player_name: result.participant_name,
+    class_name: result.class_name,
+    registration_date: result.registration_date
+  }))
+
+  // Transform approved results to match the results format
+  const approvedResultsMap = approvedResults.reduce((acc, result) => {
+    acc[result.id] = {
+      overallPosition: result.overall_position,
+      classPosition: result.class_position,
+      totalPoints: result.total_points || 0,
+      extraPoints: result.extra_points || 0,
+      participated: true
+    }
+    return acc
+  }, {} as Record<string, any>)
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="space-y-6">
@@ -120,45 +142,18 @@ function ResultsPageContent() {
                         </p>
                       </div>
                       
-                      {approvedResultsLoading ? (
-                        <div className="p-8 text-center">
-                          <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
-                          <p className="text-slate-400 mt-2">Laen tulemusi...</p>
-                        </div>
-                      ) : approvedResults.length > 0 ? (
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-slate-800/50">
-                              <tr className="border-b border-slate-700/50">
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Koht</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Nimi</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Klass</th>
-                                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Punktid</th>
-                                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Lisa punktid</th>
-                                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Kokku</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-700/30">
-                              {approvedResults.map((result: any) => (
-                                <tr key={result.id} className="hover:bg-slate-800/30">
-                                  <td className="px-4 py-3 text-sm text-white">{result.class_position}</td>
-                                  <td className="px-4 py-3 text-sm text-white">{result.participant_name}</td>
-                                  <td className="px-4 py-3 text-sm text-slate-300">{result.class_name}</td>
-                                  <td className="px-4 py-3 text-sm text-right text-slate-300">{result.total_points || 0}</td>
-                                  <td className="px-4 py-3 text-sm text-right text-slate-300">{result.extra_points || 0}</td>
-                                  <td className="px-4 py-3 text-sm text-right font-medium text-white">
-                                    {(result.total_points || 0) + (result.extra_points || 0)}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <div className="p-8 text-center">
-                          <p className="text-slate-400">Tulemusi ei leitud</p>
-                        </div>
-                      )}
+                      {/* Use ClassSeparatedParticipantsTable for approved results */}
+                      <div className="p-6">
+                        <ClassSeparatedParticipantsTable
+                          participants={approvedParticipants}
+                          results={approvedResultsMap}
+                          editMode={false}
+                          onUpdateResult={() => {}}
+                          onClearResults={() => {}}
+                          onRemoveParticipant={() => {}}
+                          isRemoving={false}
+                        />
+                      </div>
                     </div>
                   </>
                 ) : (
