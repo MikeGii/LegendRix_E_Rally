@@ -536,8 +536,8 @@ body.modal-open {
     font-weight: bold;
   }
 
-  .tech-border:hover::before {
-  opacity: 0.3;
+.tech-border:hover::before {
+  opacity: 0;
 }
 
 /* Disable tech-border hover for UserQuickMenu */
