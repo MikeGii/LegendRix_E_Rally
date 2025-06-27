@@ -1,8 +1,10 @@
-// Fixed PublicPlayerProfileModal that passes userId to child components
+// src/components/player/PublicPlayerProfileModal.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { usePublicPlayerProfile } from '@/hooks/usePublicPlayerProfile'
+import { usePlayerTeam } from '@/hooks/usePlayerTeam'
 import { useUserStatistics } from '@/hooks/useUserStatistics'
 import { useUserAchievements } from '@/hooks/useUserAchievements'
 import { UserStatistics } from '@/components/user/statistics/UserStatistics'
@@ -14,17 +16,21 @@ interface PublicPlayerProfileModalProps {
   userId: string
   isOpen: boolean
   onClose: () => void
+  anchorElement?: HTMLElement | null
 }
 
 export function PublicPlayerProfileModal({ 
   userId, 
   isOpen, 
-  onClose 
+  onClose,
+  anchorElement 
 }: PublicPlayerProfileModalProps) {
   const [activeSection, setActiveSection] = useState<ProfileSection>('statistics')
+  const modalRef = useRef<HTMLDivElement>(null)
 
   // Load profile by userId (secure)
   const { data: player, isLoading: playerLoading } = usePublicPlayerProfile(userId)
+  const { data: teamData, isLoading: teamLoading } = usePlayerTeam(userId)
   const { data: statistics, isLoading: statsLoading } = useUserStatistics(userId, { useCache: true })
   const { data: achievements, isLoading: achievementsLoading } = useUserAchievements(userId)
 
@@ -43,6 +49,29 @@ export function PublicPlayerProfileModal({
     }
   ]
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY
+      
+      // Prevent background scrolling
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
+      
+      return () => {
+        // Restore scroll
+        document.body.style.overflow = ''
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.width = ''
+        window.scrollTo(0, scrollY)
+      }
+    }
+  }, [isOpen])
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('et-EE', {
       year: 'numeric',
@@ -56,10 +85,8 @@ export function PublicPlayerProfileModal({
 
     switch (activeSection) {
       case 'statistics':
-        // FIXED: Pass userId and hide refresh button for public view
         return <UserStatistics userId={userId} showRefreshButton={false} />
       case 'achievements':
-        // FIXED: Pass userId to achievements component (you may need to update this too)
         return <UserAchievements userId={userId} />
       default:
         return <UserStatistics userId={userId} showRefreshButton={false} />
@@ -75,12 +102,17 @@ export function PublicPlayerProfileModal({
     }
   }
 
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm overflow-y-auto"
       onClick={handleBackdropClick}
     >
-      <div className="relative w-full max-w-2xl mx-4 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-3xl overflow-hidden">
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div 
+          ref={modalRef}
+          className="relative w-full max-w-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-3xl overflow-hidden my-8"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Close button */}
         <button
           onClick={onClose}
@@ -91,25 +123,55 @@ export function PublicPlayerProfileModal({
 
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-slate-700/50 p-6">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-xl flex items-center justify-center">
-              <span className="text-xl font-semibold text-white">
-                {player?.player_name?.charAt(0).toUpperCase() || '?'}
-              </span>
+          <div className="flex items-center justify-between">
+            {/* Left side - Player info */}
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-xl flex items-center justify-center">
+                <span className="text-xl font-semibold text-white">
+                  {player?.player_name?.charAt(0).toUpperCase() || '?'}
+                </span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">
+                  {player?.player_name || 'Mängija profiil'}
+                </h2>
+                <p className="text-slate-300">
+                  Avalik profiil
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">
-                {player?.player_name || 'Mängija profiil'}
-              </h2>
-              <p className="text-slate-300">
-                Avalik profiil
-              </p>
-            </div>
+
+            {/* Right side - Team info */}
+            {teamData && (
+              <div className="text-right">
+                <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-600/50 rounded-xl px-4 py-3">
+                  <p className="text-sm text-slate-400 mb-1">Tiim</p>
+                  <h3 className="text-lg font-semibold text-white">
+                    {teamData.team_name}
+                  </h3>
+                  {(teamData.vehicle_name || teamData.class_name) && (
+                    <p className="text-sm text-slate-300 mt-1">
+                      {teamData.vehicle_name && teamData.class_name ? (
+                        <>
+                          <span className="text-blue-400">{teamData.vehicle_name}</span>
+                          <span className="mx-1 text-slate-500">-</span>
+                          <span className="text-purple-400">{teamData.class_name}</span>
+                        </>
+                      ) : teamData.vehicle_name ? (
+                        <span className="text-blue-400">{teamData.vehicle_name}</span>
+                      ) : (
+                        <span className="text-purple-400">{teamData.class_name}</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Content */}
-        {playerLoading ? (
+        {playerLoading || teamLoading ? (
           <div className="p-8 text-center">
             <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-slate-400">Profiili laadimine...</p>
@@ -169,7 +231,15 @@ export function PublicPlayerProfileModal({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   )
+
+  // Use portal to render at document body level
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body)
+  }
+
+  return null
 }
