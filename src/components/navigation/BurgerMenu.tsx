@@ -1,3 +1,4 @@
+// src/components/navigation/BurgerMenu.tsx - REDESIGNED WITH FUTURISTIC BLACK-RED-GRAY THEME
 import React, { useState, useRef, useEffect } from 'react'
 
 interface BurgerMenuProps {
@@ -101,39 +102,37 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* Burger Button */}
+      {/* Futuristic Burger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`
           relative w-12 h-12 rounded-xl transition-all duration-300 flex items-center justify-center
           ${isOpen 
-            ? 'bg-blue-600/20 border-blue-400/40 shadow-lg shadow-blue-500/25' 
-            : 'bg-slate-700/50 hover:bg-slate-600/70 border-slate-600/50'
+            ? 'bg-red-600/20 border-2 border-red-500/50 shadow-[0_0_20px_rgba(255,0,64,0.5)]' 
+            : 'bg-gray-900/50 hover:bg-gray-800/70 border border-gray-800 hover:border-red-500/30'
           }
-          backdrop-blur-xl border hover:scale-105 group
+          backdrop-blur-xl hover:scale-105 group
         `}
         aria-label="Navigation menu"
         aria-expanded={isOpen}
       >
         <div className="w-6 h-6 flex flex-col justify-center items-center">
           <span className={`
-            block w-5 h-0.5 bg-white rounded-sm transition-all duration-300 transform origin-center
+            block w-5 h-0.5 bg-gradient-to-r from-red-400 to-red-600 rounded-sm transition-all duration-300 transform origin-center
             ${isOpen ? 'rotate-45 translate-y-1.5' : ''}
           `} />
           <span className={`
-            block w-5 h-0.5 bg-white rounded-sm transition-all duration-300 mt-1
+            block w-5 h-0.5 bg-gradient-to-r from-red-400 to-red-600 rounded-sm transition-all duration-300 mt-1
             ${isOpen ? 'opacity-0 scale-0' : ''}
           `} />
           <span className={`
-            block w-5 h-0.5 bg-white rounded-sm transition-all duration-300 transform origin-center mt-1
+            block w-5 h-0.5 bg-gradient-to-r from-red-400 to-red-600 rounded-sm transition-all duration-300 transform origin-center mt-1
             ${isOpen ? '-rotate-45 -translate-y-1.5' : ''}
           `} />
         </div>
       </button>
 
-      {/* Menu Overlay - REMOVED: Now header stays normal and clickable */}
-
-      {/* Menu Panel */}
+      {/* Futuristic Menu Panel */}
       <div className={`
         absolute top-14 right-0 w-80 transition-all duration-300 transform z-50
         ${isOpen 
@@ -141,18 +140,18 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
           : 'opacity-0 scale-95 -translate-y-4 pointer-events-none'
         }
       `}>
-        <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden">
-          {/* Header */}
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-600/10 to-purple-600/10 border-b border-slate-700/50">
+        <div className="tech-border rounded-2xl shadow-[0_0_50px_rgba(255,0,64,0.3)] overflow-hidden bg-black/95">
+          {/* Header with User Info */}
+          <div className="px-6 py-4 bg-gradient-to-r from-red-900/20 to-gray-900/20 border-b border-gray-800">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                <span className="text-blue-400 font-medium text-sm">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-800 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(255,0,64,0.4)]">
+                <span className="text-white font-bold text-sm font-['Orbitron']">
                   {user.name.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div>
-                <p className="text-white font-medium text-sm">{user.name}</p>
-                <p className="text-slate-400 text-xs">
+                <p className="text-white font-medium text-sm font-['Orbitron']">{user.name}</p>
+                <p className="text-gray-400 text-xs">
                   {user.player_name && `🎮 ${user.player_name}`}
                 </p>
               </div>
@@ -162,81 +161,85 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
           {/* Navigation Items */}
           <div className="py-2">
             {/* Primary Items */}
-            {menuItems.filter(item => item.priority === 'primary').map((item, index) => (
+            {menuItems.filter(item => item.priority === 'primary').map((item) => (
               <button
                 key={item.label}
                 onClick={item.action}
-                className="w-full px-6 py-4 text-left hover:bg-slate-800/50 transition-all duration-200 group flex items-center space-x-4"
+                className="w-full px-6 py-4 text-left hover:bg-gray-900/50 transition-all duration-200 group flex items-center space-x-4 border-b border-gray-900"
               >
-                <span className="text-2xl group-hover:scale-110 transition-transform duration-200">
+                <span className="text-2xl group-hover:scale-110 transition-transform duration-200 group-hover:animate-pulse">
                   {item.icon}
                 </span>
                 <div className="flex-1">
-                  <p className="text-white font-medium group-hover:text-blue-300 transition-colors">
+                  <p className="text-white font-medium group-hover:text-red-400 transition-colors font-['Orbitron'] uppercase tracking-wide text-sm">
                     {item.label}
                   </p>
-                  <p className="text-slate-400 text-xs">
+                  <p className="text-gray-500 text-xs">
                     {item.description}
                   </p>
                 </div>
-                <span className="text-slate-500 group-hover:text-slate-300 transition-colors">
+                <span className="text-gray-600 group-hover:text-red-400 transition-colors text-xl">
                   →
                 </span>
               </button>
             ))}
 
             {/* Divider */}
-            <div className="mx-6 my-2 border-t border-slate-700/50" />
+            <div className="mx-6 my-2 border-t border-gray-800" />
             <div className="px-6 py-1">
-              <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">
+              <p className="text-xs text-gray-600 uppercase tracking-wider font-['Orbitron']">
                 Seaded
               </p>
             </div>
 
             {/* Secondary Items */}
-            {menuItems.filter(item => item.priority === 'secondary').map((item, index) => (
+            {menuItems.filter(item => item.priority === 'secondary').map((item) => (
               <button
                 key={item.label}
                 onClick={item.action}
-                className="w-full px-6 py-3 text-left hover:bg-slate-800/50 transition-all duration-200 group flex items-center space-x-4"
+                className="w-full px-6 py-3 text-left hover:bg-gray-900/50 transition-all duration-200 group flex items-center space-x-4"
               >
                 <span className="text-xl group-hover:scale-110 transition-transform duration-200">
                   {item.icon}
                 </span>
                 <div className="flex-1">
-                  <p className="text-slate-300 font-medium group-hover:text-white transition-colors">
+                  <p className="text-gray-300 font-medium group-hover:text-white transition-colors text-sm">
                     {item.label}
                   </p>
-                  <p className="text-slate-500 text-xs">
+                  <p className="text-gray-600 text-xs">
                     {item.description}
                   </p>
                 </div>
-                <span className="text-slate-500 group-hover:text-slate-300 transition-colors">
+                <span className="text-gray-600 group-hover:text-gray-400 transition-colors">
                   →
                 </span>
               </button>
             ))}
 
-            {/* Logout */}
-            <div className="mx-6 my-2 border-t border-slate-700/50" />
+            {/* Logout Button - Futuristic Style */}
+            <div className="mx-6 my-2 border-t border-gray-800" />
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="w-full px-6 py-4 text-left hover:bg-red-600/10 transition-all duration-200 group flex items-center space-x-4 disabled:opacity-50"
+              className="w-full px-6 py-4 text-left hover:bg-red-900/20 transition-all duration-200 group flex items-center space-x-4 disabled:opacity-50 border-t border-gray-800"
             >
-              <span className="text-xl group-hover:scale-110 transition-transform duration-200">
+              <span className="text-xl group-hover:scale-110 transition-transform duration-200 text-red-400">
                 🚪
               </span>
               <div className="flex-1">
-                <p className="text-red-400 font-medium group-hover:text-red-300 transition-colors">
-                  {isLoggingOut ? 'Välja logimas...' : 'Logi välja'}
+                <p className="text-red-400 font-['Orbitron'] uppercase tracking-wide text-sm font-bold group-hover:text-red-300 transition-colors">
+                  {isLoggingOut ? 'Väljun...' : 'Logi Välja'}
                 </p>
-                <p className="text-slate-500 text-xs">
-                  Lõpeta sessioon
+                <p className="text-gray-600 text-xs">
+                  Välju süsteemist
                 </p>
               </div>
-              {isLoggingOut && (
-                <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+              {isLoggingOut ? (
+                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <span className="text-red-400 group-hover:text-red-300 transition-colors">
+                  →
+                </span>
               )}
             </button>
           </div>

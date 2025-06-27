@@ -1,10 +1,11 @@
-// src/components/DashboardLayout.tsx - Updated with Unified Header Design
+// src/components/DashboardLayout.tsx - REDESIGNED WITH FUTURISTIC BLACK-RED-GRAY THEME
 'use client'
 
 import Image from 'next/image'
 import { useAuth } from './AuthProvider'
 import { useView } from './ViewProvider'
 import { BurgerMenu } from './navigation/BurgerMenu'
+import '@/styles/futuristic-theme.css'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -18,16 +19,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     console.log('🚪 Dashboard logout initiated...')
     
     try {
-      // Clear all auth state first
       await logout()
       
-      // Clear any remaining session data completely
       if (typeof window !== 'undefined') {
-        // Clear all localStorage
         window.localStorage.clear()
-        // Clear sessionStorage  
         window.sessionStorage.clear()
-        // Clear specific supabase auth keys
         window.localStorage.removeItem('supabase.auth.token')
         window.localStorage.removeItem('sb-localhost-auth-token')
         window.localStorage.removeItem('sb-' + window.location.hostname + '-auth-token')
@@ -35,41 +31,34 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       
       console.log('✅ Dashboard logout completed, redirecting to main page...')
       
-      // Redirect to main page with a hard navigation to ensure clean state
       setTimeout(() => {
         window.location.href = '/'
       }, 100)
       
     } catch (error) {
       console.error('❌ Dashboard logout error:', error)
-      // Force redirect even if logout fails
       window.location.href = '/'
     }
   }
 
-  // FIXED: Handle view switching with actual routing
   const handleViewSwitch = (view: 'admin' | 'user') => {
     if (view === 'admin') {
-      // Navigate to admin dashboard
       window.location.href = '/admin-dashboard'
     } else {
-      // Navigate to user dashboard
       window.location.href = '/user-dashboard'
     }
   }
 
-  // FIXED: Determine current view based on current URL with proper defaults
   const getCurrentView = () => {
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname
       
-      // List of all admin pages that should show "Admin" in the view switcher
       const adminPages = [
         '/admin-dashboard',
         '/user-management', 
         '/game-management',
         '/rally-management',
-        '/news-management', // ← ADD NEWS MANAGEMENT PAGE
+        '/news-management',
         '/championships',
         '/results',
         '/participant-linking',
@@ -77,15 +66,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         '/teams-manager'
       ]
       
-      // Check if current path is any admin page
       if (adminPages.some(page => pathname.includes(page))) {
         return 'admin'
       } else {
-        // Default to 'user' for user-dashboard and other pages
         return 'user'
       }
     }
-    return 'user' // Default to user view
+    return 'user'
   }
 
   const actualCurrentView = getCurrentView()
@@ -93,95 +80,112 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
-      {/* Enhanced Navigation Header - NOW WITH UNIFIED DESIGN */}
+    <div className="min-h-screen bg-black">
+      {/* Futuristic Navigation Header */}
       <nav className="sticky top-0 z-30">
-        {/* Background with blur effect - matching landing page */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-900/80 to-transparent backdrop-blur-2xl border-b border-white/5 shadow-2xl"></div>
+        {/* Animated tech border effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-950 to-transparent backdrop-blur-2xl"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
         
-        <div className="relative max-w-6xl mx-auto px-6">
-          <div className="flex justify-between items-center h-20 py-6">
-            {/* Left Section: Logo - EXACTLY LIKE LANDING PAGE */}
-            <div className="flex items-center space-x-4">
-              <a 
-                href="/"
-                className="flex items-center space-x-4 group"
-              >
-                <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/20 bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-sm p-1 group-hover:ring-white/30 transition-all">
-                  <div className="w-full h-full rounded-xl overflow-hidden relative">
-                    <Image
-                      src="/image/rally-cover.png"
-                      alt="LegendRix Rally"
-                      fill
-                      className="object-cover"
-                      priority
-                      sizes="56px"
-                    />
+        <div className="relative">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex justify-between items-center h-20 py-6">
+              {/* Left Section: Logo - Futuristic Style */}
+              <div className="flex items-center space-x-4">
+                <a 
+                  href="/"
+                  className="flex items-center space-x-4 group"
+                >
+                  <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(255,0,64,0.3)] ring-2 ring-red-500/20 bg-gradient-to-br from-red-900/20 to-gray-900/20 backdrop-blur-sm p-1 group-hover:ring-red-500/40 transition-all duration-300">
+                    <div className="w-full h-full rounded-xl overflow-hidden relative">
+                      <Image
+                        src="/image/rally-cover.png"
+                        alt="LegendRix Rally"
+                        fill
+                        className="object-cover"
+                        priority
+                        sizes="56px"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-white drop-shadow-xl tracking-wide">LegendRix</h1>
-                  <p className="text-sm text-blue-300/90 drop-shadow-lg font-medium -mt-1">E-Spordikeskus</p>
-                </div>
-              </a>
-            </div>
-            
-            {/* Right Section: View Switcher + Burger Menu */}
-            <div className="flex items-center space-x-4">
-              {/* View Switcher for Admins */}
-              {canSwitchView && (
-                <div className="hidden md:flex bg-slate-800/50 rounded-xl p-1 backdrop-blur-sm">
-                  <button
-                    onClick={() => handleViewSwitch('user')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      actualCurrentView === 'user'
-                        ? 'bg-green-600 text-white shadow-lg shadow-green-500/25'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-600/50'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <span>🏁</span>
-                      <span>Võistleja</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleViewSwitch('admin')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      actualCurrentView === 'admin'
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-600/50'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <span>👑</span>
-                      <span>Admin</span>
-                    </div>
-                  </button>
-                </div>
-              )}
+                  <div>
+                    <h1 className="text-2xl font-black text-white font-['Orbitron'] tracking-wider group-hover:text-red-400 transition-colors">
+                      LegendRix
+                    </h1>
+                    <p className="text-sm text-red-400/80 font-medium -mt-1 font-['Orbitron'] uppercase tracking-wide">
+                      E-Spordikeskus
+                    </p>
+                  </div>
+                </a>
+              </div>
+              
+              {/* Right Section: View Switcher + Burger Menu */}
+              <div className="flex items-center space-x-4">
+                {/* View Switcher for Admins - Futuristic Design */}
+                {canSwitchView && (
+                  <div className="hidden md:flex bg-gray-900/50 rounded-xl p-1 backdrop-blur-sm border border-gray-800">
+                    <button
+                      onClick={() => handleViewSwitch('user')}
+                      className={`px-4 py-2 rounded-lg text-sm font-['Orbitron'] uppercase tracking-wider transition-all duration-300 ${
+                        actualCurrentView === 'user'
+                          ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-[0_0_20px_rgba(255,0,64,0.5)]'
+                          : 'text-gray-400 hover:text-red-400 hover:bg-gray-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span>🏁</span>
+                        <span>Võistleja</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => handleViewSwitch('admin')}
+                      className={`px-4 py-2 rounded-lg text-sm font-['Orbitron'] uppercase tracking-wider transition-all duration-300 ${
+                        actualCurrentView === 'admin'
+                          ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-[0_0_20px_rgba(255,0,64,0.5)]'
+                          : 'text-gray-400 hover:text-red-400 hover:bg-gray-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span>👑</span>
+                        <span>Admin</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
 
-              {/* Mobile View Switcher */}
-              {canSwitchView && (
-                <div className="md:hidden">
-                  <button
-                    onClick={() => handleViewSwitch(actualCurrentView === 'admin' ? 'user' : 'admin')}
-                    className="p-2 bg-slate-700/50 rounded-lg text-slate-300 hover:text-white hover:bg-slate-600/50 transition-all duration-200 backdrop-blur-sm"
-                  >
-                    {actualCurrentView === 'admin' ? '🏁' : '👑'}
-                  </button>
-                </div>
-              )}
+                {/* Mobile View Switcher */}
+                {canSwitchView && (
+                  <div className="md:hidden">
+                    <button
+                      onClick={() => handleViewSwitch(actualCurrentView === 'admin' ? 'user' : 'admin')}
+                      className="p-2 bg-gray-900/50 rounded-lg text-gray-400 hover:text-red-400 hover:bg-gray-800/50 transition-all duration-300 backdrop-blur-sm border border-gray-800"
+                    >
+                      {actualCurrentView === 'admin' ? '🏁' : '👑'}
+                    </button>
+                  </div>
+                )}
 
-              {/* Burger Menu */}
-              <BurgerMenu user={user} onLogout={handleLogout} />
+                {/* Burger Menu with Futuristic Style */}
+                <BurgerMenu user={user} onLogout={handleLogout} />
+              </div>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Main Content */}
+      {/* Main Content with Grid Pattern Background */}
       <main className="relative">
-        {children}
+        {/* Futuristic grid background */}
+        <div className="fixed inset-0 grid-pattern opacity-5 pointer-events-none"></div>
+        
+        {/* Gradient orbs for ambiance */}
+        <div className="fixed top-20 left-20 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="fixed bottom-20 right-20 w-96 h-96 bg-gray-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        {/* Content */}
+        <div className="relative z-10">
+          {children}
+        </div>
       </main>
     </div>
   )
