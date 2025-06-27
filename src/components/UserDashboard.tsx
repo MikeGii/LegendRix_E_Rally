@@ -3,12 +3,11 @@
 
 import { useAuth } from '@/components/AuthProvider'
 import { useView } from '@/components/ViewProvider'
-import { useAllRallies, useFeaturedRallies, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
+import { useAllRallies, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
 import { UserWelcomeHeader } from '@/components/user/UserWelcomeHeader'
 import { UserQuickMenu } from '@/components/user/UserQuickMenu'
 import { UserStatusBanner } from '@/components/user/UserStatusBanner'
 import { UpcomingRalliesSection } from '@/components/user/UpcomingRalliesSection'
-import { FeaturedRalliesSection } from '@/components/user/FeaturedRalliesSection'
 import { UserRegistrationsSection } from '@/components/user/UserRegistrationsSection'
 import { UserActionPrompt } from '@/components/user/UserActionPrompt'
 import { SectionDivider } from '@/components/landing/SectionDivider'
@@ -57,7 +56,6 @@ export function UserDashboard() {
   
   // Load rally data
   const { data: allRallies = [], isLoading: isLoadingAll } = useAllRallies(20)
-  const { data: featuredRallies = [], isLoading: isLoadingFeatured } = useFeaturedRallies(3)
   const { data: userRegistrations = [], isLoading: isLoadingRegistrations } = useUserRallyRegistrations()
 
   if (!user) return null
@@ -124,24 +122,6 @@ export function UserDashboard() {
             </div>
             <div className="mt-8">
               <SectionDivider variant="z-pattern" />
-            </div>
-          </div>
-        )}
-
-        {/* Featured Rallies with Special Effects */}
-        {canAccessRallies && featuredRallies.length > 0 && (
-          <div className="relative">
-            {/* Animated Background Glow */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-yellow-600/20 to-red-600/20 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
-            <div className="relative">
-              <FeaturedRalliesSection
-                rallies={featuredRallies}
-                isLoading={isLoadingFeatured}
-                canAccessRallies={canAccessRallies}
-              />
-            </div>
-            <div className="mt-8">
-              <SectionDivider variant="l-corners" />
             </div>
           </div>
         )}
