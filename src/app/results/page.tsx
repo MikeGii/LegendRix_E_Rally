@@ -19,9 +19,11 @@ import { RallyHeader } from '@/components/results/RallyHeader'
 import { ResultsEntryInterface } from '@/components/results/ResultsEntryInterface'
 import { TeamResultsInterface } from '@/components/results/TeamResultsInterface'
 import { ClassSeparatedParticipantsTable } from '@/components/results/components/ClassSeparatedParticipantsTable'
+import { PublicToggle } from '@/components/results/components/PublicToggle'
+import { StatusMessages } from '@/components/results/components/StatusMessages'
 
 // Import existing components for approved results view
-import { useApprovedRallyResults } from '@/hooks/useApprovedRallies'
+import { useApprovedRallyResults, useIsRallyPublic } from '@/hooks/useApprovedRallies'
 
 function ResultsPageContent() {
   const { user, loading: authLoading } = useAuth()
@@ -61,6 +63,12 @@ function ResultsPageContent() {
     isLoading: approvedResultsLoading 
   } = useApprovedRallyResults(selectedRally || '')
 
+  // For public visibility status
+  const {
+    data: isRallyPublic = false,
+    isLoading: isPublicLoading
+  } = useIsRallyPublic(selectedRally || '')
+
   if (completedLoading && approvedLoading && teamLoading) {
     return <LoadingState message="Laen rallisid..." />
   }
@@ -83,11 +91,14 @@ function ResultsPageContent() {
 
   // Transform approved results to match the results format
   const approvedResultsMap = approvedResults.reduce((acc, result) => {
+    const totalPoints = result.total_points || 0
+    const extraPoints = result.extra_points || 0
     acc[result.id] = {
       overallPosition: result.overall_position,
       classPosition: result.class_position,
-      totalPoints: result.total_points || 0,
-      extraPoints: result.extra_points || 0,
+      totalPoints: totalPoints,
+      extraPoints: extraPoints,
+      overallPoints: totalPoints + extraPoints,  // Calculate the total here
       participated: true
     }
     return acc
@@ -133,6 +144,23 @@ function ResultsPageContent() {
                       rally={selectedRallyData}
                       participants={participants}
                     />
+                    
+                    {/* Status Messages */}
+                    <div className="space-y-4">
+                      <StatusMessages 
+                        isSaving={false}
+                        isApproving={false}
+                        isApproved={true}
+                      />
+                      
+                      {/* Public Toggle */}
+                      {!isPublicLoading && (
+                        <PublicToggle
+                          rallyId={selectedRally}
+                          initialIsPublic={isRallyPublic}
+                        />
+                      )}
+                    </div>
                     
                     <div className="bg-slate-800/30 backdrop-blur-xl rounded-xl border border-slate-700/50">
                       <div className="p-6 border-b border-slate-700/50">
