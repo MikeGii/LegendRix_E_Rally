@@ -535,3 +535,17 @@ body.modal-open {
     background: #1a1a1a;
     font-weight: bold;
   }
+
+  .tech-border:hover::before {
+  opacity: 0.3;
+}
+
+/* Disable tech-border hover for UserQuickMenu */
+.user-quick-menu-container .tech-border:hover::before {
+  opacity: 0;
+}
+
+/* Disable tech-border hover for UpcomingRalliesSection */
+.upcoming-rallies-container .tech-border:hover::before {
+  opacity: 0;
+}

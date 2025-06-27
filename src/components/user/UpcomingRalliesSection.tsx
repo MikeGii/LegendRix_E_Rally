@@ -99,6 +99,7 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
 
   return (
     <>
+    <div className="upcoming-rallies-container">
       <div className="tech-border rounded-2xl shadow-[0_0_30px_rgba(255,0,64,0.2)] bg-black/80 backdrop-blur-xl p-8 relative overflow-hidden">
         {/* Animated background pattern */}
         <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
@@ -321,6 +322,7 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
             )}
           </div>
         )}
+      </div>
       </div>
 
       {/* Rally Detail Modal */}

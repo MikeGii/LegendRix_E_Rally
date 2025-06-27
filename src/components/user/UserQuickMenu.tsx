@@ -65,6 +65,7 @@ export function UserQuickMenu() {
   }
 
   return (
+    <div className="user-quick-menu-container">
     <div className="tech-border rounded-2xl shadow-[0_0_30px_rgba(255,0,64,0.1)] bg-black/80 backdrop-blur-xl p-6 relative overflow-hidden">
       {/* Animated background pattern */}
       <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
@@ -137,6 +138,7 @@ export function UserQuickMenu() {
       
       {/* Bottom gradient line */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent"></div>
+    </div>
     </div>
   )
 }
