@@ -1,7 +1,7 @@
 // src/components/landing/sections/SocialMediaSection.tsx - Futuristic Theme
 export function SocialMediaSection() {
   return (
-    <div className="text-center mt-32 mb-20 py-16 relative">
+    <div className="text-center mt-32 mb-0 pt-16 relative">
       {/* Background accent lines */}
       <div className="absolute inset-0 -top-20 -bottom-20 overflow-hidden pointer-events-none">
         <div className="absolute bottom-1/4 left-1/4 w-32 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent"></div>
