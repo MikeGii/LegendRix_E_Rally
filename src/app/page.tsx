@@ -13,6 +13,7 @@ import { EdetabelModal } from '@/components/landing/EdetabelModal'
 import { usePublicUpcomingRallies } from '@/hooks/usePublicRallies'
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import '@/styles/futuristic-theme.css'
 
 // Import modular landing page components
@@ -54,6 +55,9 @@ function HomeContent() {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [showVerification, setShowVerification] = useState(false)
   const { data: upcomingRallies = [], isLoading: isLoadingRallies } = usePublicUpcomingRallies()
+
+  // Use scroll lock when auth modal is open
+  useScrollLock(showAuthModal)
 
   useEffect(() => {
     setIsMounted(true)
@@ -270,44 +274,54 @@ function HomeContent() {
         <VerificationMessage />
       )}
 
-      {/* Auth Modal with futuristic styling */}
+      {/* Auth Modal with futuristic styling and scroll support */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/90 backdrop-blur-md"
             onClick={() => setShowAuthModal(false)}
-          ></div>
+          />
           
-          <div className="relative w-full max-w-md mx-4 tech-border rounded-2xl p-8 shadow-[0_0_50px_rgba(255,0,64,0.3)]">
-            <button
-              onClick={() => setShowAuthModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+          {/* Modal Container */}
+          <div className="relative w-full max-w-md max-h-[80vh] flex">
+            <div className="relative w-full tech-border rounded-2xl shadow-[0_0_50px_rgba(255,0,64,0.3)] bg-black/95 flex flex-col">
+              {/* Close button - positioned absolutely */}
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors z-10"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
 
-            <h2 className="text-2xl font-black text-white mb-8 text-center font-['Orbitron'] tracking-wide">
-              {authView === 'login' ? 'TERE TULEMAST TAGASI' : 
-               authView === 'register' ? 'LOO UUS KONTO' : 'PAROOLI TAASTAMINE'}
-            </h2>
+              {/* Scrollable Content - includes title */}
+              <div className="flex-1 overflow-y-auto px-8 py-8 custom-modal-scrollbar">
+                {/* Title - now inside scrollable area */}
+                <h2 className="text-2xl font-black text-white mb-6 text-center font-['Orbitron'] tracking-wide">
+                  {authView === 'login' ? 'TERE TULEMAST TAGASI' : 
+                  authView === 'register' ? 'LOO UUS KONTO' : 'PAROOLI TAASTAMINE'}
+                </h2>
 
-            {authView === 'login' ? (
-              <LoginForm 
-                onSwitchToRegister={() => setAuthView('register')}
-                onSwitchToForgotPassword={() => setAuthView('forgot-password')}
-                onLoginSuccess={handleLoginSuccess}
-              />
-            ) : authView === 'register' ? (
-              <RegisterForm 
-                onSwitchToLogin={() => setAuthView('login')}
-                onSuccess={handleRegisterSuccess}
-                onError={handleRegisterError}
-              />
-            ) : (
-              <ForgotPasswordForm onBackToLogin={() => setAuthView('login')} />
-            )}
+                {/* Forms */}
+                {authView === 'login' ? (
+                  <LoginForm 
+                    onSwitchToRegister={() => setAuthView('register')}
+                    onSwitchToForgotPassword={() => setAuthView('forgot-password')}
+                    onLoginSuccess={handleLoginSuccess}
+                  />
+                ) : authView === 'register' ? (
+                  <RegisterForm 
+                    onSwitchToLogin={() => setAuthView('login')}
+                    onSuccess={handleRegisterSuccess}
+                    onError={handleRegisterError}
+                  />
+                ) : (
+                  <ForgotPasswordForm onBackToLogin={() => setAuthView('login')} />
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

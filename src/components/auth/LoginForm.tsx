@@ -1,7 +1,8 @@
-// src/components/auth/LoginForm.tsx - Form handles its own error logic
+// src/components/auth/LoginForm.tsx - Futuristic theme with enhanced effects
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useAuth } from '@/components/AuthProvider'
 import { mapAuthError, shouldShowForgotPassword } from '@/utils/authErrors'
 
@@ -102,64 +103,94 @@ export function LoginForm({
     }
   }
 
-  const shouldShowForgotPasswordLink = error && shouldShowForgotPassword(error)
-
   return (
-    <div className="space-y-5">
-      {/* Error Display */}
+    <div className="space-y-6">
+      {/* Logo with futuristic effects */}
+      <div className="flex justify-center mb-12">
+        <div className="relative group">
+          {/* Animated gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-purple-500 to-orange-500 rounded-2xl blur-2xl opacity-50 animate-pulse"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-red-500 to-purple-500 rounded-2xl blur-xl opacity-30 animate-pulse animation-delay-2000"></div>
+          
+          {/* Logo container */}
+          <div className="relative w-24 h-24 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-red-500/50 bg-gradient-to-br from-red-600/20 to-purple-600/20 backdrop-blur-sm p-2 group-hover:ring-red-500/70 transition-all neon-glow">
+            <div className="w-full h-full rounded-xl overflow-hidden relative">
+              <Image
+                src="/image/rally-cover.png"
+                alt="LegendRix Rally"
+                fill
+                className="object-cover"
+                priority
+                sizes="96px"
+              />
+            </div>
+          </div>
+          
+          {/* Orbiting particles effect */}
+          <div className="absolute -inset-4" style={{ animation: 'spin 8s linear infinite' }}>
+            <div className="absolute top-0 left-1/2 w-1 h-1 bg-red-500 rounded-full"></div>
+            <div className="absolute bottom-0 right-1/2 w-1 h-1 bg-purple-500 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Error Message with futuristic design */}
       {error && (
-        <div className="p-4 bg-red-900/50 border border-red-700 rounded-lg">
-          <div className="flex items-center space-x-3">
-            <span className="text-lg">❌</span>
-            <div className="flex-1">
-              <p className="text-red-300 font-medium">{error}</p>
-              
-              {/* Forgot Password suggestion */}
-              {shouldShowForgotPasswordLink && (
-                <div className="mt-2 pt-2 border-t border-red-700/50">
-                  <p className="text-red-200 text-sm">
-                    Kas unustasid parooli?{' '}
-                    <button
-                      type="button"
-                      onClick={onSwitchToForgotPassword}
-                      className="underline hover:no-underline font-medium text-red-100"
-                    >
-                      Taasta parool siin
-                    </button>
-                  </p>
+        <div className="relative p-4 rounded-lg overflow-hidden">
+          {/* Background with animated border */}
+          <div className="absolute inset-0 bg-red-900/20 backdrop-blur-sm"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/20 to-red-500/0 animate-pulse"></div>
+          
+          {/* Border effect */}
+          <div className="absolute inset-0 rounded-lg border border-red-500/50"></div>
+          <div className="absolute -inset-px rounded-lg border border-red-500/20"></div>
+          
+          {/* Content */}
+          <div className="relative">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0 w-5 h-5 mt-0.5">
+                <div className="relative w-full h-full">
+                  <div className="absolute inset-0 bg-red-500 rounded-full animate-ping"></div>
+                  <div className="relative w-full h-full bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-black text-xs font-bold">!</span>
+                  </div>
                 </div>
-              )}
-              
-              {/* Help tips after multiple attempts */}
-              {showHelp && attemptCount >= 2 && (
-                <div className="mt-3 pt-2 border-t border-red-700/50">
-                  <p className="text-red-200 text-sm mb-2">💡 Abiks:</p>
-                  <ul className="text-red-200/80 text-sm space-y-1">
-                    <li className="flex items-start space-x-1">
-                      <span className="mt-0.5 opacity-60">•</span>
-                      <span>Kontrolli, et sisestasid õige e-maili aadressi</span>
-                    </li>
-                    <li className="flex items-start space-x-1">
-                      <span className="mt-0.5 opacity-60">•</span>
-                      <span>Veendu, et parool on õigesti sisestatud</span>
-                    </li>
-                    {attemptCount >= 3 && (
-                      <li className="flex items-start space-x-1">
-                        <span className="mt-0.5 opacity-60">•</span>
-                        <span>Kui probleem püsib, proovi parooli lähtestamist</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-red-200 font-medium">{error}</p>
+                
+                {/* Help tips after multiple attempts */}
+                {showHelp && attemptCount >= 2 && (
+                  <div className="mt-3 pt-3 border-t border-red-500/20">
+                    <p className="text-red-300/80 text-sm font-semibold mb-2">Võimalikud lahendused:</p>
+                    <ul className="space-y-1 text-red-300/70 text-sm">
+                      <li className="flex items-start space-x-2">
+                        <span className="text-red-400 mt-0.5">▸</span>
+                        <span>Kontrolli, kas kasutad õiget e-maili aadressi</span>
                       </li>
-                    )}
-                  </ul>
-                </div>
-              )}
+                      <li className="flex items-start space-x-2">
+                        <span className="text-red-400 mt-0.5">▸</span>
+                        <span>Veendu, et parool on õigesti sisestatud</span>
+                      </li>
+                      {attemptCount >= 3 && (
+                        <li className="flex items-start space-x-2">
+                          <span className="text-red-400 mt-0.5">▸</span>
+                          <span>Kui probleem püsib, proovi parooli lähtestamist</span>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-        {/* Email Field */}
-        <div>
+        {/* Email Field with futuristic styling */}
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-purple-600 rounded-xl opacity-0 group-hover:opacity-30 blur transition duration-300"></div>
           <input
             type="email"
             placeholder="E-maili aadress"
@@ -168,12 +199,13 @@ export function LoginForm({
             disabled={loading}
             required
             autoComplete="email"
-            className="w-full px-4 py-3 bg-gray-900/80 border border-gray-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 focus:bg-gray-900 disabled:opacity-50"
+            className="relative w-full px-4 py-3 bg-black/60 backdrop-blur-md border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 
-        {/* Password Field */}
-        <div>
+        {/* Password Field with futuristic styling */}
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-purple-600 rounded-xl opacity-0 group-hover:opacity-30 blur transition duration-300"></div>
           <input
             type="password"
             placeholder="Parool"
@@ -182,51 +214,75 @@ export function LoginForm({
             disabled={loading}
             required
             autoComplete="current-password"
-            className="w-full px-4 py-3 bg-gray-900/80 border border-gray-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 focus:bg-gray-900 disabled:opacity-50"
+            className="relative w-full px-4 py-3 bg-black/60 backdrop-blur-md border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 
-        {/* Forgot Password Link */}
+        {/* Forgot Password Link with futuristic hover effect */}
         <div className="flex justify-end">
           <button
             type="button"
             onClick={onSwitchToForgotPassword}
             disabled={loading}
-            className="text-sm text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50 underline-offset-2 hover:underline"
+            className="relative text-sm text-gray-400 hover:text-red-400 transition-all duration-300 disabled:opacity-50 group"
           >
-            Unustasid parooli?
+            <span className="relative z-10">Unustasid parooli?</span>
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-red-500 to-purple-600 group-hover:w-full transition-all duration-300"></span>
           </button>
         </div>
 
-        {/* Submit Button */}
+        {/* Submit Button with futuristic design */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          className="relative w-full group overflow-hidden rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>Sisselogimine...</span>
-            </>
-          ) : (
-            <span>Logi sisse</span>
-          )}
+          {/* Background layers */}
+          <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-purple-600 transition-all duration-300 group-hover:scale-105"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          
+          {/* Animated border */}
+          <div className="absolute inset-0 rounded-xl">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+            <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+          </div>
+          
+          {/* Content */}
+          <div className="relative px-4 py-3 flex items-center justify-center space-x-2">
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span className="font-['Orbitron'] font-bold text-white tracking-wider">SISSELOGIMINE...</span>
+              </>
+            ) : (
+              <span className="font-['Orbitron'] font-bold text-white tracking-wider">LOGI SISSE</span>
+            )}
+          </div>
+          
+          {/* Hover effect overlay */}
+          <div className="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
         </button>
 
-        {/* Switch to Register */}
-        <div className="text-center text-sm text-gray-400">
-          Pole veel kontot?{' '}
+        {/* Switch to Register with enhanced styling */}
+        <div className="text-center text-sm">
+          <span className="text-gray-500">Pole veel kontot?</span>{' '}
           <button
             type="button"
             onClick={onSwitchToRegister}
             disabled={loading}
-            className="text-blue-400 hover:text-blue-300 font-medium transition-colors disabled:opacity-50 underline-offset-2 hover:underline"
+            className="relative text-red-400 hover:text-red-300 font-medium transition-all duration-300 disabled:opacity-50 group"
           >
-            Registreeru siin
+            <span className="relative z-10">Registreeru siin</span>
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-red-500 to-purple-600 group-hover:w-full transition-all duration-300"></span>
           </button>
         </div>
       </form>
+
+      {/* Tech decoration lines */}
+      <div className="relative mt-8">
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent"></div>
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-red-500/50 rounded-full"></div>
+      </div>
     </div>
   )
 }

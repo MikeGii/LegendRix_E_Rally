@@ -19,6 +19,11 @@
   50% { opacity: 0.5; }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Neon Glow Effect */
 .neon-glow {
   animation: neon-pulse 2s ease-in-out infinite;
@@ -313,4 +318,133 @@
   border: 1px solid rgba(255, 0, 64, 0.4);
   border-left: none;
   border-bottom: none;
+}
+
+/* Custom Modal Scrollbar - Futuristic Style */
+.custom-modal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 0, 64, 0.3) rgba(255, 255, 255, 0.05);
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255, 0, 64, 0.4), rgba(139, 0, 255, 0.4));
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(255, 0, 64, 0.6), rgba(139, 0, 255, 0.6));
+}
+
+/* Smart Scroll Detection */
+.scroll-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.has-scroll .scroll-indicator {
+  opacity: 1;
+}
+
+/* Responsive Modal Height Control */
+@media (min-height: 800px) {
+  /* Only apply max-height restriction on larger screens */
+  .modal-height-control {
+    max-height: 80vh;
+  }
+}
+
+@media (max-height: 799px) {
+  /* Allow full height on smaller screens */
+  .modal-height-control {
+    max-height: calc(100vh - 2rem);
+  }
+}
+
+/* Add these styles to src/styles/futuristic-theme.css */
+
+/* Scrollable Modal Improvements */
+.modal-container {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* Modal content wrapper with proper spacing */
+.modal-content-wrapper {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive modal sizing */
+@media (max-height: 800px) {
+  .modal-content-wrapper {
+    align-items: flex-start;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-content-wrapper {
+    padding: 1rem 0.5rem;
+  }
+  
+  .tech-border {
+    margin: 0.5rem;
+  }
+}
+
+/* Ensure modal content doesn't exceed viewport */
+.modal-content {
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar for modal content */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 0, 64, 0.3);
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 0, 64, 0.5);
 }
