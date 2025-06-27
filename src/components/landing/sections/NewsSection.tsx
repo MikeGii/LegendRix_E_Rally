@@ -1,4 +1,4 @@
-// src/components/landing/sections/NewsSection.tsx
+// src/components/landing/sections/NewsSection.tsx - Futuristic Theme
 'use client'
 
 import { useState } from 'react'
@@ -38,8 +38,8 @@ function NewsArticleModal({ isOpen, onClose, articleId }: NewsModalProps) {
       <div className="p-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
-            <span className="ml-3 text-slate-400">Laen artiklit...</span>
+            <div className="w-8 h-8 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin"></div>
+            <span className="ml-3 text-gray-500">Laen artiklit...</span>
           </div>
         ) : article ? (
           <div className="space-y-6">
@@ -53,7 +53,7 @@ function NewsArticleModal({ isOpen, onClose, articleId }: NewsModalProps) {
               </div>
             )}
 
-            <div className="flex items-center space-x-4 text-sm text-slate-400">
+            <div className="flex items-center space-x-4 text-sm text-gray-500">
               <span>📅 {new Date(article.published_at || article.created_at).toLocaleDateString('et-EE')}</span>
               {article.author_name && (
                 <span>👤 {article.author_name}</span>
@@ -62,14 +62,14 @@ function NewsArticleModal({ isOpen, onClose, articleId }: NewsModalProps) {
 
             <div className="prose prose-invert max-w-none">
               <div 
-                className="text-slate-300 leading-relaxed"
+                className="text-gray-400 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: article.content }}
               />
             </div>
           </div>
         ) : (
           <div className="text-center py-12">
-            <span className="text-slate-400">Artiklit ei leitud</span>
+            <span className="text-gray-500">Artiklit ei leitud</span>
           </div>
         )}
       </div>
@@ -81,7 +81,7 @@ interface CompactNewsCardProps {
   article: {
     id: string
     title: string
-    cover_image_url?: string
+    cover_image_url?: string | null
     created_at: string
     content: string
   }
@@ -100,19 +100,22 @@ function CompactNewsCard({ article, onClick }: CompactNewsCardProps) {
   return (
     <div
       onClick={onClick}
-      className="group cursor-pointer bg-slate-900/30 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-4 hover:border-slate-700/50 transition-all duration-300"
+      className="group cursor-pointer futuristic-card rounded-xl p-4 hover:scale-105 transition-all duration-300 overflow-hidden relative"
     >
-      <div className="flex space-x-3">
-        {/* Small image */}
-        <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-700/50">
+      {/* Hover glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-purple-500/0 group-hover:from-purple-500/10 group-hover:to-transparent transition-all duration-300"></div>
+      
+      <div className="flex space-x-3 relative z-10">
+        {/* Small image with futuristic border */}
+        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-800/50 ring-1 ring-purple-500/20 group-hover:ring-purple-500/40 transition-all">
           {article.cover_image_url ? (
             <img
               src={article.cover_image_url}
               alt={article.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center">
+            <div className="w-full h-full bg-gradient-to-br from-purple-600/20 to-red-600/20 flex items-center justify-center">
               <span className="text-lg opacity-60">📰</span>
             </div>
           )}
@@ -121,14 +124,14 @@ function CompactNewsCard({ article, onClick }: CompactNewsCardProps) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between mb-2">
-            <h4 className="text-sm font-medium text-white line-clamp-1 group-hover:text-blue-400 transition-colors">
+            <h4 className="text-sm font-bold text-white line-clamp-1 group-hover:text-purple-400 transition-colors font-['Orbitron'] uppercase tracking-wide">
               {article.title}
             </h4>
-            <span className="text-xs text-slate-500 ml-2 flex-shrink-0">
+            <span className="text-xs text-gray-600 ml-2 flex-shrink-0 font-['Orbitron']">
               {timeAgoText}
             </span>
           </div>
-          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
             {excerpt}
           </p>
         </div>
@@ -148,20 +151,17 @@ export function CompactNewsSection() {
 
   return (
     <>
-      {/* Compact News Section - matches your "Toeta meid" styling */}
-      <div className="text-center">
-        <h3 className="text-2xl font-semibold text-white mb-6">Teated</h3>
-        <div className="max-w-md mx-auto">
-          <div className="bg-slate-900/30 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-6 hover:border-slate-700/50 transition-all duration-300 group">
-            {/* News icon header */}
-            <div className="relative mb-6">
-              {/* Decorative glow effect - matching your QR section */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-green-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></div>
-            </div>
-
+      {/* Compact News Section with futuristic styling - Matching QR section height */}
+      <div className="text-center h-full">
+        <h3 className="text-2xl font-bold text-white mb-6 font-['Orbitron'] uppercase">Teated</h3>
+        <div className="max-w-md mx-auto h-full">
+          <div className="group relative futuristic-card rounded-2xl p-8 hover:scale-105 transition-all duration-300 overflow-hidden h-full flex flex-col">
+            {/* Hover glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-purple-500/0 group-hover:from-purple-500/10 group-hover:to-transparent transition-all duration-300"></div>
+            
             {/* Compact news list */}
-            <div className="space-y-3">
-              {latestNews.map((article, index) => (
+            <div className="space-y-3 relative z-10 flex-grow">
+              {latestNews.slice(0, 3).map((article, index) => (
                 <CompactNewsCard
                   key={article.id}
                   article={article}
@@ -171,10 +171,13 @@ export function CompactNewsSection() {
             </div>
 
             {/* Footer text */}
-            <div className="mt-4 pt-4 border-t border-slate-700/50">
-              <p className="text-slate-300 text-sm leading-relaxed">
+            <div className="mt-6 pt-6 border-t border-gray-800/50 relative z-10">
+              <p className="text-gray-400 text-sm leading-relaxed">
                 Jälgi meie uusimaid uudiseid ja teateid kogukonnast.
               </p>
+              <div className="text-purple-400 font-['Orbitron'] text-sm uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity mt-2">
+                Loe rohkem →
+              </div>
             </div>
           </div>
         </div>

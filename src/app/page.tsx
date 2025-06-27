@@ -1,4 +1,4 @@
-// src/app/page.tsx - Updated with Toast notifications for authentication errors
+// src/app/page.tsx - Futuristic Black/Grey Theme inspired by Opera GX
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
@@ -13,12 +13,15 @@ import { EdetabelModal } from '@/components/landing/EdetabelModal'
 import { usePublicUpcomingRallies } from '@/hooks/usePublicRallies'
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import '@/styles/futuristic-theme.css'
 
 // Import modular landing page components
 import { HeroSection } from '@/components/landing/sections/HeroSection'
 import { FeaturesSection } from '@/components/landing/sections/FeaturesSection'
 import { SupportersSection } from '@/components/landing/supporters/SupportersSection'
 import { SocialMediaSection } from '@/components/landing/sections/SocialMediaSection'
+import { SectionDivider } from '@/components/landing/SectionDivider'
+import { Footer } from '@/components/landing/Footer'
 
 type AuthView = 'login' | 'register' | 'forgot-password'
 
@@ -35,6 +38,8 @@ const useModalState = (
   )
 }
 
+import '@/styles/futuristic-theme.css'
+
 function HomeContent() {
   const { user, loading: authLoading, logout } = useAuth()
   const router = useRouter()
@@ -45,208 +50,158 @@ function HomeContent() {
   const [isEdetabelModalOpen, setIsEdetabelModalOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [isChampionshipModalOpen, setIsChampionshipModalOpen] = useState(false)
-  const [attemptCount, setAttemptCount] = useState(0)
+  // Existing state and effect hooks remain the same
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-  // ADDED: Track login state to prevent premature modal closing
-  const [wasLoggedIn, setWasLoggedIn] = useState(false)
+  const [showVerification, setShowVerification] = useState(false)
+  const { data: upcomingRallies = [], isLoading: isLoadingRallies } = usePublicUpcomingRallies()
 
-  // Optimized modal state calculation
-  const isAnyModalOpen = useModalState(
-    isCompetitionsModalOpen,
-    isEdetabelModalOpen,
-    showAuthModal,
-    isChampionshipModalOpen
-  )
-
-  // Load upcoming rallies for competitions modal - only when needed
-  const { data: upcomingRallies = [], isLoading: isLoadingRallies } = usePublicUpcomingRallies(10)
-
-  // Fix hydration issues
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  // UPDATED: Only close modal when user actually becomes logged in (not on failed attempts)
   useEffect(() => {
-    // Only act when user state actually changes from null to user (successful login)
-    if (user && !wasLoggedIn && showAuthModal) {
-      setShowAuthModal(false)
-      setAuthView('login')
-      setAttemptCount(0)
+    if (authLoading || !isMounted) return
+
+    const handleErrorFromURL = () => {
+      const params = new URLSearchParams(window.location.search)
+      const errorType = params.get('error')
       
-      // Show success toast
-      showToast({
-        type: 'success',
-        message: `Tere tulemast, ${user.name}! Oled edukalt sisse logitud.`,
-        duration: 4000
-      })
-      
-      setWasLoggedIn(true)
-    } else if (!user && wasLoggedIn) {
-      // User logged out
-      setWasLoggedIn(false)
-    } else if (user && !wasLoggedIn) {
-      // User was already logged in on page load
-      setWasLoggedIn(true)
+      if (errorType === 'not_approved') {
+        showAuthError('Teie konto ootab kinnitust. Palun proovige hiljem uuesti.')
+        setShowAuthModal(true)
+        window.history.replaceState({}, '', '/')
+      } else if (errorType === 'auth_failed') {
+        showAuthError('Sisselogimine ebaõnnestus. Palun proovige uuesti.')
+        setShowAuthModal(true)
+        window.history.replaceState({}, '', '/')
+      }
     }
-  }, [user, wasLoggedIn, showAuthModal, showToast])
 
-  // Memoized event handlers to prevent unnecessary re-renders
+    if (!user) {
+      handleErrorFromURL()
+    }
+  }, [user, authLoading, isMounted, showAuthError])
+
+  const isAnyModalOpen = useModalState(isCompetitionsModalOpen, isEdetabelModalOpen, showAuthModal, isChampionshipModalOpen)
+  const blurClasses = isAnyModalOpen ? 'blur-md transition-all duration-300' : ''
+
   const handleOpenAuth = useCallback(() => {
+    setAuthView('login')
     setShowAuthModal(true)
-    setAttemptCount(0) // Reset attempt count when opening modal
   }, [])
 
-  const handleCloseAuth = useCallback(() => {
-    setShowAuthModal(false)
-    setAuthView('login') // Reset to login when closing
-    setAttemptCount(0) // Reset attempt count
-  }, [])
+  const handleLogout = useCallback(async () => {
+    setIsLoggingOut(true)
+    await logout()
+    setIsLoggingOut(false)
+  }, [logout])
 
-  // UPDATED: Don't close modal here, let useEffect handle it when user state changes
-  const handleLoginSuccess = useCallback(() => {
-    // Modal will be closed by the useEffect when user changes
-    // Success toast will also be shown there
-  }, [])
-
-  const handleLoginError = useCallback((error: string) => {
-    const currentAttempt = attemptCount + 1
-    setAttemptCount(currentAttempt)
-    
-    // Show error as toast notification on screen instead of in modal
-    showAuthError(error, currentAttempt, () => {
-      setAuthView('forgot-password')
-    })
-  }, [attemptCount, showAuthError])
-
-  const handleRegisterSuccess = useCallback((message: string) => {
-    showToast({
-      type: 'success',
-      message,
-      duration: 6000
-    })
-    setAuthView('login') // Switch to login after successful registration
-  }, [showToast])
-
-  const handleRegisterError = useCallback((error: string) => {
-    showToast({
-      type: 'error',
-      message: error,
-      duration: 5000
-    })
-  }, [showToast])
-
-  const handleDashboard = useCallback(() => {
-    if (user) {
+  const handleGoToDashboard = useCallback(() => {
+    if (user?.role === 'admin') {
+      router.push('/admin-dashboard')
+    } else {
       router.push('/user-dashboard')
     }
   }, [user, router])
 
-  const handleLogout = useCallback(async () => {
-    setIsLoggingOut(true)
-    
-    try {
-      await logout()
-      
-      showToast({
-        type: 'info',
-        message: 'Oled edukalt välja logitud.',
-        duration: 3000
-      })
-      
-      setTimeout(() => {
-        window.location.href = '/'
-      }, 100)
-      
-    } catch (error) {
-      console.error('❌ Logout error:', error)
-      showToast({
-        type: 'error',
-        message: 'Väljalogimisel tekkis viga. Proovime uuesti...',
-        duration: 3000
-      })
-      window.location.href = '/'
-    }
-  }, [logout, showToast])
+  const handleLoginSuccess = useCallback(() => {
+    setShowAuthModal(false)
+    showToast({ message: 'Sisselogimine õnnestus!', type: 'success' })
+    router.push(user?.role === 'admin' ? '/admin-dashboard' : '/user-dashboard')
+  }, [user, router, showToast])
 
-  const handleOpenCompetitions = useCallback(() => {
-    setIsCompetitionsModalOpen(true)
+  const handleRegisterSuccess = useCallback(() => {
+    setShowAuthModal(false)
+    setShowVerification(true)
   }, [])
 
-  const handleOpenEdetabel = useCallback(() => {
-    setIsEdetabelModalOpen(true)
-  }, [])
+  const handleRegisterError = useCallback((error: string) => {
+    showAuthError(error)
+  }, [showAuthError])
 
-  // Simple loading state to prevent hydration issues
   if (!isMounted) {
     return null
   }
 
-  // Memoized blur classes for performance
-  const blurClasses = isAnyModalOpen 
-    ? 'pointer-events-none opacity-75 blur-sm transition-all duration-300' 
-    : ''
-
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
-      {/* Header */}
-      <header className={`absolute top-0 left-0 right-0 z-30 ${blurClasses}`}>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-900/80 to-transparent backdrop-blur-2xl border-b border-white/5 shadow-2xl"></div>
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Futuristic Background Effects */}
+      <div className="fixed inset-0 z-0">
+        {/* Grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,64,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,0,64,0.03)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
         
-        <div className="relative max-w-7xl mx-auto px-6 py-6">
-          <div className="flex justify-between items-center">
+        {/* Gradient mesh */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-0 -left-4 w-96 h-96 bg-red-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse animation-delay-2000"></div>
+          <div className="absolute bottom-40 left-20 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse animation-delay-4000"></div>
+        </div>
+      </div>
+
+      {/* Navigation Header - Futuristic Style */}
+      <header className={`fixed top-0 left-0 right-0 z-50 ${blurClasses}`}>
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl border-b border-red-500/20"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-6">
+          <div className="flex justify-between items-center h-24 py-6">
+            {/* Logo with futuristic styling and pulsing effect */}
             <div className="flex items-center space-x-4">
-              <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/20 bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-sm p-1">
-                <div className="w-full h-full rounded-xl overflow-hidden relative">
-                  <Image
-                    src="/image/rally-cover.png"
-                    alt="LegendRix Rally"
-                    fill
-                    className="object-cover"
-                    priority
-                    sizes="56px"
-                  />
+              <div className="relative group">
+                <div className="absolute inset-0 bg-red-500 blur-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
+                <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-red-500/30 bg-gradient-to-br from-red-600/20 to-purple-600/20 backdrop-blur-sm p-1 group-hover:ring-red-500/50 transition-all neon-glow">
+                  <div className="w-full h-full rounded-xl overflow-hidden relative">
+                    <Image
+                      src="/image/rally-cover.png"
+                      alt="LegendRix Rally"
+                      fill
+                      className="object-cover"
+                      priority
+                      sizes="56px"
+                    />
+                  </div>
                 </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white drop-shadow-xl tracking-wide">LegendRix</h1>
-                <p className="text-sm text-blue-300/90 drop-shadow-lg font-medium -mt-1">E-Spordikeskus</p>
-              </div>
+              <h1 className="text-3xl font-black text-white font-['Orbitron'] tracking-wider">
+                LEGEND<span className="text-red-500">RIX</span>
+              </h1>
             </div>
 
-            <div className="flex items-center space-x-3">
+            {/* User Section with futuristic buttons */}
+            <div className="flex items-center space-x-4">
               {user ? (
                 <>
                   <button
-                    onClick={handleDashboard}
-                    className="group px-6 py-3 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/40 hover:to-blue-500/30 backdrop-blur-xl text-white rounded-2xl font-semibold transition-all duration-300 border border-blue-500/20 hover:border-blue-400/40 shadow-xl hover:shadow-blue-500/20 hover:scale-105"
+                    onClick={handleGoToDashboard}
+                    disabled={isLoggingOut}
+                    className="tech-border group px-6 py-3 text-white rounded-lg font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(255,0,64,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg group-hover:scale-110 transition-transform duration-200">🏠</span>
-                      <span>Töölaud</span>
+                    <div className="flex items-center space-x-3">
+                      <span className="text-lg neon-glow">⚡</span>
+                      <span className="font-['Orbitron']">TÖÖLAUD</span>
                     </div>
                   </button>
+                  
                   <button
                     onClick={handleLogout}
                     disabled={isLoggingOut}
-                    className="group px-6 py-3 bg-gradient-to-r from-red-600/20 to-red-500/10 hover:from-red-600/40 hover:to-red-500/30 backdrop-blur-xl text-white rounded-2xl font-semibold transition-all duration-300 border border-red-500/20 hover:border-red-400/40 shadow-xl hover:shadow-red-500/20 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    className="tech-border group px-6 py-3 text-white rounded-lg font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(139,0,255,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg group-hover:scale-110 transition-transform duration-200">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-lg">
                         {isLoggingOut ? '⏳' : '🚪'}
                       </span>
-                      <span>{isLoggingOut ? 'Välja logimas...' : 'Logi Välja'}</span>
+                      <span className="font-['Orbitron']">{isLoggingOut ? 'VÄLJUMINE...' : 'VÄLJU'}</span>
                     </div>
                   </button>
                 </>
               ) : (
                 <button
                   onClick={handleOpenAuth}
-                  className="group px-8 py-3 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl hover:from-white/20 hover:to-white/15 text-white rounded-2xl font-semibold transition-all duration-300 border border-white/15 hover:border-white/30 shadow-xl hover:shadow-white/10 hover:scale-105"
+                  className="tech-border group px-8 py-3 text-white rounded-lg font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,0,64,0.6)] scan-line overflow-hidden"
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="text-lg group-hover:scale-110 transition-transform duration-200">👤</span>
-                    <span>Logi sisse / Registreeru</span>
+                    <span className="text-lg neon-glow">👤</span>
+                    <span className="font-['Orbitron'] uppercase tracking-wide">Logi sisse</span>
                   </div>
                 </button>
               )}
@@ -255,8 +210,8 @@ function HomeContent() {
         </div>
       </header>
 
-      {/* Cover Photo */}
-      <div className={`relative w-full ${blurClasses}`} style={{ height: '35vh', marginTop: '100px' }}>
+      {/* Cover Photo with futuristic overlay */}
+      <div className={`relative w-full ${blurClasses}`} style={{ height: '40vh', marginTop: '96px' }}>
         <div className="absolute inset-0 overflow-hidden">
           <Image
             src="/cover-photo.png"
@@ -266,97 +221,93 @@ function HomeContent() {
             style={{ objectPosition: 'center 60%' }}
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/30 via-slate-900/20 to-slate-950/90"></div>
+          {/* Futuristic overlay effects */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black"></div>
+          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5"></div>
+          
+          {/* Scan lines effect */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-500/10 to-transparent h-32 animate-scan-line"></div>
+          </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 to-transparent"></div>
+        
+        {/* Bottom gradient */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent"></div>
       </div>
 
-      {/* Main Content */}
-      <main className={`relative z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950 ${blurClasses}`}>
+      {/* Main Content with futuristic styling */}
+      <main className={`relative z-10 bg-black ${blurClasses}`}>
         <div className="max-w-7xl mx-auto px-6 py-20">
-          {user && (
-            <div className="text-center mb-12">
-              <h3 className="text-3xl font-bold text-white mb-4 drop-shadow-xl">
-                Tere tulemast, {user.name}!
-              </h3>
-              <p className="text-xl text-slate-300 drop-shadow-lg">
-                Valmis uuteks väljakutseteks? Vaadake meie uusimaid võistlusi ja alustage oma rallikarjääri!
-              </p>
-            </div>
-          )}
-
+          {/* Sections with futuristic theme */}
           <HeroSection 
-            user={user}
-            onOpenAuth={handleOpenAuth}
-            onDashboard={handleDashboard}
+            onOpenAuth={handleOpenAuth} 
+            onOpenCompetitions={() => setIsCompetitionsModalOpen(true)} 
+            onOpenEdetabel={() => setIsEdetabelModalOpen(true)} 
           />
-
-          <FeaturesSection
-            onOpenCompetitions={handleOpenCompetitions}
-            showDynamicData={true}
-            showEdetabelModal={true}
+          
+          <SectionDivider variant="z-pattern" />
+          
+          <FeaturesSection 
+            onOpenCompetitions={() => setIsCompetitionsModalOpen(true)}
+            onOpenEdetabel={() => setIsEdetabelModalOpen(true)}
           />
-
+          
+          <SectionDivider variant="mixed" />
+          
           <SupportersSection />
+          
+          <SectionDivider variant="l-corners" />
+          
           <SocialMediaSection />
         </div>
       </main>
 
-      {/* CLEAN AUTH MODAL - No error display inside, errors shown as toasts */}
-      {!user && showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Footer */}
+      <Footer />
+
+      {/* Verification Message */}
+      {showVerification && (
+        <VerificationMessage />
+      )}
+
+      {/* Auth Modal with futuristic styling */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
-            onClick={handleCloseAuth}
+            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            onClick={() => setShowAuthModal(false)}
           ></div>
           
-          <div className="relative w-full max-w-md animate-fadeIn">
-            <div className="glass-panel rounded-xl p-8 shadow-2xl relative">
-              <button
-                onClick={handleCloseAuth}
-                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-200"
-              >
-                ✕
-              </button>
+          <div className="relative w-full max-w-md mx-4 tech-border rounded-2xl p-8 shadow-[0_0_50px_rgba(255,0,64,0.3)]">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
 
-              <div className="flex justify-center mb-8 animate-float">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-600/20 to-blue-900/20 border-2 border-blue-500/30 flex items-center justify-center shadow-lg overflow-hidden backdrop-blur-sm">
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden">
-                    <Image
-                      src="/image/rally-cover.png"
-                      alt="LegendRix Rally"
-                      fill
-                      className="object-cover"
-                      priority
-                    />
-                  </div>
-                </div>
-              </div>
+            <h2 className="text-2xl font-black text-white mb-8 text-center font-['Orbitron'] tracking-wide">
+              {authView === 'login' ? 'TERE TULEMAST TAGASI' : 
+               authView === 'register' ? 'LOO UUS KONTO' : 'PAROOLI TAASTAMINE'}
+            </h2>
 
-              <VerificationMessage />
-
-              <h2 className="text-center text-2xl font-bold text-white mb-6">
-                {authView === 'login' ? 'Tere tulemast tagasi' : 
-                 authView === 'register' ? 'Loo uus konto' : 'Parooli taastamine'}
-              </h2>
-
-              {authView === 'login' ? (
-                <LoginForm 
-                  onSwitchToRegister={() => setAuthView('register')}
-                  onSwitchToForgotPassword={() => setAuthView('forgot-password')}
-
-                  onLoginSuccess={handleLoginSuccess}
-                />
-              ) : authView === 'register' ? (
-                <RegisterForm 
-                  onSwitchToLogin={() => setAuthView('login')}
-                  onSuccess={handleRegisterSuccess}
-                  onError={handleRegisterError}
-                />
-              ) : (
-                <ForgotPasswordForm onBackToLogin={() => setAuthView('login')} />
-              )}
-            </div>
+            {authView === 'login' ? (
+              <LoginForm 
+                onSwitchToRegister={() => setAuthView('register')}
+                onSwitchToForgotPassword={() => setAuthView('forgot-password')}
+                onLoginSuccess={handleLoginSuccess}
+              />
+            ) : authView === 'register' ? (
+              <RegisterForm 
+                onSwitchToLogin={() => setAuthView('login')}
+                onSuccess={handleRegisterSuccess}
+                onError={handleRegisterError}
+              />
+            ) : (
+              <ForgotPasswordForm onBackToLogin={() => setAuthView('login')} />
+            )}
           </div>
         </div>
       )}
@@ -372,7 +323,7 @@ function HomeContent() {
       <EdetabelModal
         isOpen={isEdetabelModalOpen}
         onClose={() => setIsEdetabelModalOpen(false)}
-        onChampionshipModalToggle={setIsChampionshipModalOpen}
+        onChampionshipModalToggle={(isOpen) => setIsChampionshipModalOpen(isOpen)}
       />
     </div>
   )

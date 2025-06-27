@@ -1,0 +1,316 @@
+/* src/styles/futuristic-theme.css */
+
+/* Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
+/* Animations */
+@keyframes neon-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.5; }
+}
+
+/* Neon Glow Effect */
+.neon-glow {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* Tech Border Styling */
+.tech-border {
+  position: relative;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  border: 1px solid rgba(255, 0, 64, 0.2);
+}
+
+.tech-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, #FF0040, #8B00FF, #FF4500);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s;
+  border-radius: inherit;
+}
+
+.tech-border:hover::before {
+  opacity: 0.3;
+}
+
+/* Scan Line Effect */
+.scan-line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FF0040, transparent);
+  animation: scan-line 3s linear infinite;
+}
+
+/* Grid Background Pattern */
+.grid-pattern {
+  background-image: 
+    linear-gradient(rgba(255,0,64,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,0,64,0.03) 1px, transparent 1px);
+  background-size: 100px 100px;
+}
+
+/* Futuristic Button Base */
+.futuristic-btn {
+  position: relative;
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.futuristic-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Primary Button - Red Theme */
+.futuristic-btn-primary {
+  background: linear-gradient(135deg, #1a0a0a 0%, #2a1a1a 100%);
+  border: 1px solid rgba(255, 0, 64, 0.3);
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 0, 64, 0.2);
+}
+
+.futuristic-btn-primary:hover {
+  box-shadow: 0 0 40px rgba(255, 0, 64, 0.6);
+  border-color: rgba(255, 0, 64, 0.6);
+}
+
+/* Secondary Button - Purple Theme */
+.futuristic-btn-secondary {
+  background: linear-gradient(135deg, #1a0a1a 0%, #2a1a2a 100%);
+  border: 1px solid rgba(139, 0, 255, 0.3);
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(139, 0, 255, 0.2);
+}
+
+.futuristic-btn-secondary:hover {
+  box-shadow: 0 0 40px rgba(139, 0, 255, 0.6);
+  border-color: rgba(139, 0, 255, 0.6);
+}
+
+/* Accent Button - Orange Theme */
+.futuristic-btn-accent {
+  background: linear-gradient(135deg, #1a0a0a 0%, #2a1a0a 100%);
+  border: 1px solid rgba(255, 69, 0, 0.3);
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 69, 0, 0.2);
+}
+
+.futuristic-btn-accent:hover {
+  box-shadow: 0 0 40px rgba(255, 69, 0, 0.6);
+  border-color: rgba(255, 69, 0, 0.6);
+}
+
+/* Text Glow Effects */
+.text-glow-red {
+  text-shadow: 0 0 20px rgba(255, 0, 64, 0.8);
+}
+
+.text-glow-purple {
+  text-shadow: 0 0 20px rgba(139, 0, 255, 0.8);
+}
+
+.text-glow-orange {
+  text-shadow: 0 0 20px rgba(255, 69, 0, 0.8);
+}
+
+/* Orange-Red Glow for Supporters */
+.supporter-glow {
+  color: #FF0040;
+  text-shadow: 
+    0 0 8px rgba(255, 69, 0, 0.6),
+    0 0 16px rgba(255, 0, 0, 0.4);
+  animation: supporter-pulse 2s ease-in-out infinite;
+}
+
+@keyframes supporter-pulse {
+  0%, 100% { 
+    text-shadow: 
+      0 0 8px rgba(255, 69, 0, 0.6),
+      0 0 16px rgba(255, 0, 0, 0.4);
+  }
+  50% { 
+    text-shadow: 
+      0 0 10px rgba(255, 69, 0, 0.7),
+      0 0 20px rgba(255, 0, 0, 0.5);
+  }
+}
+
+/* Card Styling */
+.futuristic-card {
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  border: 1px solid rgba(255, 0, 64, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.futuristic-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 0, 64, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.futuristic-card:hover::before {
+  left: 100%;
+}
+
+/* Gradient Orb Animations */
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  mix-blend-mode: multiply;
+  filter: blur(60px);
+  animation: gradient-shift 4s ease-in-out infinite;
+}
+
+.gradient-orb-red {
+  background: #FF0040;
+}
+
+.gradient-orb-purple {
+  background: #8B00FF;
+}
+
+.gradient-orb-orange {
+  background: #FF4500;
+}
+
+/* Animation Delays */
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Noise Texture Overlay */
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Section Dividers */
+.section-divider {
+  position: relative;
+  width: 100%;
+  height: 1px;
+  margin: 3rem 0;
+  overflow: visible;
+}
+
+.section-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 0, 64, 0.2) 10%,
+    rgba(255, 0, 64, 0.4) 50%,
+    rgba(255, 0, 64, 0.2) 90%,
+    transparent 100%
+  );
+}
+
+/* Geometric accent shapes */
+.divider-accent {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+}
+
+.divider-accent-left {
+  left: 20%;
+}
+
+.divider-accent-center {
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+}
+
+.divider-accent-right {
+  right: 20%;
+}
+
+/* Z-shaped line pattern */
+.z-pattern {
+  width: 60px;
+  height: 30px;
+  position: relative;
+}
+
+.z-pattern::before,
+.z-pattern::after {
+  content: '';
+  position: absolute;
+  height: 1px;
+  background: rgba(255, 0, 64, 0.6);
+}
+
+.z-pattern::before {
+  width: 30px;
+  top: 0;
+  left: 0;
+}
+
+.z-pattern::after {
+  width: 30px;
+  bottom: 0;
+  right: 0;
+}
+
+.z-pattern-diagonal {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 30px;
+  background: rgba(255, 0, 64, 0.6);
+  transform: skewX(-45deg) translateX(-50%);
+}
+
+/* L-shaped corner accents */
+.l-corner {
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(255, 0, 64, 0.4);
+  border-right: none;
+  border-bottom: none;
+}
+
+.l-corner-right {
+  border: 1px solid rgba(255, 0, 64, 0.4);
+  border-left: none;
+  border-bottom: none;
+}
