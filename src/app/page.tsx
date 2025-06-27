@@ -101,11 +101,9 @@ function HomeContent() {
   }, [logout])
 
   const handleGoToDashboard = useCallback(() => {
-    if (user?.role === 'admin') {
-      router.push('/admin-dashboard')
-    } else {
+
       router.push('/user-dashboard')
-    }
+
   }, [user, router])
 
   const handleLoginSuccess = useCallback(() => {
