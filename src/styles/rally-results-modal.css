@@ -1,0 +1,59 @@
+/* src/styles/rally-results-modal.css */
+
+/* Tech border effect */
+.tech-border {
+  position: relative;
+  background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+}
+
+.tech-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(
+    45deg,
+    #ff0040,
+    #ff0040 20%,
+    #666 20%,
+    #666 40%,
+    #ff0040 40%,
+    #ff0040 60%,
+    #666 60%,
+    #666 80%,
+    #ff0040 80%
+  );
+  border-radius: 1rem;
+  z-index: -1;
+  animation: border-animation 3s linear infinite;
+}
+
+@keyframes border-animation {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+/* Custom scrollbar for modal */
+.custom-modal-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #ff0040, #666);
+  border-radius: 4px;
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #ff3366, #888);
+}
+
+/* Orbitron font import */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
