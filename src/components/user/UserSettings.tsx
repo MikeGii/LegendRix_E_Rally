@@ -1,4 +1,4 @@
-// src/components/user/UserSettings.tsx - REDESIGNED WITH FUTURISTIC BLACK-RED-GRAY THEME
+// src/components/user/UserSettings.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -6,6 +6,8 @@ import { useAuth } from '@/components/AuthProvider'
 import { ProfileTab } from './settings/ProfileTab'
 import { AccountTab } from './settings/AccountTab'
 import { PasswordTab } from './settings/PasswordTab'
+import { SectionDivider } from '@/components/landing/SectionDivider'
+import '@/styles/futuristic-theme.css'
 
 type SettingsSection = 'profile' | 'account' | 'password'
 
@@ -34,21 +36,33 @@ export function UserSettings() {
       icon: '👤',
       title: 'Profiil',
       description: 'Vaata oma ralli profiili',
-      color: 'red' as const
+      color: 'red' as const,
+      accentColor: 'text-red-500',
+      bgGradient: 'from-red-900/30 to-red-800/20',
+      borderColor: 'border-red-500/30',
+      hoverShadow: 'hover:shadow-[0_0_20px_rgba(255,0,64,0.3)]'
     },
     {
       id: 'account' as SettingsSection,
       icon: '⚙️',
       title: 'Kasutaja andmed',
       description: 'Muuda oma nime ja e-maili',
-      color: 'gray' as const
+      color: 'purple' as const,
+      accentColor: 'text-purple-500',
+      bgGradient: 'from-purple-900/30 to-purple-800/20',
+      borderColor: 'border-purple-500/30',
+      hoverShadow: 'hover:shadow-[0_0_20px_rgba(139,0,255,0.3)]'
     },
     {
       id: 'password' as SettingsSection,
       icon: '🔐',
       title: 'Parooli muutmine',
       description: 'Uuenda oma parooli',
-      color: 'gray' as const
+      color: 'orange' as const,
+      accentColor: 'text-orange-500',
+      bgGradient: 'from-orange-900/30 to-orange-800/20',
+      borderColor: 'border-orange-500/30',
+      hoverShadow: 'hover:shadow-[0_0_20px_rgba(255,69,0,0.3)]'
     }
   ]
 
@@ -70,8 +84,8 @@ export function UserSettings() {
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-gray-500/20 border-b-gray-500 rounded-full animate-spin" 
+            <div className="w-16 h-16 border-2 border-gray-700 border-t-red-500 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-16 h-16 border-2 border-gray-700 border-b-purple-500 rounded-full animate-spin" 
               style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
           </div>
           <p className="mt-4 text-gray-400 font-['Orbitron'] tracking-wider uppercase">Sätete laadimine...</p>
@@ -95,111 +109,120 @@ export function UserSettings() {
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 grid-pattern opacity-[0.02]"></div>
-        <div className="absolute top-20 left-20 w-96 h-96 bg-red-600/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-40 right-40 w-96 h-96 bg-gray-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-      </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-5xl font-black text-transparent bg-gradient-to-r from-red-400 via-white to-gray-400 bg-clip-text font-['Orbitron'] uppercase tracking-wider mb-4">
-            Kasutaja sätted
+    <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      {/* Page Header - Futuristic Design */}
+      <div className="relative bg-gradient-to-br from-gray-900/90 to-black backdrop-blur-xl rounded-2xl border border-red-500/20 overflow-hidden">
+        {/* Animated background pattern */}
+        <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
+        
+        {/* Gradient orbs for ambience */}
+        <div className="absolute top-0 right-0 w-64 h-64 gradient-orb gradient-orb-red opacity-20"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 gradient-orb gradient-orb-purple opacity-20"></div>
+        
+        <div className="relative z-10 p-8">
+          <h1 className="text-4xl font-black text-white font-['Orbitron'] uppercase tracking-wider mb-3">
+            <span className="text-glow-red">Kasutaja sätted</span>
           </h1>
-          <p className="text-xl text-gray-400 font-['Orbitron']">
+          <p className="text-gray-400 text-lg">
             Halda oma konto informatsiooni ja eelistusi
           </p>
-          <div className="h-px bg-gradient-to-r from-red-500/50 via-gray-500/30 to-transparent mt-4"></div>
         </div>
+      </div>
 
-        {/* Settings Grid */}
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <div className="tech-border rounded-2xl shadow-[0_0_20px_rgba(255,0,64,0.2)] bg-black/80 backdrop-blur-xl p-6 relative overflow-hidden">
-              <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
+      {/* Section Divider */}
+      <SectionDivider variant="z-pattern" />
+
+      {/* Settings Grid */}
+      <div className="grid lg:grid-cols-4 gap-6">
+        {/* Sidebar Navigation */}
+        <div className="lg:col-span-1">
+          <div className="relative bg-gradient-to-br from-gray-900/90 to-black backdrop-blur-xl rounded-2xl border border-red-500/20 overflow-hidden">
+            <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
+            
+            <div className="relative z-10 p-6">
+              <h2 className="text-lg font-bold text-white mb-6 font-['Orbitron'] uppercase tracking-wider">
+                <span className="text-red-500">▣</span> Sätted
+              </h2>
               
-              <h2 className="text-lg font-bold text-white mb-6 font-['Orbitron'] uppercase tracking-wider relative z-10">Sätted</h2>
-              
-              <nav className="space-y-2 relative z-10">
-                {settingsSections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`
-                      w-full text-left p-4 rounded-xl border transition-all duration-300 group relative overflow-hidden
-                      ${activeSection === section.id
-                        ? 'bg-gradient-to-r from-red-900/30 to-gray-900/20 border-red-500/50 text-red-400 shadow-[0_0_15px_rgba(255,0,64,0.3)]'
-                        : 'hover:bg-gray-900/50 text-gray-400 hover:text-red-400 border-gray-800 hover:border-red-500/30'
-                      }
-                    `}
-                  >
-                    {/* Hover sweep effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                    
-                    <div className="relative z-10 flex items-center space-x-3">
-                      <span className="text-xl group-hover:scale-110 transition-transform duration-200">
-                        {section.icon}
-                      </span>
-                      <div>
-                        <p className="font-bold font-['Orbitron'] uppercase tracking-wider text-sm">{section.title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{section.description}</p>
+              <nav className="space-y-2">
+                {settingsSections.map((section) => {
+                  const isActive = activeSection === section.id
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => setActiveSection(section.id)}
+                      className={`
+                        w-full text-left p-4 rounded-xl border transition-all duration-300 
+                        group relative overflow-hidden tech-border
+                        ${isActive
+                          ? `bg-gradient-to-r ${section.bgGradient} ${section.borderColor} ${section.hoverShadow}`
+                          : 'bg-gray-900/30 border-gray-700/50 hover:border-gray-600/50'
+                        }
+                      `}
+                    >
+                      <div className="relative z-10 flex items-start space-x-3">
+                        <span className={`text-2xl ${isActive ? section.accentColor : 'text-gray-500'}`}>
+                          {section.icon}
+                        </span>
+                        <div className="flex-1">
+                          <p className={`font-bold text-sm font-['Orbitron'] uppercase tracking-wider ${
+                            isActive ? 'text-white' : 'text-gray-300'
+                          }`}>
+                            {section.title}
+                          </p>
+                          <p className={`text-xs mt-1 ${
+                            isActive ? 'text-gray-300' : 'text-gray-500'
+                          }`}>
+                            {section.description}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    
-                    {activeSection === section.id && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(255,0,64,0.8)]"></div>
-                      </div>
-                    )}
-                  </button>
-                ))}
+                      
+                      {isActive && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          <div className={`w-2 h-2 rounded-full ${section.accentColor.replace('text-', 'bg-')} animate-pulse`}></div>
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
               </nav>
-              
-              {/* Bottom gradient line */}
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent"></div>
             </div>
           </div>
+        </div>
 
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <div className="tech-border rounded-2xl shadow-[0_0_30px_rgba(255,0,64,0.2)] bg-black/80 backdrop-blur-xl p-8 relative overflow-hidden">
-              <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
-              
-              {/* Message Display */}
-              {message && (
-                <div className={`
-                  relative z-10 mb-6 p-4 rounded-xl border backdrop-blur-sm
-                  ${message.type === 'success'
-                    ? 'bg-gradient-to-r from-green-900/30 to-green-800/20 border-green-500/30 text-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]'
-                    : message.type === 'warning'
-                    ? 'bg-gradient-to-r from-yellow-900/30 to-yellow-800/20 border-yellow-500/30 text-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.3)]'
-                    : 'bg-gradient-to-r from-red-900/30 to-red-800/20 border-red-500/30 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.3)]'
-                  }
-                `}>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-xl">
-                      {message.type === 'success' ? '✅' : 
-                       message.type === 'warning' ? '⚠️' : '❌'}
-                    </span>
-                    <div className="flex-1">
-                      <p className="font-bold font-['Orbitron'] uppercase tracking-wider text-sm mb-1">
-                        {message.type === 'success' ? 'EDUKAS' : 
-                         message.type === 'warning' ? 'HOIATUS' : 'VIGA'}
-                      </p>
-                      <p className="text-sm">{message.text}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Active Section Content */}
-              <div className="relative z-10">
-                {renderActiveSection()}
+        {/* Main Content Area */}
+        <div className="lg:col-span-3">
+          {/* Message Alert */}
+          {message && (
+            <div className={`
+              relative overflow-hidden rounded-xl p-4 mb-6 backdrop-blur-xl border
+              ${message.type === 'success' 
+                ? 'bg-gradient-to-r from-green-900/20 to-green-800/10 border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.3)]'
+                : message.type === 'error'
+                  ? 'bg-gradient-to-r from-red-900/20 to-red-800/10 border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.3)]'
+                  : 'bg-gradient-to-r from-orange-900/20 to-orange-800/10 border-orange-500/30 shadow-[0_0_20px_rgba(255,69,0,0.3)]'
+              }
+            `}>
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl">
+                  {message.type === 'success' ? '✅' : message.type === 'error' ? '❌' : '⚠️'}
+                </span>
+                <p className={`font-medium ${
+                  message.type === 'success' ? 'text-green-400' : message.type === 'error' ? 'text-red-400' : 'text-orange-400'
+                }`}>
+                  {message.text}
+                </p>
               </div>
+            </div>
+          )}
+
+          {/* Active Section Content */}
+          <div className="relative bg-gradient-to-br from-gray-900/90 to-black backdrop-blur-xl rounded-2xl border border-gray-700/20 overflow-hidden">
+            <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
+            
+            <div className="relative z-10 p-8">
+              {renderActiveSection()}
             </div>
           </div>
         </div>
