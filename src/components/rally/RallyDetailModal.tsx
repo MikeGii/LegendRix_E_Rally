@@ -398,8 +398,26 @@ export function RallyDetailModal({ rally, onClose, onRegister, userRegistration:
                         return acc
                       }, {} as Record<string, RallyRegistration[]>)
 
-                      // Sort classes alphabetically
-                      const sortedClasses = Object.keys(participantsByClass).sort()
+                      // Custom class order: Pro -> Semi-Pro -> Juunior -> others
+                      const classOrder = ['Pro', 'Semi-Pro', 'Juunior']
+                      const sortedClasses = Object.keys(participantsByClass).sort((a, b) => {
+                        const aIndex = classOrder.indexOf(a)
+                        const bIndex = classOrder.indexOf(b)
+                        
+                        // If both are in the priority list, sort by their index
+                        if (aIndex !== -1 && bIndex !== -1) {
+                          return aIndex - bIndex
+                        }
+                        
+                        // If only a is in priority list, it comes first
+                        if (aIndex !== -1) return -1
+                        
+                        // If only b is in priority list, it comes first
+                        if (bIndex !== -1) return 1
+                        
+                        // Otherwise sort alphabetically
+                        return a.localeCompare(b, 'et-EE')
+                      })
 
                       return sortedClasses.map((className, classIndex) => {
                         const classParticipants = participantsByClass[className]
