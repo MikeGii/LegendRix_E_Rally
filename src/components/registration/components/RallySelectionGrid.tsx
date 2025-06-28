@@ -89,6 +89,17 @@ export function RallySelectionGrid({ rallies, onRallySelect, isLoading }: RallyS
                   </span>
                 </div>
                 
+                {/* Competition Time */}
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Võistluse kellaaeg:</span>
+                  <span className="text-white font-medium font-['Orbitron']">
+                    {new Date(rally.competition_date).toLocaleTimeString('et-EE', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+                
                 {/* Registration Deadline */}
                 <div className="flex items-center justify-between">
                   <span className="text-gray-500">Reg. tähtaeg:</span>
@@ -96,6 +107,17 @@ export function RallySelectionGrid({ rallies, onRallySelect, isLoading }: RallyS
                     {new Date(rally.registration_deadline).toLocaleDateString('et-EE', {
                       day: 'numeric',
                       month: 'short'
+                    })}
+                  </span>
+                </div>
+                
+                {/* Registration Time */}
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Reg. kellaaeg:</span>
+                  <span className="text-white font-medium font-['Orbitron']">
+                    {new Date(rally.registration_deadline).toLocaleTimeString('et-EE', {
+                      hour: '2-digit',
+                      minute: '2-digit'
                     })}
                   </span>
                 </div>
