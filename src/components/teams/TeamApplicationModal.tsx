@@ -81,11 +81,13 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
     }
   }, [])
 
+  const memberPercentage = (team.members_count / team.max_members_count) * 100
+
   return (
     <>
       {/* Backdrop with high z-index */}
       <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/80 backdrop-blur-md"
         style={{ zIndex: 9998 }}
         onClick={onClose}
       />
@@ -96,89 +98,138 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
         style={{ zIndex: 9999 }}
       >
         <div 
-          className="bg-slate-800 rounded-2xl border border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-hidden"
+          className="relative bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-red-500/30 shadow-[0_0_40px_rgba(255,0,64,0.3)] max-w-2xl w-full overflow-hidden"
+          style={{ maxHeight: '80vh', height: 'auto' }}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Animated background pattern */}
+          <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
+          
+          {/* Gradient orbs for ambience */}
+          <div className="absolute top-0 right-0 w-48 h-48 gradient-orb gradient-orb-red opacity-10"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 gradient-orb gradient-orb-purple opacity-10"></div>
+
           {/* Header */}
-          <div className="relative p-6 border-b border-slate-700">
-            <h2 className="text-2xl font-bold text-white pr-12">
-              Kandideeri tiimi: {team.team_name}
+          <div className="relative p-6 border-b border-red-500/20 bg-black/50">
+            <h2 className="text-2xl font-black text-white pr-12 font-['Orbitron'] uppercase tracking-wider">
+              <span className="text-red-500">▣</span> Kandideeri tiimi: {team.team_name}
             </h2>
             
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-6 right-6 p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              className="absolute top-6 right-6 p-2 tech-border rounded-lg transition-all duration-200 hover:shadow-[0_0_15px_rgba(255,0,64,0.5)]"
               aria-label="Sulge"
             >
-              <svg className="w-6 h-6 text-slate-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-red-400 hover:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-            {/* Team Info */}
-            <div className="mb-6 bg-slate-900/50 rounded-xl p-4 border border-slate-700/50">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">Mäng</p>
-                  <p className="text-white font-medium">{team.game?.name || 'N/A'}</p>
+          <div 
+            className="relative z-10 p-6 overflow-y-auto custom-modal-scrollbar"
+            style={{ 
+              maxHeight: 'calc(80vh - 144px)', // 80vh minus header (72px) and footer (72px)
+              minHeight: '200px',
+              overflowY: 'auto'
+            }}
+          >
+            {/* Team Info Card */}
+            <div className="mb-6 tech-border rounded-xl p-6 bg-gradient-to-br from-gray-900/50 to-black/50">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="flex items-start gap-3">
+                  <span className="text-purple-500 text-xl">◈</span>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider font-['Orbitron']">Mäng</p>
+                    <p className="text-white font-bold mt-1">{team.game?.name || 'N/A'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">Klass</p>
-                  <p className="text-white font-medium">{team.game_class?.name || 'N/A'}</p>
+                <div className="flex items-start gap-3">
+                  <span className="text-orange-500 text-xl">◆</span>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider font-['Orbitron']">Klass</p>
+                    <p className="text-white font-bold mt-1">{team.game_class?.name || 'N/A'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">Tiimi sõiduk</p>
-                  <p className="text-white font-medium">{team.vehicle?.vehicle_name || 'Määramata'}</p>
+                <div className="flex items-start gap-3">
+                  <span className="text-red-500 text-xl">⬢</span>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider font-['Orbitron']">Tiimi sõiduk</p>
+                    <p className="text-white font-bold mt-1">{team.vehicle?.vehicle_name || 'Määramata'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-slate-400 mb-1">Kohti täidetud</p>
-                  <p className="text-white font-medium">{team.members_count} / {team.max_members_count}</p>
+                <div className="flex items-start gap-3">
+                  <span className="text-purple-500 text-xl">◉</span>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider font-['Orbitron']">Kohti täidetud</p>
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-2xl font-bold text-white font-['Orbitron']">{team.members_count}</span>
+                        <span className="text-gray-500">/</span>
+                        <span className="text-lg text-gray-400 font-['Orbitron']">{team.max_members_count}</span>
+                      </div>
+                      <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-500 ${
+                            memberPercentage >= 100 ? 'bg-red-500' : memberPercentage > 75 ? 'bg-orange-500' : 'bg-green-500'
+                          }`}
+                          style={{ width: `${memberPercentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Members List */}
             <div>
-              <h3 className="text-lg font-semibold text-white mb-4">Tiimi liikmed</h3>
+              <h3 className="text-lg font-bold text-white mb-4 font-['Orbitron'] uppercase tracking-wider flex items-center gap-3">
+                <span className="text-red-500">◈</span> Tiimi liikmed
+              </h3>
               
               {isLoading ? (
                 <div className="flex justify-center py-8">
-                  <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin"></div>
+                  <div className="w-8 h-8 border-2 border-gray-700 border-t-red-500 rounded-full animate-spin"></div>
                 </div>
               ) : members.length === 0 ? (
-                <p className="text-slate-400 text-center py-8">Tiimi liikmete info pole saadaval</p>
+                <p className="text-gray-400 text-center py-8 font-['Orbitron'] uppercase tracking-wider">
+                  Tiimi liikmete info pole saadaval
+                </p>
               ) : (
                 <div className="space-y-3">
                   {members.map((member, index) => (
                     <div
                       key={member.user_id}
-                      className={`flex items-center space-x-3 p-4 rounded-lg border ${
+                      className={`relative tech-border rounded-lg p-4 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,0,64,0.2)] ${
                         member.role === 'manager'
-                          ? 'bg-amber-500/10 border-amber-500/30'
-                          : 'bg-slate-900/50 border-slate-700/50'
+                          ? 'bg-gradient-to-r from-red-900/20 to-black/20'
+                          : 'bg-gradient-to-r from-gray-900/20 to-black/20'
                       }`}
                     >
-                      {/* Icon */}
-                      <div className="flex-shrink-0">
-                        {member.role === 'manager' ? (
-                          <span className="text-2xl">👑</span>
-                        ) : (
-                          <span className="text-2xl">🏁</span>
-                        )}
-                      </div>
-                      
-                      {/* Member Info */}
-                      <div className="flex-1">
-                        <p className="text-white font-medium">
-                          {member.user.player_name}
-                        </p>
-                        <p className="text-sm text-slate-400">
-                          {member.role === 'manager' ? 'Tiimi pealik' : 'Liige'}
-                        </p>
+                      <div className="flex items-center space-x-4">
+                        {/* Member number */}
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-['Orbitron'] font-bold ${
+                          member.role === 'manager'
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            : 'bg-gray-700/30 text-gray-400 border border-gray-600/30'
+                        }`}>
+                          {member.role === 'manager' ? '★' : index}
+                        </div>
+                        
+                        {/* Member info */}
+                        <div className="flex-1">
+                          <p className="font-medium text-white">
+                            {member.user.player_name || member.user.name}
+                          </p>
+                          {member.role === 'manager' && (
+                            <p className="text-xs text-red-400 mt-1 font-['Orbitron'] uppercase tracking-wider">
+                              Tiimi pealik
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -186,79 +237,50 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
               )}
             </div>
 
-            {/* Rules Section */}
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Taotluse reeglid</h3>
-              
-              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50">
-                <p className="text-sm text-slate-300 mb-4 font-medium">
-                  Liitudes tiimiga olen kohustatud järgima võistluse registreerimisvormi reegleid lisaks siin välja toodud reeglitele:
-                </p>
-                
-                <ol className="space-y-3 text-sm text-slate-300 list-decimal list-inside">
-                  <li>
-                    Iga tiimi liige on kohustatud võistlustel kasutama tiimile määratud sõidukit. Vastasel juhul tiimiliikme tulemused ei lähe arvesse ja korduva rikkumise korral tiimiliige kustutatakse tiimi nimekirjast administraatorite poolt.
-                  </li>
-                  <li>
-                    Iga tiimi liige on kohustatud osalema tiimi poolt määratud võistlusklassis. Hooaja kestel ei ole lubatud vahetada võidusõidu klassi.
-                  </li>
-                  <li>
-                    Tiimi manageerijal on tiimi üle otsustav roll.
-                  </li>
-                  <li>
-                    Iga tiimi liige peab kinni pidama mängu heast tavast ja peab arvestama enda tiimi manageerija korraldusi.
-                  </li>
-                  <li>
-                    Kui manageerija korraldused või tegevuskava tundub pahatahtlik või ei arvestata head tava siis palun ühendust võtta administraatoriga.
-                  </li>
-                </ol>
-                
-                {/* Checkbox */}
-                <div className="mt-6 flex items-start space-x-3">
-                  <input
-                    type="checkbox"
-                    id="accept-rules"
-                    checked={rulesAccepted}
-                    onChange={(e) => setRulesAccepted(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-slate-600 bg-slate-700/50 text-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-0 focus:ring-offset-transparent cursor-pointer"
-                  />
-                  <label 
-                    htmlFor="accept-rules" 
-                    className="text-sm text-slate-300 cursor-pointer select-none"
-                  >
-                    Kinnitan, et olen tutvunud reeglitega ja nõustun nendega
-                  </label>
-                </div>
-              </div>
+            {/* Rules Checkbox */}
+            <div className="mt-8 tech-border rounded-lg p-4 bg-gradient-to-r from-gray-900/30 to-black/30">
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={rulesAccepted}
+                  onChange={(e) => setRulesAccepted(e.target.checked)}
+                  className="w-5 h-5 mt-0.5 bg-gray-800 border-2 border-red-500/50 rounded focus:ring-2 focus:ring-red-500 focus:ring-offset-0 checked:bg-red-500 checked:border-red-500 transition-all duration-200"
+                />
+                <span className="text-sm text-gray-300 leading-relaxed group-hover:text-white transition-colors">
+                  Kinnitan, et olen tutvunud võistluste reeglitega ja nõustun nendega. 
+                  Mõistan, et tiimi kandideerimine ei garanteeri automaatset vastuvõtmist.
+                  <br /><br />
+                  <strong className="text-red-400">Reeglid:</strong>
+                  <br />• Tiimi liikmed peavad kasutama tiimile määratud sõidukit
+                  <br />• Tiimi liikmed peavad võistlema tiimile määratud klassis
+                  <br />• Tiimi suurus on piiratud vastavalt võistluste tingimustele
+                  <br />• Tiimi pealik otsustab tiimi tegevus üle
+                  <br />• Kõik liikmed peavad järgima võistluse reegleid ja ausat mängu põhimõtteid
+                </span>
+              </label>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-slate-700 bg-slate-900/50">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-400">
-                Kandideerides saadad tiimi pealikule taotluse
-              </p>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={onClose}
-                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200"
-                >
-                  Tühista
-                </button>
-                <button
-                  onClick={() => onApply(team.id)}
-                  disabled={!rulesAccepted}
-                  className={`px-6 py-3 text-white rounded-xl font-medium transition-all duration-200 shadow-lg ${
-                    rulesAccepted 
-                      ? 'bg-green-600 hover:bg-green-700 shadow-green-500/25 cursor-pointer' 
-                      : 'bg-slate-600 cursor-not-allowed opacity-50'
-                  }`}
-                  title={!rulesAccepted ? 'Palun nõustu reeglitega' : ''}
-                >
-                  Saada taotlus
-                </button>
-              </div>
+          <div className="relative p-6 border-t border-red-500/20 bg-black/50">
+            <div className="flex items-center justify-end space-x-4">
+              <button
+                onClick={onClose}
+                className="px-6 py-3 tech-border rounded-xl font-['Orbitron'] uppercase tracking-wider text-sm text-gray-300 hover:text-white transition-all duration-200 hover:shadow-[0_0_15px_rgba(255,0,64,0.3)]"
+              >
+                Tühista
+              </button>
+              <button
+                onClick={() => onApply(team.id)}
+                disabled={!rulesAccepted}
+                className={`px-6 py-3 rounded-xl font-['Orbitron'] uppercase tracking-wider text-sm font-bold transition-all duration-200 ${
+                  rulesAccepted
+                    ? 'futuristic-btn futuristic-btn-primary'
+                    : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
+                }`}
+              >
+                Kandideeri
+              </button>
             </div>
           </div>
         </div>
