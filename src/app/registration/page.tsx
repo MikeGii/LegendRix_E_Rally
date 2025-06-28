@@ -1,7 +1,7 @@
 'use client'
 
 import { ProtectedRoute } from '@/components/ProtectedRoute'
-import { RallyRegistration } from '@/components/registration/RallyRegistration'
+import { RallyRegistration } from '@/components/RallyRegistration'
 import { DashboardLayout } from '@/components/DashboardLayout'
 
 export default function RegistrationPage() {
