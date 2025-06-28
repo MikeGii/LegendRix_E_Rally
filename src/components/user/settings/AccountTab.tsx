@@ -114,47 +114,50 @@ export function AccountTab({ onMessage }: AccountTabProps) {
 
   return (
     <div>
-      <h3 className="text-2xl font-bold text-white mb-6">Kasutaja andmed</h3>
+      <h3 className="text-2xl font-black text-white mb-8 font-['Orbitron'] uppercase tracking-wider">
+        <span className="text-purple-500">◈</span> Kasutaja andmed
+      </h3>
+      
       <form onSubmit={accountForm.handleSubmit(handleAccountUpdate)} className="space-y-6">
         {/* Name Field */}
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">
-            Täisnimi
+          <label htmlFor="name" className="flex items-center gap-2 text-xs font-bold text-gray-400 mb-2 font-['Orbitron'] uppercase tracking-wider">
+            <span className="text-red-500">⬢</span> Täisnimi
           </label>
           <input
             {...accountForm.register('name', { required: 'Nimi on kohustuslik' })}
             type="text"
-            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-black/50 border border-red-500/30 rounded-xl text-white placeholder-gray-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all duration-200 font-medium"
             placeholder="Sisesta oma täisnimi"
           />
           {accountForm.formState.errors.name && (
-            <p className="text-red-400 text-sm mt-1">{accountForm.formState.errors.name.message}</p>
+            <p className="text-red-400 text-sm mt-2 font-['Orbitron']">{accountForm.formState.errors.name.message}</p>
           )}
         </div>
 
         {/* Player Name Field */}
         <div>
-          <label htmlFor="player_name" className="block text-sm font-medium text-slate-300 mb-2">
-            Mängijanimi
+          <label htmlFor="player_name" className="flex items-center gap-2 text-xs font-bold text-gray-400 mb-2 font-['Orbitron'] uppercase tracking-wider">
+            <span className="text-purple-500">◉</span> Mängijanimi
           </label>
           <input
             {...accountForm.register('player_name', { required: 'Mängijanimi on kohustuslik' })}
             type="text"
-            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-black/50 border border-purple-500/30 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 font-medium"
             placeholder="Sisesta oma mängijanimi"
           />
           {accountForm.formState.errors.player_name && (
-            <p className="text-red-400 text-sm mt-1">{accountForm.formState.errors.player_name.message}</p>
+            <p className="text-red-400 text-sm mt-2 font-['Orbitron']">{accountForm.formState.errors.player_name.message}</p>
           )}
-          <p className="text-xs text-slate-500 mt-1">
-            See nimi kuvatakse avalikult ralli tulemustes ja tabelites.
+          <p className="text-xs text-gray-500 mt-2 font-['Orbitron'] uppercase tracking-wider">
+            See nimi kuvatakse avalikult ralli tulemustes ja tabelites
           </p>
         </div>
 
         {/* Email Field */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
-            E-mail
+          <label htmlFor="email" className="flex items-center gap-2 text-xs font-bold text-gray-400 mb-2 font-['Orbitron'] uppercase tracking-wider">
+            <span className="text-orange-500">◆</span> E-mail
           </label>
           <input
             {...accountForm.register('email', { 
@@ -165,31 +168,51 @@ export function AccountTab({ onMessage }: AccountTabProps) {
               }
             })}
             type="email"
-            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-black/50 border border-orange-500/30 rounded-xl text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200 font-medium"
             placeholder="Sisesta oma e-maili aadress"
           />
           {accountForm.formState.errors.email && (
-            <p className="text-red-400 text-sm mt-1">{accountForm.formState.errors.email.message}</p>
+            <p className="text-red-400 text-sm mt-2 font-['Orbitron']">{accountForm.formState.errors.email.message}</p>
           )}
-          <p className="text-xs text-slate-500 mt-1">
-            E-maili muutmisel saadetakse kinnituskiri.
+          <p className="text-xs text-gray-500 mt-2 font-['Orbitron'] uppercase tracking-wider">
+            E-maili muutmisel saadetakse kinnituskiri
           </p>
         </div>
 
+        {/* Info Card */}
+        <div className="tech-border rounded-xl p-6 bg-gradient-to-br from-gray-900/50 to-black/50">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl text-purple-500">ℹ️</span>
+            <div>
+              <h4 className="font-bold text-white mb-2 font-['Orbitron'] uppercase tracking-wider">
+                Kasutajaandmete muutmine
+              </h4>
+              <ul className="space-y-1 text-sm text-gray-400">
+                <li>• Nime muudatused rakenduvad kohe</li>
+                <li>• Mängijanime muudatused mõjutavad kõiki tulemusi</li>
+                <li>• E-maili muutmisel pead kinnitama uue aadressi</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         {/* Update Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-4">
           <button
             type="submit"
             disabled={loading}
-            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-blue-500/25"
+            className="px-8 py-3 futuristic-btn futuristic-btn-secondary rounded-xl font-['Orbitron'] uppercase tracking-wider text-sm font-bold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 <span>Salvestamine...</span>
               </div>
             ) : (
-              'Salvesta muudatused'
+              <span className="flex items-center gap-2">
+                <span>◈</span>
+                <span>Salvesta muudatused</span>
+              </span>
             )}
           </button>
         </div>

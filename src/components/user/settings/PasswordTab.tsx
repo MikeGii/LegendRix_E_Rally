@@ -63,9 +63,9 @@ const calculatePasswordStrength = (password: string): number => {
 }
 
 const getPasswordStrengthColor = (strength: number): string => {
-  if (strength <= 2) return 'bg-red-500'
-  if (strength <= 4) return 'bg-yellow-500'
-  return 'bg-green-500'
+  if (strength <= 2) return 'from-red-500 to-red-600'
+  if (strength <= 4) return 'from-orange-500 to-orange-600'
+  return 'from-green-500 to-green-600'
 }
 
 const getPasswordStrengthText = (strength: number): string => {
@@ -262,7 +262,9 @@ export function PasswordTab({ onMessage }: PasswordTabProps) {
 
   return (
     <div>
-      <h3 className="text-2xl font-bold text-white mb-6">Parooli muutmine</h3>
+      <h3 className="text-2xl font-black text-white mb-8 font-['Orbitron'] uppercase tracking-wider">
+        <span className="text-orange-500">◆</span> Parooli muutmine
+      </h3>
       
       <form onSubmit={passwordForm.handleSubmit(handlePasswordUpdate)} className="space-y-6">
         {/* Hidden username field for accessibility and security */}
@@ -278,8 +280,8 @@ export function PasswordTab({ onMessage }: PasswordTabProps) {
 
         {/* Current Password Field */}
         <div>
-          <label htmlFor="currentPassword" className="block text-sm font-medium text-slate-300 mb-2">
-            Praegune parool
+          <label htmlFor="currentPassword" className="flex items-center gap-2 text-xs font-bold text-gray-400 mb-2 font-['Orbitron'] uppercase tracking-wider">
+            <span className="text-red-500">🔐</span> Praegune parool
           </label>
           <div className="relative">
             <input
@@ -292,29 +294,26 @@ export function PasswordTab({ onMessage }: PasswordTabProps) {
               })}
               type={showPasswords.current ? 'text' : 'password'}
               autoComplete="current-password"
-              className="w-full px-4 py-3 pr-12 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-3 pr-12 bg-black/50 border border-red-500/30 rounded-xl text-white placeholder-gray-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
               placeholder="Sisesta oma praegune parool"
             />
             <button
               type="button"
               onClick={() => togglePasswordVisibility('current')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-400 transition-colors"
             >
               {showPasswords.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
           {passwordForm.formState.errors.currentPassword && (
-            <p className="text-red-400 text-sm mt-1">{passwordForm.formState.errors.currentPassword.message}</p>
+            <p className="text-red-400 text-sm mt-2 font-['Orbitron']">{passwordForm.formState.errors.currentPassword.message}</p>
           )}
-          <p className="text-xs text-slate-500 mt-1">
-            Praeguse parooli sisestamine on kohustuslik turvalisuse tagamiseks.
-          </p>
         </div>
 
         {/* New Password Field */}
         <div>
-          <label htmlFor="newPassword" className="block text-sm font-medium text-slate-300 mb-2">
-            Uus parool
+          <label htmlFor="newPassword" className="flex items-center gap-2 text-xs font-bold text-gray-400 mb-2 font-['Orbitron'] uppercase tracking-wider">
+            <span className="text-purple-500">🔑</span> Uus parool
           </label>
           <div className="relative">
             <input
@@ -336,13 +335,13 @@ export function PasswordTab({ onMessage }: PasswordTabProps) {
               })}
               type={showPasswords.new ? 'text' : 'password'}
               autoComplete="new-password"
-              className="w-full px-4 py-3 pr-12 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-3 pr-12 bg-black/50 border border-purple-500/30 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all duration-200"
               placeholder="Sisesta oma uus parool"
             />
             <button
               type="button"
               onClick={() => togglePasswordVisibility('new')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-400 transition-colors"
             >
               {showPasswords.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -350,19 +349,19 @@ export function PasswordTab({ onMessage }: PasswordTabProps) {
           
           {/* Password Strength Indicator */}
           {newPassword && (
-            <div className="mt-2">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="text-xs text-slate-400">Parooli tugevus:</span>
-                <span className={`text-xs font-medium ${
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Parooli tugevus:</span>
+                <span className={`text-xs font-bold font-['Orbitron'] uppercase tracking-wider ${
                   passwordStrength <= 2 ? 'text-red-400' : 
-                  passwordStrength <= 4 ? 'text-yellow-400' : 'text-green-400'
+                  passwordStrength <= 4 ? 'text-orange-400' : 'text-green-400'
                 }`}>
                   {getPasswordStrengthText(passwordStrength)}
                 </span>
               </div>
-              <div className="w-full bg-slate-700 rounded-full h-2">
+              <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
                 <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor(passwordStrength)}`}
+                  className={`h-1 rounded-full transition-all duration-500 bg-gradient-to-r ${getPasswordStrengthColor(passwordStrength)} shadow-[0_0_10px_rgba(255,0,64,0.5)]`}
                   style={{ width: `${(passwordStrength / 6) * 100}%` }}
                 ></div>
               </div>
@@ -370,14 +369,14 @@ export function PasswordTab({ onMessage }: PasswordTabProps) {
           )}
           
           {passwordForm.formState.errors.newPassword && (
-            <p className="text-red-400 text-sm mt-1">{passwordForm.formState.errors.newPassword.message}</p>
+            <p className="text-red-400 text-sm mt-2 font-['Orbitron']">{passwordForm.formState.errors.newPassword.message}</p>
           )}
         </div>
 
         {/* Confirm Password Field */}
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300 mb-2">
-            Kinnita uus parool
+          <label htmlFor="confirmPassword" className="flex items-center gap-2 text-xs font-bold text-gray-400 mb-2 font-['Orbitron'] uppercase tracking-wider">
+            <span className="text-orange-500">✓</span> Kinnita uus parool
           </label>
           <div className="relative">
             <input
@@ -390,43 +389,55 @@ export function PasswordTab({ onMessage }: PasswordTabProps) {
               })}
               type={showPasswords.confirm ? 'text' : 'password'}
               autoComplete="new-password"
-              className="w-full px-4 py-3 pr-12 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-3 pr-12 bg-black/50 border border-orange-500/30 rounded-xl text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
               placeholder="Kinnita oma uus parool"
             />
             <button
               type="button"
               onClick={() => togglePasswordVisibility('confirm')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-400 transition-colors"
             >
               {showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
           {passwordForm.formState.errors.confirmPassword && (
-            <p className="text-red-400 text-sm mt-1">{passwordForm.formState.errors.confirmPassword.message}</p>
+            <p className="text-red-400 text-sm mt-2 font-['Orbitron']">{passwordForm.formState.errors.confirmPassword.message}</p>
           )}
         </div>
 
-        {/* Enhanced Password Requirements Info */}
-        <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
-          <div className="flex items-start space-x-3">
-            <Shield className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+        {/* Password Requirements */}
+        <div className="tech-border rounded-xl p-6 bg-gradient-to-br from-gray-900/50 to-black/50">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl text-purple-500">🛡️</span>
             <div>
-              <h4 className="text-sm font-medium text-slate-300 mb-2">Parooli turvalisusnõuded:</h4>
-              <ul className="text-xs text-slate-400 space-y-1">
-                <li className={newPassword?.length >= 8 ? 'text-green-400' : ''}>
-                  • Vähemalt 8 tähemärki pikk
+              <h4 className="font-bold text-white mb-3 font-['Orbitron'] uppercase tracking-wider">
+                Parooli nõuded
+              </h4>
+              <ul className="space-y-1 text-sm text-gray-400">
+                <li className={newPassword && newPassword.length >= 8 ? 'text-green-400' : ''}>
+                  <span className={newPassword && newPassword.length >= 8 ? 'text-green-400' : 'text-gray-500'}>
+                    {newPassword && newPassword.length >= 8 ? '✓' : '○'}
+                  </span> Vähemalt 8 tähemärki
                 </li>
-                <li className={/[A-Z]/.test(newPassword || '') ? 'text-green-400' : ''}>
-                  • Vähemalt üks suurtäht (A-Z)
+                <li className={newPassword && /[A-Z]/.test(newPassword) ? 'text-green-400' : ''}>
+                  <span className={newPassword && /[A-Z]/.test(newPassword) ? 'text-green-400' : 'text-gray-500'}>
+                    {newPassword && /[A-Z]/.test(newPassword) ? '✓' : '○'}
+                  </span> Vähemalt üks suurtäht (A-Z)
                 </li>
-                <li className={/[a-z]/.test(newPassword || '') ? 'text-green-400' : ''}>
-                  • Vähemalt üks väiketäht (a-z)
+                <li className={newPassword && /[a-z]/.test(newPassword) ? 'text-green-400' : ''}>
+                  <span className={newPassword && /[a-z]/.test(newPassword) ? 'text-green-400' : 'text-gray-500'}>
+                    {newPassword && /[a-z]/.test(newPassword) ? '✓' : '○'}
+                  </span> Vähemalt üks väiketäht (a-z)
                 </li>
-                <li className={/[0-9]/.test(newPassword || '') ? 'text-green-400' : ''}>
-                  • Vähemalt üks number (0-9)
+                <li className={newPassword && /[0-9]/.test(newPassword) ? 'text-green-400' : ''}>
+                  <span className={newPassword && /[0-9]/.test(newPassword) ? 'text-green-400' : 'text-gray-500'}>
+                    {newPassword && /[0-9]/.test(newPassword) ? '✓' : '○'}
+                  </span> Vähemalt üks number (0-9)
                 </li>
-                <li className={/[^A-Za-z0-9]/.test(newPassword || '') ? 'text-green-400' : ''}>
-                  • Soovitatav: erimärgid (!@#$%^&*)
+                <li className={newPassword && /[^A-Za-z0-9]/.test(newPassword) ? 'text-green-400' : ''}>
+                  <span className={newPassword && /[^A-Za-z0-9]/.test(newPassword) ? 'text-green-400' : 'text-gray-500'}>
+                    {newPassword && /[^A-Za-z0-9]/.test(newPassword) ? '✓' : '○'}
+                  </span> Soovitatav: erimärgid (!@#$%^&*)
                 </li>
               </ul>
             </div>
@@ -434,11 +445,13 @@ export function PasswordTab({ onMessage }: PasswordTabProps) {
         </div>
 
         {/* Enhanced Security Notice */}
-        <div className="bg-orange-900/30 border border-orange-700/50 rounded-lg p-4">
-          <div className="flex items-start space-x-3">
-            <AlertTriangle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
+        <div className="relative bg-gradient-to-r from-orange-900/20 to-orange-800/10 border border-orange-500/30 rounded-xl p-6 shadow-[0_0_20px_rgba(255,69,0,0.3)]">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-6 h-6 text-orange-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-sm font-medium text-orange-300 mb-1">Oluline turvalisuse märkus</h4>
+              <h4 className="text-sm font-bold text-orange-300 mb-2 font-['Orbitron'] uppercase tracking-wider">
+                ⚠ Oluline turvalisuse märkus
+              </h4>
               <div className="text-xs text-orange-200 space-y-1">
                 <p>• Parooli muutmisel logitakse sind automaatselt kõikidest seadmetest välja</p>
                 <p>• Pärast parooli muutmist suunatakse sind tagasi avalehele</p>
@@ -451,21 +464,21 @@ export function PasswordTab({ onMessage }: PasswordTabProps) {
         </div>
 
         {/* Update Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-4">
           <button
             type="submit"
             disabled={loading || passwordStrength < 4}
-            className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 disabled:from-slate-600 disabled:to-slate-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-green-500/25"
+            className="px-8 py-3 futuristic-btn futuristic-btn-accent rounded-xl font-['Orbitron'] uppercase tracking-wider text-sm font-bold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 <span>Uuendamine...</span>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
-                <Shield className="w-4 h-4" />
-                <span>Uuenda parooli</span>
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                <span>◆ Uuenda parooli</span>
               </div>
             )}
           </button>
