@@ -1,3 +1,4 @@
+// src/app/admin-dashboard/page.tsx - Admin Dashboard Page
 'use client'
 
 import { ProtectedRoute } from '@/components/ProtectedRoute'
