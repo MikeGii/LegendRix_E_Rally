@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { TrackSliderGenerator } from './TrackSliderGenerator'
 import { useEventTracks } from '@/hooks/useGameManagement'
+import { useSaveGenerationHistory } from '@/hooks/useGenerationHistory'
 import '@/styles/futuristic-theme.css'
 
 interface RallyGenerationModalProps {
@@ -47,6 +48,9 @@ export function RallyGenerationModal({
   const [availableTracks, setAvailableTracks] = useState<any[]>([])
   const [isComplete, setIsComplete] = useState(false)
   
+  // Hook to save generation history
+  const saveHistoryMutation = useSaveGenerationHistory()
+  
   // Load tracks for current event
   const { data: eventTracks = [] } = useEventTracks(
     selectedEventIds[currentEventIndex] || ''
@@ -87,7 +91,8 @@ export function RallyGenerationModal({
       order: currentGlobalIndex + 1
     }
     
-    setSelectedTracks(prev => [...prev, selected])
+    const updatedTracks = [...selectedTracks, selected]
+    setSelectedTracks(updatedTracks)
     setUsedTrackIds(prev => [...prev, track.id])
     setIsSpinning(false)
     
@@ -104,8 +109,36 @@ export function RallyGenerationModal({
       } else {
         // All done!
         setIsComplete(true)
+        saveGenerationHistory(updatedTracks)
       }
     }, 1000)
+  }
+  
+  // Save generation history
+  const saveGenerationHistory = async (finalTracks: SelectedTrack[]) => {
+    try {
+      await saveHistoryMutation.mutateAsync({
+        gameId: gameId,
+        gameName: gameName,
+        eventCount: selectedEventIds.length,
+        trackCountPerEvent: trackCount,
+        totalTracks: finalTracks.length,
+        minTrackLength: minTrackLength,
+        maxTrackLength: maxTrackLength,
+        selectedEvents: selectedEventIds.map((id, idx) => ({
+          event_id: id,
+          event_name: eventNames[idx]
+        })),
+        selectedTracks: finalTracks.map(track => ({
+          track_id: track.id,
+          track_name: track.name,
+          event_name: track.event_name,
+          length_km: track.length_km
+        }))
+      })
+    } catch (error) {
+      console.error('Error saving generation history:', error)
+    }
   }
   
   // Start spinning
