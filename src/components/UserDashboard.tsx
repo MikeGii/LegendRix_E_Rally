@@ -10,7 +10,6 @@ import { UserStatusBanner } from '@/components/user/UserStatusBanner'
 import { UpcomingRalliesSection } from '@/components/user/UpcomingRalliesSection'
 import { UserRegistrationsSection } from '@/components/user/UserRegistrationsSection'
 import { UserActionPrompt } from '@/components/user/UserActionPrompt'
-import { ApprovalPendingBanner } from '@/components/user/ApprovalPendingBanner'
 import { SectionDivider } from '@/components/landing/SectionDivider'
 
 interface StatusMessage {
