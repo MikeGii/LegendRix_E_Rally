@@ -162,3 +162,19 @@ input[type="number"] {
 .bg-gray-900\/50:hover input[type="number"] {
   color: #c084fc; /* lighter purple on hover */
 }
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}

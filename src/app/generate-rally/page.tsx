@@ -8,6 +8,7 @@ import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { GameSelectionComponent } from '@/components/generate-rally/GameSelectionComponent'
 import { EventSelectionComponent } from '@/components/generate-rally/EventSelectionComponent'
 import { TrackLengthFilter } from '@/components/generate-rally/TrackLengthFilter'
+import { RallyGenerationModal } from '@/components/generate-rally/RallyGenerationModal'
 import { useGames, useGameEvents } from '@/hooks/useGameManagement'
 import '@/styles/track-length-filter.css'
 
@@ -20,6 +21,7 @@ export default function GenerateRallyPage() {
   const [minTrackLength, setMinTrackLength] = useState<number>(5)
   const [maxTrackLength, setMaxTrackLength] = useState<number>(20)
   const [trackCount, setTrackCount] = useState<number>(3)
+  const [showGenerationModal, setShowGenerationModal] = useState(false)
   
   // Data hooks
   const { data: games = [], isLoading: gamesLoading } = useGames()
@@ -55,15 +57,14 @@ export default function GenerateRallyPage() {
   
   // Handle rally generation
   const handleGenerateRally = () => {
-    console.log('🎲 Generating rally with:', {
-      gameId: selectedGameId,
-      eventIds: selectedEventIds,
-      trackLength: { min: minTrackLength, max: maxTrackLength },
-      trackCount: trackCount
-    })
-    
-    // TODO: Implement actual rally generation logic
-    alert(`Rally genereerimine:\n- Mäng: ${games.find(g => g.id === selectedGameId)?.name}\n- Riigid: ${selectedEventIds.length}\n- Raja pikkus: ${minTrackLength}-${maxTrackLength} km\n- Radade arv: ${trackCount} rada iga riigi kohta`)
+    setShowGenerationModal(true)
+  }
+  
+  // Get selected event names
+  const getSelectedEventNames = () => {
+    return selectedEventIds.map(id => 
+      events.find(e => e.id === id)?.name || 'Unknown'
+    )
   }
   
   return (
@@ -157,6 +158,19 @@ export default function GenerateRallyPage() {
             </div>
           )}
         </div>
+        
+        {/* Rally Generation Modal */}
+        <RallyGenerationModal
+          isOpen={showGenerationModal}
+          onClose={() => setShowGenerationModal(false)}
+          gameId={selectedGameId}
+          gameName={games.find(g => g.id === selectedGameId)?.name || ''}
+          selectedEventIds={selectedEventIds}
+          eventNames={getSelectedEventNames()}
+          minTrackLength={minTrackLength}
+          maxTrackLength={maxTrackLength}
+          trackCount={trackCount}
+        />
       </DashboardLayout>
     </ProtectedRoute>
   )
