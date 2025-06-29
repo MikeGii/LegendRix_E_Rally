@@ -1,7 +1,6 @@
 // src/app/reset-password/page.tsx
 'use client'
 
-import { Suspense } from 'react'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
@@ -36,26 +35,7 @@ interface ResetPasswordFormData {
   confirmPassword: string
 }
 
-// Password strength calculator
-function calculatePasswordStrength(password: string) {
-  let strength = 0
-  
-  if (password.length >= 8) strength++
-  if (password.length >= 12) strength++
-  if (/[A-Z]/.test(password)) strength++
-  if (/[a-z]/.test(password)) strength++
-  if (/[0-9]/.test(password)) strength++
-  if (/[^A-Za-z0-9]/.test(password)) strength++
-  
-  return {
-    score: strength,
-    percentage: (strength / 6) * 100,
-    label: strength <= 2 ? 'Nõrk' : strength <= 4 ? 'Keskmine' : 'Tugev'
-  }
-}
-
-// Separate component for the main content that uses useSearchParams
-function ResetPasswordContent() {
+export default function ResetPasswordPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -91,32 +71,54 @@ function ResetPasswordContent() {
           setValidating(false)
           return
         }
-
-        // Get the token_hash from URL
-        const tokenHash = urlParams.get('token_hash')
-        const type = urlParams.get('type')
         
-        console.log('🔄 Checking reset password params:', { 
-          hasTokenHash: !!tokenHash, 
-          type 
-        })
+        // Check for our custom token parameter
+        const token = urlParams.get('token')
+        if (token) {
+          console.log('🔄 Found custom reset token, validating...')
+          
+          try {
+            // Validate token with our API
+            const response = await fetch('/api/auth/validate-reset-token', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ token })
+            })
 
-        if (!tokenHash || type !== 'recovery') {
-          console.error('❌ Missing or invalid reset parameters')
-          setError('Vigane parooli lähtestamise link. Palun taotle uus link.')
-          setValidating(false)
-          return
+            const result = await response.json()
+
+            if (!response.ok) {
+              console.error('❌ Token validation failed:', result.error)
+              setError('Parooli lähtestamise link on aegunud või vigane. Palun taotle uus link.')
+              setValidating(false)
+              return
+            }
+
+            if (result.valid) {
+              console.log('✅ Custom reset token is valid')
+              // Store token for password update
+              sessionStorage.setItem('reset_token', token)
+              setValidating(false)
+              return
+            }
+          } catch (validationError) {
+            console.error('❌ Token validation exception:', validationError)
+            setError('Parooli lähtestamise lingi kontrollimine ebaõnnestus.')
+            setValidating(false)
+            return
+          }
         }
 
-        // Store the token in session storage for later use
-        sessionStorage.setItem('reset_token', tokenHash)
-
-        console.log('✅ Reset password token validated and stored')
+        // No valid token found
+        console.error('❌ No valid reset token found')
+        setError('Parooli lähtestamise link puudub või on vigane. Palun taotle uus link.')
         setValidating(false)
-
-      } catch (err: any) {
-        console.error('❌ Reset password validation error:', err)
-        setError('Parooli lähtestamise lingi kontrollimine ebaõnnestus.')
+        
+      } catch (err) {
+        console.error('❌ Password reset error:', err)
+        setError('Ootamatu viga. Palun proovi uuesti.')
         setValidating(false)
       }
     }
@@ -124,15 +126,13 @@ function ResetPasswordContent() {
     handlePasswordReset()
   }, [])
 
-  const onSubmit = async (data: ResetPasswordFormData) => {
-    // Validate passwords match
+  const handleSubmit = async (data: ResetPasswordFormData) => {
     if (data.password !== data.confirmPassword) {
-      setError('Paroolid ei kattu. Palun kontrolli.')
+      setError('Paroolid ei ühti')
       return
     }
 
-    // Validate password strength
-    if (passwordStrength.score < 3) {
+    if (passwordStrength < 4) {
       setError('Parool on liiga nõrk. Palun vali tugevam parool.')
       return
     }
@@ -271,23 +271,24 @@ function ResetPasswordContent() {
               <h2 className="text-2xl font-bold text-white mb-3">
                 Link ei kehti
               </h2>
-              <p className="text-gray-300 mb-6">{error}</p>
+              <p className="text-gray-300 mb-6">
+                {error}
+              </p>
+              
+              <button
+                onClick={() => router.push('/')}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 font-medium"
+              >
+                Tagasi avalehele
+              </button>
             </div>
-
-            {/* Back to Home Button */}
-            <button
-              onClick={() => router.push('/')}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
-            >
-              Tagasi avalehele
-            </button>
           </div>
         </div>
       </div>
     )
   }
 
-  // Reset Password Form
+  // Main reset form
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -307,151 +308,168 @@ function ResetPasswordContent() {
             </div>
           </div>
 
-          {/* Title */}
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Uue parooli seadmine
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-3">
+              Uue parooli seadistamine
             </h2>
-            <p className="text-gray-400 text-sm">
-              Sisesta oma uus parool
+            <p className="text-gray-300">
+              Sisesta oma uus parool allpool
             </p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3 text-center">
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
-            )}
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 rounded-lg border bg-red-900/50 border-red-700 text-red-300">
+              <p className="text-sm text-center">{error}</p>
+            </div>
+          )}
 
-            {/* New Password */}
+          {/* Form */}
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* Password Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
                 Uus parool
               </label>
               <div className="relative">
                 <input
+                  {...form.register('password', {
+                    required: 'Parool on kohustuslik',
+                    minLength: {
+                      value: 8,
+                      message: 'Parool peab olema vähemalt 8 tähemärki pikk'
+                    },
+                    validate: {
+                      hasUppercase: (value) => /[A-Z]/.test(value) || 'Parool peab sisaldama vähemalt üht suurtähte',
+                      hasLowercase: (value) => /[a-z]/.test(value) || 'Parool peab sisaldama vähemalt üht väiketähte',
+                      hasNumber: (value) => /[0-9]/.test(value) || 'Parool peab sisaldama vähemalt üht numbrit'
+                    }
+                  })}
                   type={showPasswords.password ? 'text' : 'password'}
-                  {...form.register('password', { required: true })}
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 pr-12"
+                  disabled={loading}
+                  className="w-full px-4 py-3 pr-12 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 disabled:opacity-50"
                   placeholder="Sisesta uus parool"
                 />
                 <button
                   type="button"
                   onClick={() => togglePasswordVisibility('password')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
                 >
-                  {showPasswords.password ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPasswords.password ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
 
               {/* Password Strength Indicator */}
               {password && (
                 <div className="mt-2">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-gray-400">Parooli tugevus:</span>
-                    <span className={`font-medium ${
-                      passwordStrength.score <= 2 ? 'text-red-400' :
-                      passwordStrength.score <= 4 ? 'text-yellow-400' :
-                      'text-green-400'
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="text-xs text-slate-400">Parooli tugevus:</span>
+                    <span className={`text-xs font-medium ${
+                      passwordStrength <= 2 ? 'text-red-400' : 
+                      passwordStrength <= 4 ? 'text-yellow-400' : 'text-green-400'
                     }`}>
-                      {passwordStrength.label}
+                      {getPasswordStrengthText(passwordStrength)}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                  <div className="w-full bg-slate-700 rounded-full h-2">
                     <div 
-                      className={`h-full transition-all duration-300 ${
-                        passwordStrength.score <= 2 ? 'bg-red-500' :
-                        passwordStrength.score <= 4 ? 'bg-yellow-500' :
-                        'bg-green-500'
-                      }`}
-                      style={{ width: `${passwordStrength.percentage}%` }}
-                    />
+                      className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor(passwordStrength)}`}
+                      style={{ width: `${(passwordStrength / 6) * 100}%` }}
+                    ></div>
                   </div>
                 </div>
               )}
+
+              {form.formState.errors.password && (
+                <p className="text-red-400 text-sm mt-1">{form.formState.errors.password.message}</p>
+              )}
             </div>
 
-            {/* Confirm Password */}
+            {/* Confirm Password Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Korda parooli
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300 mb-2">
+                Kinnita uus parool
               </label>
               <div className="relative">
                 <input
+                  {...form.register('confirmPassword', {
+                    required: 'Palun kinnita oma parooli',
+                    validate: (value) => {
+                      const password = form.getValues('password')
+                      return value === password || 'Paroolid ei ühti'
+                    }
+                  })}
                   type={showPasswords.confirm ? 'text' : 'password'}
-                  {...form.register('confirmPassword', { required: true })}
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 pr-12"
-                  placeholder="Sisesta parool uuesti"
+                  disabled={loading}
+                  className="w-full px-4 py-3 pr-12 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 disabled:opacity-50"
+                  placeholder="Kinnita uus parool"
                 />
                 <button
                   type="button"
                   onClick={() => togglePasswordVisibility('confirm')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
                 >
-                  {showPasswords.confirm ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {form.formState.errors.confirmPassword && (
+                <p className="text-red-400 text-sm mt-1">{form.formState.errors.confirmPassword.message}</p>
+              )}
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
-              className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-[1.02] ${
-                loading 
-                  ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white'
-              }`}
+              disabled={loading || passwordStrength < 4}
+              className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <span className="flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Uuendan parooli...
-                </span>
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Parooli uuendamine...</span>
+                </div>
               ) : (
                 'Uuenda parool'
               )}
             </button>
-
-            {/* Back to Login Link */}
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={() => router.push('/')}
-                className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
-              >
-                Tagasi sisselogimise juurde
-              </button>
-            </div>
           </form>
+
+          {/* Back to home */}
+          <div className="text-center mt-6">
+            <button
+              onClick={() => router.push('/')}
+              className="text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              Tagasi avalehele
+            </button>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-// Main component with Suspense boundary
-export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Laadimine...</p>
-        </div>
-      </div>
-    }>
-      <ResetPasswordContent />
-    </Suspense>
-  )
+// Password strength utilities
+const calculatePasswordStrength = (password: string): number => {
+  let score = 0
+  if (password.length >= 8) score += 1
+  if (password.length >= 12) score += 1
+  if (/[a-z]/.test(password)) score += 1
+  if (/[A-Z]/.test(password)) score += 1
+  if (/[0-9]/.test(password)) score += 1
+  if (/[^A-Za-z0-9]/.test(password)) score += 1
+  return score
+}
+
+const getPasswordStrengthColor = (strength: number): string => {
+  if (strength <= 2) return 'bg-red-500'
+  if (strength <= 4) return 'bg-yellow-500'
+  return 'bg-green-500'
+}
+
+const getPasswordStrengthText = (strength: number): string => {
+  if (strength <= 2) return 'Nõrk'
+  if (strength <= 4) return 'Keskmine'
+  return 'Tugev'
 }
