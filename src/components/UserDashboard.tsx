@@ -10,6 +10,7 @@ import { UserStatusBanner } from '@/components/user/UserStatusBanner'
 import { UpcomingRalliesSection } from '@/components/user/UpcomingRalliesSection'
 import { UserRegistrationsSection } from '@/components/user/UserRegistrationsSection'
 import { UserActionPrompt } from '@/components/user/UserActionPrompt'
+import { ApprovalPendingBanner } from '@/components/user/ApprovalPendingBanner'
 import { SectionDivider } from '@/components/landing/SectionDivider'
 
 interface StatusMessage {
@@ -38,7 +39,7 @@ function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage | nu
     }
   }
 
-  if (!user.admin_approved) {
+  if (!user.admin_approved && user.status !== 'approved') {
     return {
       type: 'warning',
       message: 'Ootame admin kinnitust',
@@ -49,6 +50,7 @@ function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage | nu
 
   return null
 }
+
 
 export function UserDashboard() {
   const { user } = useAuth()
