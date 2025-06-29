@@ -1,0 +1,164 @@
+/* src/styles/track-length-filter.css */
+
+/* Custom Range Slider Styles */
+.slider-min,
+.slider-max {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: all;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Track (the line) - hidden as we use custom track */
+.slider-min::-webkit-slider-track,
+.slider-max::-webkit-slider-track {
+  -webkit-appearance: none;
+  height: 8px;
+  background: transparent;
+}
+
+.slider-min::-moz-range-track,
+.slider-max::-moz-range-track {
+  height: 8px;
+  background: transparent;
+}
+
+/* Thumb (the handle) */
+.slider-min::-webkit-slider-thumb,
+.slider-max::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9333ea, #7c3aed);
+  border: 2px solid #1a1a1a;
+  cursor: pointer;
+  margin-top: -6px;
+  box-shadow: 0 0 10px rgba(147, 51, 234, 0.6);
+  transition: all 0.2s ease;
+}
+
+.slider-min::-moz-range-thumb,
+.slider-max::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9333ea, #7c3aed);
+  border: 2px solid #1a1a1a;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(147, 51, 234, 0.6);
+  transition: all 0.2s ease;
+}
+
+/* Hover effect on thumb */
+.slider-min:hover::-webkit-slider-thumb,
+.slider-max:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.8);
+}
+
+.slider-min:hover::-moz-range-thumb,
+.slider-max:hover::-moz-range-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.8);
+}
+
+/* Active/Focus state */
+.slider-min:active::-webkit-slider-thumb,
+.slider-max:active::-webkit-slider-thumb,
+.slider-min:focus::-webkit-slider-thumb,
+.slider-max:focus::-webkit-slider-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 30px rgba(147, 51, 234, 1);
+}
+
+.slider-min:active::-moz-range-thumb,
+.slider-max:active::-moz-range-thumb,
+.slider-min:focus::-moz-range-thumb,
+.slider-max:focus::-moz-range-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 30px rgba(147, 51, 234, 1);
+}
+
+/* Remove focus outline */
+.slider-min:focus,
+.slider-max:focus {
+  outline: none;
+}
+
+/* Transparent track for sliders */
+.slider-track-transparent {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+/* Remove default track */
+.slider-track-transparent::-webkit-slider-track {
+  -webkit-appearance: none;
+  height: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider-track-transparent::-moz-range-track {
+  height: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Style the thumb */
+.slider-track-transparent::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  cursor: grab;
+  position: relative;
+  z-index: 10;
+}
+
+.slider-track-transparent::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: grab;
+  position: relative;
+  z-index: 10;
+}
+
+/* Active state */
+.slider-track-transparent:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.slider-track-transparent:active::-moz-range-thumb {
+  cursor: grabbing;
+}
+
+/* Remove focus outline */
+.slider-track-transparent:focus {
+  outline: none;
+}
+
+/* Number input styling */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Hover effect for value displays */
+.bg-gray-900\/50:hover input[type="number"] {
+  color: #c084fc; /* lighter purple on hover */
+}
