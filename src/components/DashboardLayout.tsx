@@ -63,7 +63,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         '/results',
         '/participant-linking',
         '/sponsors',
-        '/teams-manager'
+        '/teams-manager',
+        '/generate-rally'
       ]
       
       if (adminPages.some(page => pathname.includes(page))) {

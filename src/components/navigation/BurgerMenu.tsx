@@ -62,7 +62,8 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
     window.location.href = path
   }
 
-  const menuItems = [
+  // Base menu items for all users
+  const baseMenuItems = [
     {
       icon: '🏠',
       label: 'Pealeht',
@@ -98,6 +99,24 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
       action: () => navigateTo('/user-settings'),
       priority: 'secondary'
     }
+  ]
+
+  // Add admin-only items if user is admin
+  const adminOnlyItems = user?.role === 'admin' ? [
+    {
+      icon: '🎲',
+      label: 'Genereeri ralli!',
+      description: 'Genereeri automaatselt uus ralli',
+      action: () => navigateTo('/generate-rally'),
+      priority: 'primary'
+    }
+  ] : []
+
+  // Combine menu items - insert admin items after teams but before registration
+  const menuItems = [
+    ...baseMenuItems.slice(0, 3), // Home, Dashboard, Teams
+    ...adminOnlyItems,
+    ...baseMenuItems.slice(3) // Registration, Settings
   ]
 
   return (
