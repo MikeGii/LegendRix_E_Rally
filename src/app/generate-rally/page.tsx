@@ -9,6 +9,7 @@ import { GameSelectionComponent } from '@/components/generate-rally/GameSelectio
 import { EventSelectionComponent } from '@/components/generate-rally/EventSelectionComponent'
 import { TrackLengthFilter } from '@/components/generate-rally/TrackLengthFilter'
 import { RallyGenerationModal } from '@/components/generate-rally/RallyGenerationModal'
+import { GenerationHistory } from '@/components/generate-rally/GenerationHistory'
 import { useGames, useGameEvents } from '@/hooks/useGameManagement'
 import '@/styles/track-length-filter.css'
 
@@ -22,6 +23,7 @@ export default function GenerateRallyPage() {
   const [maxTrackLength, setMaxTrackLength] = useState<number>(20)
   const [trackCount, setTrackCount] = useState<number>(3)
   const [showGenerationModal, setShowGenerationModal] = useState(false)
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0)
   
   // Data hooks
   const { data: games = [], isLoading: gamesLoading } = useGames()
@@ -58,6 +60,12 @@ export default function GenerateRallyPage() {
   // Handle rally generation
   const handleGenerateRally = () => {
     setShowGenerationModal(true)
+  }
+  
+  // Handle modal close and refresh history
+  const handleModalClose = () => {
+    setShowGenerationModal(false)
+    setHistoryRefreshKey(prev => prev + 1) // Trigger history refresh
   }
   
   // Get selected event names
@@ -187,12 +195,15 @@ export default function GenerateRallyPage() {
               </div>
             </div>
           )}
+          
+          {/* Generation History */}
+          <GenerationHistory refreshKey={historyRefreshKey} />
         </div>
         
         {/* Rally Generation Modal */}
         <RallyGenerationModal
           isOpen={showGenerationModal}
-          onClose={() => setShowGenerationModal(false)}
+          onClose={handleModalClose}
           gameId={selectedGameId}
           gameName={games.find(g => g.id === selectedGameId)?.name || ''}
           selectedEventIds={selectedEventIds}
