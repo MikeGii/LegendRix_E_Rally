@@ -187,15 +187,20 @@ export function TrackSliderGenerator({
                 <div
                   key={`${track.id}-${index}`}
                   className={`
-                    flex-shrink-0 w-48 mx-1 px-4 py-3 rounded-xl transition-all duration-300 border-2
+                    flex-shrink-0 w-48 mx-1 px-4 py-3 rounded-xl transition-all duration-300 border-2 relative
                     ${isSelected
-                      ? 'bg-gradient-to-br from-red-600/40 to-red-800/30 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.6)] scale-110 z-10'
+                      ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700/50 scale-110 z-10'
                       : isCentered && isAnimating
                       ? 'bg-gradient-to-br from-gray-700/60 to-gray-800/60 border-gray-600 scale-105'
                       : 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700/50 hover:border-gray-600'
                     }
                   `}
                 >
+                  {/* Green highlight frame for selected track */}
+                  {isSelected && (
+                    <div className="absolute inset-0 rounded-xl border-2 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.6)] pointer-events-none animate-pulse"></div>
+                  )}
+                  
                   <h3 className={`
                     font-bold text-sm font-['Orbitron'] mb-1 truncate transition-colors
                     ${isSelected ? 'text-white' : 'text-gray-300'}
@@ -204,13 +209,13 @@ export function TrackSliderGenerator({
                   </h3>
                   <p className={`
                     text-xs transition-colors
-                    ${isSelected ? 'text-red-400' : 'text-gray-500'}
+                    ${isSelected ? 'text-green-400' : 'text-gray-500'}
                   `}>
                     {actualTrack.event_name}
                   </p>
                   <p className={`
                     text-xs font-['Orbitron'] transition-colors
-                    ${isSelected ? 'text-red-300' : 'text-gray-400'}
+                    ${isSelected ? 'text-green-300' : 'text-gray-400'}
                   `}>
                     {actualTrack.length_km} km
                   </p>
@@ -224,7 +229,7 @@ export function TrackSliderGenerator({
       {/* Selected track display */}
       {!isAnimating && selectedTrack && (
         <div className="text-center animate-fadeIn">
-          <div className="inline-block bg-gradient-to-br from-gray-900 to-black rounded-xl px-8 py-4 border-2 border-red-500/70 shadow-[0_0_40px_rgba(239,68,68,0.6)]">
+          <div className="inline-block bg-gradient-to-br from-gray-900 to-black rounded-xl px-8 py-4 border-2 border-green-500/70 shadow-[0_0_40px_rgba(34,197,94,0.6)]">
             <p className="text-xs text-gray-400 font-['Orbitron'] uppercase tracking-wider mb-2">Valitud rada</p>
             <p className="text-white font-bold font-['Orbitron'] text-xl mb-1">
               {selectedTrack.name}
