@@ -6,7 +6,8 @@ import { useRallies, useDeleteRally } from '@/hooks/useRallyManagement'
 import { useRallyNotification } from '@/hooks/useRallyNotification'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { CreateRallyModal } from '@/components/rally-management/CreateRallyModal'
-import { useAdminAllRallies } from '@/hooks/useOptimizedRallies'
+import { useAdminAllRallies, useServerSideStatusUpdate } from '@/hooks/useOptimizedRallies'
+import { RefreshCw, AlertCircle } from 'lucide-react'
 
 interface Rally {
   id: string
@@ -41,6 +42,9 @@ export function RallyManagement() {
   const { data: allRallies = [], isLoading, error, refetch } = useAdminAllRallies(100)
   const deleteRallyMutation = useDeleteRally()
   const rallyNotificationMutation = useRallyNotification()
+  const updateStatuses = useServerSideStatusUpdate() 
+
+  const hasStatusMismatch = allRallies.some(rally => rally.needs_status_update)
 
   // FILTER: Separate active and completed rallies
   const activeRallies = allRallies.filter(rally => 
@@ -52,6 +56,18 @@ export function RallyManagement() {
   )
 
   const currentRallies = activeTab === 'active' ? activeRallies : completedRallies
+
+  const handleStatusUpdate = async () => {
+    try {
+      const result = await updateStatuses.mutateAsync()
+      if (result.updated > 0) {
+        // Refetch rallies to show updated statuses
+        refetch()
+      }
+    } catch (error) {
+      console.error('Status update failed:', error)
+    }
+  }
 
   const handleCreateRally = () => {
     setEditingRally(null)
@@ -154,10 +170,11 @@ export function RallyManagement() {
         icon="🏁"
       />
 
-      {/* Tab Navigation */}
-      <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-        <div className="flex items-center justify-between mb-6">
-          {/* Tab Buttons */}
+    {/* Tab Navigation */}
+    <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+      <div className="flex items-center justify-between mb-6">
+        {/* Tab Buttons */}
+        <div className="flex items-center space-x-4">
           <div className="flex space-x-1 bg-slate-900/50 rounded-lg p-1">
             <button
               onClick={() => setActiveTab('active')}
@@ -180,6 +197,18 @@ export function RallyManagement() {
               🏆 Lõppenud rallid ({completedRallies.length})
             </button>
           </div>
+
+          {/* Status Update Button */}
+          <button
+            onClick={() => updateStatuses.mutate()}
+            disabled={updateStatuses.isPending}
+            className="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-600/30 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Uuenda kõikide rallide staatuseid andmebaasis"
+          >
+            <RefreshCw className={`h-4 w-4 ${updateStatuses.isPending ? 'animate-spin' : ''}`} />
+            <span>Uuenda staatused</span>
+          </button>
+        </div>
 
           {/* Create Rally Button - Only show on active tab */}
           {activeTab === 'active' && (

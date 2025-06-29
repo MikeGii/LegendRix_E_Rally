@@ -507,3 +507,56 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(to bottom, #ef4444, #dc2626);
   }
+
+  /* Sonner Toast Custom Styles */
+[data-sonner-toast][data-type="success"] {
+  background-color: #065f46 !important;
+  color: #f0fdf4 !important;
+  border: 1px solid #10b981 !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  background-color: #7f1d1d !important;
+  color: #fef2f2 !important;
+  border: 1px solid #ef4444 !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  background-color: #78350f !important;
+  color: #fefce8 !important;
+  border: 1px solid #f59e0b !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  background-color: #1e3a8a !important;
+  color: #eff6ff !important;
+  border: 1px solid #3b82f6 !important;
+}
+
+[data-sonner-toast][data-type="loading"] {
+  background-color: #1e3a8a !important;
+  color: #eff6ff !important;
+  border: 1px solid #3b82f6 !important;
+}
+
+/* Toast action button styles */
+[data-sonner-toast] [data-button] {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: inherit !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-sonner-toast] [data-button]:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Toast close button */
+[data-sonner-toast] [data-close-button] {
+  background-color: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: inherit !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}

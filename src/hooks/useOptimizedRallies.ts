@@ -33,6 +33,12 @@ export interface TransformedRally {
   can_register?: boolean
   is_past?: boolean
   real_time_status?: string
+  
+  // ADD THESE NEW FIELDS FOR STATUS MANAGEMENT
+  display_status?: string        // Status to display in UI (real-time or inactive)
+  needs_status_update?: boolean  // True if DB status differs from real-time status
+  db_status?: string            // Original database status for comparison
+  admin_note?: string           // Admin notes (e.g., "Deactivated", "Status needs update")
 }
 
 export interface RallyEvent {

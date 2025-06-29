@@ -6,6 +6,7 @@ import { AuthProvider } from '@/components/AuthProvider'
 import { ViewProvider } from '@/components/ViewProvider'
 import { QueryProvider } from '@/components/QueryProvider'
 import { ProfileCompletionWrapper } from '@/components/auth/ProfileCompletionWrapper'
+import { Toaster } from 'sonner'
 
 // Inter for main text
 const inter = Inter({ 
@@ -84,6 +85,21 @@ export default function RootLayout({
             </ViewProvider>
           </AuthProvider>
         </QueryProvider>
+        <Toaster 
+          position="top-right"
+          expand={false}
+          richColors
+          theme="dark"
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: '#1e293b',
+              color: '#f1f5f9',
+              border: '1px solid #334155',
+            },
+            className: 'sonner-toast',
+          }}
+        />
       </body>
     </html>
   )

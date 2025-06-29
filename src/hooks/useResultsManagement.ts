@@ -47,8 +47,10 @@ export function useCompletedRallies() {
   return useQuery({
     queryKey: resultsKeys.completed_rallies(),
     queryFn: async (): Promise<CompletedRally[]> => {
-      // Get completed rallies
-      const { data: rallies, error: ralliesError } = await supabase
+      console.log('🔍 Loading completed rallies (pending results)...')
+      
+      // Step 1: Get all completed rallies first
+      const { data: allCompletedRallies, error: ralliesError } = await supabase
         .from('rallies')
         .select(`
           id,
@@ -59,55 +61,104 @@ export function useCompletedRallies() {
           game_type:game_types(name)
         `)
         .eq('status', 'completed')
+        .eq('is_active', true) // Only active rallies
         .order('competition_date', { ascending: false })
 
-      if (ralliesError) throw ralliesError
+      if (ralliesError) {
+        console.error('Error loading rallies:', ralliesError)
+        throw ralliesError
+      }
 
-      if (!rallies || rallies.length === 0) {
+      console.log(`📊 Found ${allCompletedRallies?.length || 0} completed rallies`)
+
+      if (!allCompletedRallies || allCompletedRallies.length === 0) {
         return []
       }
 
-      // Get participant counts
-      const rallyIds = rallies.map(r => r.id)
+      // Step 2: Get ALL rally_results_status entries for debugging
+      const { data: allStatuses, error: statusError } = await supabase
+        .from('rally_results_status')
+        .select('rally_id, results_completed, results_approved')
+
+      console.log('📊 Rally results status data:', allStatuses)
+      
+      if (statusError) {
+        console.error('Error loading rally_results_status:', statusError)
+        // If error, assume all rallies need results
+        console.warn('⚠️ Could not load rally_results_status, showing all completed rallies')
+      }
+
+      // Step 3: Create a Set of approved rally IDs
+      const approvedRallyIds = new Set<string>()
+      
+      if (allStatuses && allStatuses.length > 0) {
+        allStatuses.forEach(status => {
+          if (status.results_approved === true) {
+            approvedRallyIds.add(status.rally_id)
+            console.log(`✅ Rally ${status.rally_id} is approved`)
+          } else {
+            console.log(`⏳ Rally ${status.rally_id} is NOT approved`)
+          }
+        })
+      }
+
+      console.log(`📊 Approved rally IDs: ${Array.from(approvedRallyIds).join(', ')}`)
+
+      // Step 4: Filter out approved rallies
+      const pendingRallies = allCompletedRallies.filter(rally => {
+        const isApproved = approvedRallyIds.has(rally.id)
+        console.log(`Rally "${rally.name}" (${rally.id}): ${isApproved ? 'APPROVED ❌' : 'PENDING ✅'}`)
+        return !isApproved // Return true if NOT approved
+      })
+
+      console.log(`📊 Filtered to ${pendingRallies.length} pending rallies`)
+
+      if (pendingRallies.length === 0) {
+        console.log('ℹ️ No pending rallies found')
+        return []
+      }
+
+      // Step 5: Get participant counts only for pending rallies
+      const pendingRallyIds = pendingRallies.map(r => r.id)
+      
       const { data: participantCounts } = await supabase
-        .from('rally_results')
+        .from('rally_registrations')
         .select('rally_id')
-        .in('rally_id', rallyIds)
+        .in('rally_id', pendingRallyIds)
+        .in('status', ['registered', 'confirmed'])
 
       const counts: Record<string, number> = {}
       participantCounts?.forEach(pc => {
         counts[pc.rally_id] = (counts[pc.rally_id] || 0) + 1
       })
 
-      // Get results status
-      const { data: resultsStatus } = await supabase
+      // Step 6: Get results status for pending rallies only
+      const { data: pendingStatuses } = await supabase
         .from('rally_results_status')
-        .select('rally_id, results_needed_since, results_completed, results_approved')
-        .in('rally_id', rallyIds)
+        .select('rally_id, results_completed, results_approved')
+        .in('rally_id', pendingRallyIds)
 
       const statusMap: Record<string, any> = {}
-      resultsStatus?.forEach(s => {
-        statusMap[s.rally_id] = s
+      pendingStatuses?.forEach(rs => {
+        statusMap[rs.rally_id] = rs
       })
 
-      // Transform and filter out approved rallies
-      return rallies
-        .map((rally: any) => {
-          const status = statusMap[rally.id]
-          return {
-            id: rally.id,
-            name: rally.name,
-            description: rally.description,
-            competition_date: rally.competition_date,
-            participant_count: counts[rally.id] || 0,
-            results_needed_since: status?.results_needed_since || rally.competition_date,
-            results_completed: status?.results_completed || false,
-            results_approved: status?.results_approved || false,
-            game_name: rally.game?.name || 'Unknown Game',
-            game_type_name: rally.game_type?.name || 'Unknown Type'
-          }
-        })
-        .filter(rally => !rally.results_approved) // Only non-approved rallies
+      // Return only pending rallies
+      const result = pendingRallies.map((rally: any) => ({
+        id: rally.id,
+        name: rally.name,
+        description: rally.description,
+        competition_date: rally.competition_date,
+        participant_count: counts[rally.id] || 0,
+        results_needed_since: rally.competition_date,
+        results_completed: statusMap[rally.id]?.results_completed || false,
+        results_approved: statusMap[rally.id]?.results_approved || false,
+        game_name: rally.game?.name || 'Unknown Game',
+        game_type_name: rally.game_type?.name || 'Unknown Type'
+      }))
+
+      console.log('✅ Returning pending rallies:', result.map(r => r.name))
+      return result
     },
     staleTime: 5 * 60 * 1000,
   })
@@ -120,17 +171,19 @@ export function useApprovedRallies() {
   return useQuery({
     queryKey: resultsKeys.approved_rallies(),
     queryFn: async (): Promise<CompletedRally[]> => {
-      // Get approved rally IDs
-      const { data: approvedStatus, error: statusError } = await supabase
+      // Get rally IDs with approved results
+      const { data: approvedStatuses, error: statusError } = await supabase
         .from('rally_results_status')
         .select('rally_id')
         .eq('results_approved', true)
 
-      if (statusError || !approvedStatus || approvedStatus.length === 0) {
+      if (statusError) throw statusError
+
+      const approvedRallyIds = approvedStatuses?.map(s => s.rally_id) || []
+      
+      if (approvedRallyIds.length === 0) {
         return []
       }
-
-      const approvedRallyIds = approvedStatus.map(s => s.rally_id)
 
       // Get rally details
       const { data: rallies, error: ralliesError } = await supabase
@@ -148,11 +201,12 @@ export function useApprovedRallies() {
 
       if (ralliesError) throw ralliesError
 
-      // Get participant counts
+      // Get participant counts from rally_registrations
       const { data: participantCounts } = await supabase
-        .from('rally_results')
+        .from('rally_registrations')
         .select('rally_id')
         .in('rally_id', approvedRallyIds)
+        .in('status', ['registered', 'confirmed'])
 
       const counts: Record<string, number> = {}
       participantCounts?.forEach(pc => {
@@ -164,7 +218,7 @@ export function useApprovedRallies() {
         name: rally.name,
         description: rally.description,
         competition_date: rally.competition_date,
-        participant_count: counts[rally.id] || 0,
+        participant_count: counts[rally.id] || 0, // Shows registered participants
         results_needed_since: rally.competition_date,
         results_completed: true,
         results_approved: true,
