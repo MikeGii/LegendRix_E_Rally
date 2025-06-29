@@ -8,6 +8,7 @@ import { ViewProvider } from '@/components/ViewProvider'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { TeamCreationForm } from '@/components/teams/TeamCreationForm'
 import { TeamsList } from '@/components/teams/TeamsList'
+import { PendingApplicationsSection } from '@/components/teams/PendingApplicationsSection'
 
 export default function TeamsManagerPage() {
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -42,6 +43,9 @@ export default function TeamsManagerPage() {
 
             {/* Teams List */}
             <TeamsList />
+
+            {/* Pending Applications Section */}
+            <PendingApplicationsSection />
           </div>
         </DashboardLayout>
       </ViewProvider>

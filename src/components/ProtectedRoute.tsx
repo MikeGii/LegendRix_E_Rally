@@ -8,9 +8,10 @@ import { useEffect, useRef } from 'react'
 interface ProtectedRouteProps {
   children: React.ReactNode
   requiredRole?: 'admin' | 'user'
+  requireApproval?: boolean // New prop to require admin approval
 }
 
-export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredRole, requireApproval = true }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
   const router = useRouter()
   const redirectedRef = useRef(false)
@@ -20,7 +21,10 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     loading,
     hasUser: !!user,
     userRole: user?.role,
+    userStatus: user?.status,
+    adminApproved: user?.admin_approved,
     requiredRole,
+    requireApproval,
     userEmail: user?.email,
     redirected: redirectedRef.current
   })
@@ -49,6 +53,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       loading,
       hasUser: !!user,
       userRole: user?.role,
+      userStatus: user?.status,
+      adminApproved: user?.admin_approved,
       requiredRole,
       redirected: redirectedRef.current
     })
@@ -58,6 +64,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       return
     }
 
+    // Check 1: User must be logged in
     if (!user) {
       console.log('❌ No user found, redirecting to login')
       redirectedRef.current = true
@@ -65,24 +72,33 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       return
     }
 
+    // Check 2: User must be approved (if requireApproval is true)
+    if (requireApproval && user.status !== 'approved' && user.role !== 'admin') {
+      console.log('❌ User not approved, redirecting to pending approval page')
+      redirectedRef.current = true
+      router.replace('/pending-approval')
+      return
+    }
+
+    // Check 3: Role check (if requiredRole is specified)
     if (requiredRole && user.role !== requiredRole) {
       console.log('❌ Role mismatch, redirecting based on user role')
-      // UPDATED: Default redirect is now user-dashboard for both admin and user
-      const redirectUrl = '/user-dashboard'
+      const redirectUrl = user.role === 'admin' ? '/admin-dashboard' : '/user-dashboard'
       console.log('🔄 Redirecting to:', redirectUrl)
       redirectedRef.current = true
       router.replace(redirectUrl)
       return
     }
 
+    // All checks passed
     if (user && (!requiredRole || user.role === requiredRole)) {
-      console.log('✅ ProtectedRoute - Access granted for:', user.email, '| Role:', user.role)
+      console.log('✅ ProtectedRoute - Access granted for:', user.email, '| Role:', user.role, '| Status:', user.status)
       // Clear timeout since we have successful auth
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [user, loading, requiredRole, router])
+  }, [user, loading, requiredRole, requireApproval, router])
 
   // Show loading while checking auth (with timeout protection)
   if (loading && !redirectedRef.current) {
@@ -111,7 +127,10 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   // Show loading while redirecting
-  if (!user || (requiredRole && user.role !== requiredRole) || redirectedRef.current) {
+  if (!user || 
+      (requireApproval && user.status !== 'approved' && user.role !== 'admin') ||
+      (requiredRole && user.role !== requiredRole) || 
+      redirectedRef.current) {
     console.log('🔄 ProtectedRoute showing redirect state')
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
