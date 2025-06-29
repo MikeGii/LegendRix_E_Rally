@@ -30,11 +30,6 @@
     }
   ],
   "regions": ["fra1"],
-  "framework": "nextjs",
-  "crons": [
-    {
-      "path": "/api/cron/rally-status-update",
-      "schedule": "*/30 * * * *"
-    }
-  ]
+  "framework": "nextjs"
+
 }
