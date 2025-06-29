@@ -24,10 +24,30 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
   const [members, setMembers] = useState<TeamMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [rulesAccepted, setRulesAccepted] = useState(false)
+  const [contentRef, setContentRef] = useState<HTMLDivElement | null>(null)
+  const [hasScroll, setHasScroll] = useState(false)
 
   useEffect(() => {
     fetchTeamMembers()
   }, [team.id])
+
+  // Check if content needs scrollbar
+  useEffect(() => {
+    const checkScroll = () => {
+      if (contentRef) {
+        const modalHeight = contentRef.parentElement?.offsetHeight || 0
+        const viewportHeight = window.innerHeight
+        const heightPercentage = (modalHeight / viewportHeight) * 100
+        
+      // Show scrollbar if modal is taller than 70% of viewport
+        setHasScroll(heightPercentage > 70)
+      }
+    }
+
+    checkScroll()
+    window.addEventListener('resize', checkScroll)
+    return () => window.removeEventListener('resize', checkScroll)
+  }, [contentRef, members, isLoading])
 
   const fetchTeamMembers = async () => {
     setIsLoading(true)
@@ -94,12 +114,13 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
       
       {/* Modal container with higher z-index */}
       <div 
-        className="fixed inset-0 flex items-center justify-center p-4"
-        style={{ zIndex: 9999 }}
+        className="fixed inset-0 flex items-start justify-center overflow-y-auto"
+        style={{ zIndex: 9999, paddingTop: '6rem', paddingBottom: '2rem' }}
       >
         <div 
-          className="relative bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-red-500/30 shadow-[0_0_40px_rgba(255,0,64,0.3)] max-w-2xl w-full overflow-hidden"
-          style={{ maxHeight: '80vh', height: 'auto' }}
+          ref={setContentRef}
+          className="relative bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-red-500/30 shadow-[0_0_40px_rgba(255,0,64,0.3)] max-w-2xl w-full mx-4 flex flex-col"
+          style={{ maxHeight: 'min(80vh, calc(100vh - 8rem))' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Animated background pattern */}
@@ -129,11 +150,9 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
 
           {/* Content */}
           <div 
-            className="relative z-10 p-6 overflow-y-auto custom-modal-scrollbar"
+            className={`relative z-10 p-6 flex-1 ${hasScroll ? 'overflow-y-auto custom-modal-scrollbar' : 'overflow-hidden'}`}
             style={{ 
-              maxHeight: 'calc(80vh - 144px)', // 80vh minus header (72px) and footer (72px)
               minHeight: '200px',
-              overflowY: 'auto'
             }}
           >
             {/* Team Info Card */}
@@ -262,7 +281,12 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
           </div>
 
           {/* Footer */}
-          <div className="relative p-6 border-t border-red-500/20 bg-black/50">
+          <div className="relative p-6 border-t border-red-500/20 bg-black/50 flex-shrink-0">
+            {/* Scroll indicator when content is scrollable */}
+            {hasScroll && (
+              <div className="absolute -top-8 left-0 right-0 h-8 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+            )}
+            
             <div className="flex items-center justify-end space-x-4">
               <button
                 onClick={onClose}
@@ -279,7 +303,7 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
                     : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
                 }`}
               >
-                Kandideeri
+                Saada taotlus
               </button>
             </div>
           </div>
