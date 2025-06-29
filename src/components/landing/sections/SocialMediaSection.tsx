@@ -12,7 +12,8 @@ export function SocialMediaSection() {
         Jälgi meid sotsiaalmeedias
       </h4>
       
-    <div className="flex justify-center items-center gap-8">
+
+      <div className="flex justify-center items-center gap-8">
         
         {/* Facebook */}
         <a 

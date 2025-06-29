@@ -51,8 +51,10 @@ export function useProfileCompletion() {
       console.log('✅ Profile updated successfully')
       setNeedsCompletion(false)
       
-      // Don't reload the page - the auth state will update naturally
-      // This prevents the page refresh
+      // Optionally refresh the page to get updated user data
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
       
       return { success: true }
       
