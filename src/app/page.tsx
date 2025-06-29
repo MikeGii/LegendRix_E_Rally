@@ -109,8 +109,8 @@ function HomeContent() {
   const handleLoginSuccess = useCallback(() => {
     setShowAuthModal(false)
     showToast({ message: 'Sisselogimine õnnestus!', type: 'success' })
-    // Stay on landing page after login - no redirect
-  }, [showToast])
+    router.push(user?.role === 'admin' ? '/admin-dashboard' : '/user-dashboard')
+  }, [user, router, showToast])
 
   const handleRegisterSuccess = useCallback(() => {
     setShowAuthModal(false)
