@@ -98,18 +98,6 @@ export function GameSelectionComponent({
                     `}>
                       {game.name}
                     </h3>
-                    
-                    <div className="mt-1">
-                      <span className={`
-                        inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium transition-all
-                        ${isSelected 
-                          ? 'bg-green-500/30 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)]' 
-                          : 'bg-green-500/20 text-green-400/80'
-                        }
-                      `}>
-                        AKTIIVNE
-                      </span>
-                    </div>
                   </div>
                 </button>
               )

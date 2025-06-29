@@ -130,10 +130,6 @@ export function EventSelectionComponent({
                     
                     {/* Content */}
                     <div className="relative z-10">
-                      {/* Country Flag */}
-                      <div className="text-2xl mb-1">
-                        {getCountryFlag(event.name)}
-                      </div>
                       
                       {/* Event Name */}
                       <h3 className={`
@@ -142,19 +138,6 @@ export function EventSelectionComponent({
                       `}>
                         {event.name}
                       </h3>
-                      
-                      {/* Active Badge */}
-                      <div className="mt-1">
-                        <span className={`
-                          inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium transition-all
-                          ${isSelected 
-                            ? 'bg-green-500/30 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)]' 
-                            : 'bg-green-500/20 text-green-400/80'
-                          }
-                        `}>
-                          AKTIIVNE
-                        </span>
-                      </div>
                     </div>
                   </button>
                 )
@@ -165,67 +148,4 @@ export function EventSelectionComponent({
       </div>
     </div>
   )
-}
-
-// Helper function to get country flag emoji
-function getCountryFlag(eventName: string): string {
-  const countryFlags: { [key: string]: string } = {
-    'Estonia': '🇪🇪',
-    'Eesti': '🇪🇪',
-    'Latvia': '🇱🇻',
-    'Läti': '🇱🇻',
-    'Lithuania': '🇱🇹',
-    'Leedu': '🇱🇹',
-    'Finland': '🇫🇮',
-    'Soome': '🇫🇮',
-    'Sweden': '🇸🇪',
-    'Rootsi': '🇸🇪',
-    'Norway': '🇳🇴',
-    'Norra': '🇳🇴',
-    'Poland': '🇵🇱',
-    'Poola': '🇵🇱',
-    'Germany': '🇩🇪',
-    'Saksamaa': '🇩🇪',
-    'UK': '🇬🇧',
-    'United Kingdom': '🇬🇧',
-    'Suurbritannia': '🇬🇧',
-    'France': '🇫🇷',
-    'Prantsusmaa': '🇫🇷',
-    'Italy': '🇮🇹',
-    'Itaalia': '🇮🇹',
-    'Spain': '🇪🇸',
-    'Hispaania': '🇪🇸',
-    'Russia': '🇷🇺',
-    'Venemaa': '🇷🇺',
-    'Denmark': '🇩🇰',
-    'Taani': '🇩🇰',
-    'Belgium': '🇧🇪',
-    'Belgia': '🇧🇪',
-    'Netherlands': '🇳🇱',
-    'Holland': '🇳🇱',
-    'Madalmaad': '🇳🇱',
-    'Austria': '🇦🇹',
-    'Switzerland': '🇨🇭',
-    'Šveits': '🇨🇭',
-    'Czech': '🇨🇿',
-    'Tšehhi': '🇨🇿',
-    'Portugal': '🇵🇹',
-    'USA': '🇺🇸',
-    'Canada': '🇨🇦',
-    'Kanada': '🇨🇦',
-    'Japan': '🇯🇵',
-    'Jaapan': '🇯🇵',
-    'Australia': '🇦🇺',
-    'Austraalia': '🇦🇺'
-  }
-  
-  // Try to find a match
-  for (const [key, flag] of Object.entries(countryFlags)) {
-    if (eventName.toLowerCase().includes(key.toLowerCase())) {
-      return flag
-    }
-  }
-  
-  // Default flag if no match found
-  return '🏁'
 }

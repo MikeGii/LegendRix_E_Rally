@@ -7,7 +7,9 @@ import { DashboardLayout } from '@/components/DashboardLayout'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { GameSelectionComponent } from '@/components/generate-rally/GameSelectionComponent'
 import { EventSelectionComponent } from '@/components/generate-rally/EventSelectionComponent'
+import { TrackLengthFilter } from '@/components/generate-rally/TrackLengthFilter'
 import { useGames, useGameEvents } from '@/hooks/useGameManagement'
+import '@/styles/track-length-filter.css'
 
 export default function GenerateRallyPage() {
   console.log('🎲 GenerateRallyPage - Component loaded')
@@ -15,6 +17,9 @@ export default function GenerateRallyPage() {
   // State
   const [selectedGameId, setSelectedGameId] = useState<string>('')
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>([])
+  const [minTrackLength, setMinTrackLength] = useState<number>(5)
+  const [maxTrackLength, setMaxTrackLength] = useState<number>(20)
+  const [trackCount, setTrackCount] = useState<number>(3)
   
   // Data hooks
   const { data: games = [], isLoading: gamesLoading } = useGames()
@@ -37,6 +42,30 @@ export default function GenerateRallyPage() {
     })
   }
   
+  // Handle track length change
+  const handleTrackLengthChange = (min: number, max: number) => {
+    setMinTrackLength(min)
+    setMaxTrackLength(max)
+  }
+  
+  // Handle track count change
+  const handleTrackCountChange = (count: number) => {
+    setTrackCount(count)
+  }
+  
+  // Handle rally generation
+  const handleGenerateRally = () => {
+    console.log('🎲 Generating rally with:', {
+      gameId: selectedGameId,
+      eventIds: selectedEventIds,
+      trackLength: { min: minTrackLength, max: maxTrackLength },
+      trackCount: trackCount
+    })
+    
+    // TODO: Implement actual rally generation logic
+    alert(`Rally genereerimine:\n- Mäng: ${games.find(g => g.id === selectedGameId)?.name}\n- Riigid: ${selectedEventIds.length}\n- Raja pikkus: ${minTrackLength}-${maxTrackLength} km\n- Radade arv: ${trackCount} rada iga riigi kohta`)
+  }
+  
   return (
     <ProtectedRoute requiredRole="admin">
       <DashboardLayout>
@@ -48,7 +77,9 @@ export default function GenerateRallyPage() {
             icon="🎲"
             stats={[
               { label: 'Valitud mäng', value: selectedGameId ? games.find(g => g.id === selectedGameId)?.name || '-' : '-', color: 'blue' },
-              { label: 'Valitud riigid', value: selectedEventIds.length, color: 'yellow' }
+              { label: 'Valitud riigid', value: selectedEventIds.length, color: 'yellow' },
+              { label: 'Raja pikkus', value: `${minTrackLength}-${maxTrackLength} km`, color: 'green' },
+              { label: 'Radade arv', value: `${trackCount} rada/riik`, color: 'red' }
             ]}
             actions={[]}
           />
@@ -71,25 +102,57 @@ export default function GenerateRallyPage() {
             />
           )}
           
-          {/* Generate Button - Only show when game and events are selected */}
+          {/* Track Length Filter - Only show when events are selected */}
           {selectedGameId && selectedEventIds.length > 0 && (
-            <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-              <div className="text-center">
-                <button
-                  onClick={() => {
-                    // TODO: Implement rally generation logic
-                    console.log('Generating rally with:', {
-                      gameId: selectedGameId,
-                      eventIds: selectedEventIds
-                    })
-                  }}
-                  className="px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-bold text-lg transition-all duration-200 shadow-[0_0_30px_rgba(220,38,38,0.3)] hover:shadow-[0_0_40px_rgba(220,38,38,0.5)] transform hover:scale-105"
-                >
-                  🎲 Genereeri Ralli!
-                </button>
-                <p className="text-slate-400 text-sm mt-3">
-                  Vajuta nuppu, et genereerida uus ralli valitud parameetritega
-                </p>
+            <TrackLengthFilter
+              minLength={minTrackLength}
+              maxLength={maxTrackLength}
+              trackCount={trackCount}
+              onLengthChange={handleTrackLengthChange}
+              onTrackCountChange={handleTrackCountChange}
+            />
+          )}
+          
+          {/* Generate Button - Only show when all parameters are selected */}
+          {selectedGameId && selectedEventIds.length > 0 && (
+            <div className="tech-border rounded-2xl shadow-[0_0_30px_rgba(255,0,64,0.2)] bg-black/90 backdrop-blur-xl overflow-hidden">
+              <div className="relative bg-gradient-to-r from-red-900/20 to-black p-8">
+                <div className="scan-line"></div>
+                <div className="text-center">
+                  <button
+                    onClick={handleGenerateRally}
+                    className="group relative px-12 py-5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-black text-xl font-['Orbitron'] uppercase tracking-wider transition-all duration-300 shadow-[0_0_30px_rgba(220,38,38,0.5)] hover:shadow-[0_0_50px_rgba(220,38,38,0.8)] transform hover:scale-105"
+                  >
+                    {/* Animated background glow */}
+                    <div className="absolute inset-0 rounded-xl bg-red-600 blur-xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
+                    
+                    {/* Button content */}
+                    <span className="relative z-10 flex items-center space-x-3">
+                      <span className="text-2xl animate-pulse">🎲</span>
+                      <span>Genereeri Ralli!</span>
+                    </span>
+                  </button>
+                  
+                  {/* Summary */}
+                  <div className="mt-6 inline-flex items-center space-x-6 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="text-gray-400">Mäng valitud</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                      <span className="text-gray-400">{selectedEventIds.length} riiki</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      <span className="text-gray-400">{minTrackLength}-{maxTrackLength} km rajad</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="text-gray-400">{trackCount} rada/riik</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
