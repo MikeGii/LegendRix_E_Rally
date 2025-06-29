@@ -142,6 +142,12 @@ export interface Rally {
   registered_participants?: number
   total_events?: number
   total_tracks?: number
+  // Real-time status fields - ADD THESE
+  real_time_status?: string      // Calculated real-time status
+  display_status?: string        // Status to display (real-time or inactive)
+  needs_status_update?: boolean  // True if DB status differs from real-time
+  db_status?: string            // Original DB status for comparison
+  admin_note?: string           // Admin notes
 }
 
 export interface RallyRegistration {

@@ -18,15 +18,16 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/dompurify": "^3.0.5",
     "bcryptjs": "^3.0.2",
+    "dompurify": "^3.2.6",
     "lodash": "^4.17.21",
     "lucide-react": "^0.518.0",
     "next": "^15.3.3",
     "nodemailer": "^6.9.8",
+    "quill": "^2.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.57.0",
-    "quill": "^2.0.3",
-    "dompurify": "^3.2.6"
+    "sonner": "^2.0.5"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.18",

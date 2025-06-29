@@ -1,6 +1,7 @@
 // src/hooks/useRallyManagement.ts - CLEANED VERSION
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { getRallyStatus } from './useOptimizedRallies'
 
 // CLEANED Rally Interface
 export interface Rally {
@@ -100,17 +101,25 @@ export function useRallies() {
       }
 
       // Transform with admin-specific info
-      const transformedRallies = rallies?.map((rally: any) => ({
-        ...rally,
-        game_name: rally.game?.name || 'Unknown Game',
-        game_type_name: rally.game_type?.name || 'Unknown Type',
-        registered_participants: 0, // Calculate if needed
-        total_events: 0, // Calculate if needed
-        total_tracks: 0, // Calculate if needed
-        // Add admin-specific display info
-        display_status: !rally.is_active ? 'inactive' : rally.status,
-        admin_note: !rally.is_active ? 'Deactivated' : null
-      })) || []
+      const transformedRallies = rallies?.map((rally: any) => {
+        const realTimeStatus = getRallyStatus(rally)
+        const needsUpdate = rally.status !== realTimeStatus
+        
+        return {
+          ...rally,
+          game_name: rally.game?.name || 'Unknown Game',
+          game_type_name: rally.game_type?.name || 'Unknown Type',
+          registered_participants: 0,
+          total_events: 0,
+          total_tracks: 0,
+          // Lisa need read
+          real_time_status: realTimeStatus,
+          display_status: !rally.is_active ? 'inactive' : realTimeStatus,
+          admin_note: !rally.is_active ? 'Deactivated' : (needsUpdate ? 'Staatus vajab uuendamist' : null),
+          needs_status_update: needsUpdate,
+          db_status: rally.status // säilita originaal võrdluseks
+        }
+      }) || []
 
       console.log(`✅ Rallies loaded for management: ${transformedRallies.length} (${transformedRallies.filter(r => !r.is_active).length} inactive)`)
       return transformedRallies

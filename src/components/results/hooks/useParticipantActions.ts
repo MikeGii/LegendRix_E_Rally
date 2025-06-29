@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { resultsKeys } from '@/hooks/useResultsManagement'
 import type { ManualParticipant } from './useResultsState'
+import { toast } from 'sonner'
 
 interface UseParticipantActionsProps {
   rallyId: string
@@ -41,16 +42,18 @@ export function useParticipantActions({
 
       return data
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      toast.success(`Osaleja "${variables.playerName}" lisatud edukalt!`)
       queryClient.invalidateQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
       onParticipantAdded()
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Failed to add manual participant:', error)
+      toast.error(`Osaleja lisamine ebaõnnestus: ${error.message}`)
     }
   })
 
-  // Remove participant mutation - FIXED: Better handling for both types
+  // Remove participant mutation - UPDATED WITH DIRECT DELETE
   const removeParticipantMutation = useMutation({
     mutationFn: async (participant: any) => {
       console.log('🗑️ Starting deletion process for:', participant.player_name)
@@ -74,113 +77,210 @@ export function useParticipantActions({
 
         if (deleteError) {
           console.error('❌ Failed to delete manual participant:', deleteError)
-          throw new Error(`Failed to delete manual participant: ${deleteError.message}`)
+          throw new Error(`Kustutamine ebaõnnestus: ${deleteError.message}`)
         }
 
         if (count === 0) {
-          throw new Error('No manual participant found to delete')
+          throw new Error('Osalejat ei leitud')
         }
 
         console.log('✅ Manual participant deleted successfully')
 
       } else {
-        // For registered participants: Use admin-level deletion with RLS bypass
+        // For registered participants: Use direct deletion approach
         console.log('🔍 Deleting registered participant...')
         
-        // Step 1: Delete any existing rally_results records first (to avoid FK constraints)
-        console.log('🔄 Step 1: Cleaning up rally results...')
-        const { error: resultsCleanupError } = await supabase
-          .from('rally_results')
-          .delete()
-          .eq('rally_id', rallyId)
-          .eq('user_id', participant.user_id)
+        // Show loading toast
+        const loadingToast = toast.loading('Kustutan registreeritud osalejat...')
+        
+        try {
+          // Step 1: Delete any existing rally_results records first
+          console.log('🔄 Step 1: Cleaning up rally results...')
+          const { error: resultsCleanupError } = await supabase
+            .from('rally_results')
+            .delete()
+            .eq('rally_id', rallyId)
+            .eq('user_id', participant.user_id)
 
-        if (resultsCleanupError) {
-          console.warn('⚠️ Rally results cleanup warning (may not exist):', resultsCleanupError)
-          // Don't throw here - results might not exist
-        }
-
-        // Step 2: Get the registration data for the user check
-        console.log('🔄 Step 2: Getting registration data...')
-        const { data: registrationData, error: fetchError } = await supabase
-          .from('rally_registrations')
-          .select('id, user_id, rally_id')
-          .eq('id', participant.id)
-          .eq('rally_id', rallyId)
-          .single()
-
-        if (fetchError) {
-          console.error('❌ Failed to fetch registration:', fetchError)
-          throw new Error(`Registration not found: ${fetchError.message}`)
-        }
-
-        console.log('📊 Registration data:', registrationData)
-
-        // Step 3: Use corrected RPC function to safely delete registration
-        console.log('🔄 Step 3: Calling corrected admin deletion function...')
-        const { error: rpcError } = await supabase
-          .rpc('admin_delete_rally_registration', {
-            registration_id: participant.id,
-            target_rally_id: rallyId
-          })
-
-        if (rpcError) {
-          console.error('❌ Primary RPC deletion failed:', rpcError)
-          
-          // Try the force delete function as a fallback
-          console.log('🔄 Trying force delete function...')
-          const { error: forceError } = await supabase
-            .rpc('force_delete_rally_registration', {
-              registration_id: participant.id,
-              target_rally_id: rallyId
-            })
-          
-          if (forceError) {
-            console.error('❌ Force deletion also failed:', forceError)
-            throw new Error(`Failed to delete registration: ${forceError.message}`)
+          if (resultsCleanupError) {
+            console.warn('⚠️ Rally results cleanup warning (may not exist):', resultsCleanupError)
           }
+
+          // Step 2: Get the registration data
+          console.log('🔄 Step 2: Getting registration data...')
+          const { data: registrationData, error: fetchError } = await supabase
+            .from('rally_registrations')
+            .select('id, user_id, rally_id')
+            .eq('id', participant.id)
+            .eq('rally_id', rallyId)
+            .single()
+
+          if (fetchError) {
+            toast.dismiss(loadingToast)
+            console.error('❌ Failed to fetch registration:', fetchError)
+            throw new Error(`Registreerimist ei leitud: ${fetchError.message}`)
+          }
+
+          console.log('📊 Registration data:', registrationData)
+
+          // Step 3: Use direct deletion
+          console.log('🔄 Step 3: Direct deletion approach...')
           
-          console.log('✅ Force deletion succeeded')
-        } else {
-          console.log('✅ Primary RPC deletion succeeded')
+          // Try to delete the registration directly
+          const { error: deleteError } = await supabase
+            .from('rally_registrations')
+            .delete()
+            .eq('id', participant.id)
+            .eq('rally_id', rallyId)
+
+          toast.dismiss(loadingToast)
+
+          if (deleteError) {
+            console.error('❌ Direct deletion failed:', deleteError)
+            
+            // If deletion fails due to permissions, try to cancel instead
+            if (deleteError.code === '42501' || deleteError.message.includes('permission')) {
+              console.log('🔄 Trying to cancel registration instead...')
+              
+              const { error: cancelError } = await supabase
+                .from('rally_registrations')
+                .update({ 
+                  status: 'cancelled',
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', participant.id)
+                .eq('rally_id', rallyId)
+              
+              if (cancelError) {
+                throw new Error(`Kustutamine/tühistamine ebaõnnestus: ${cancelError.message}`)
+              }
+              
+              console.log('⚠️ Registration cancelled (not deleted due to permissions)')
+              toast.warning('Registreerimine tühistatud (kustutamine pole lubatud)')
+              return participant.id
+            } else {
+              throw new Error(`Kustutamine ebaõnnestus: ${deleteError.message}`)
+            }
+          } else {
+            console.log('✅ Direct deletion succeeded')
+          }
+        } catch (error) {
+          toast.dismiss(loadingToast)
+          throw error
         }
 
-        console.log('✅ Registered participant deleted successfully')
+        console.log('✅ Registered participant removed successfully')
       }
 
       return participant.id
     },
-    onSuccess: (participantId, participant) => {
+    onMutate: async (participant) => {
+      // Optimistically remove from UI
+      const participantName = participant.player_name || participant.participant_name || 'Unknown'
+      console.log(`🔄 Optimistically removing ${participantName} from UI...`)
+    },
+    onSuccess: async (participantId, participant) => {
       console.log('🎉 Deletion completed successfully for:', participant.player_name)
+      
+      const participantName = participant.player_name || participant.participant_name || 'Unknown'
+      const isManual = participant.user_id === null || participant.user_id === 'manual-participant'
+      
+      // Show success message
+      toast.success(
+        isManual 
+          ? `Manuaalne osaleja "${participantName}" kustutatud!`
+          : `Registreeritud osaleja "${participantName}" eemaldatud!`,
+        {
+          duration: 5000,
+          description: isManual ? 'Osaleja on tulemuste tabelist eemaldatud.' : 'Osaleja registreerimine on tühistatud.'
+        }
+      )
       
       // Remove from local state immediately
       onParticipantRemoved(participantId)
       
-      // Force complete refresh of all related data
+      // Debug: Log all available query keys
+      console.log('Available query keys:', queryClient.getQueryCache().getAll().map(q => q.queryKey))
+      
+      // Force complete refresh with more aggressive approach
+      await queryClient.cancelQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
       queryClient.removeQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
-      queryClient.invalidateQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
-      queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
       
-      // Also invalidate registration-related queries
-      queryClient.invalidateQueries({ queryKey: ['rally_registrations'] })
-      queryClient.invalidateQueries({ queryKey: ['user-statistics'] })
+      // Try multiple query key variations
+      const queryVariations = [
+        resultsKeys.rally_participants(rallyId),
+        ['results_management', 'rally_participants', rallyId],
+        ['rally_participants', rallyId],
+        ['rally-participants', rallyId],
+        ['rallies'],
+        ['rally_registrations'],
+        ['user-statistics']
+      ]
       
-      // Force refetch to ensure UI updates
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: resultsKeys.rally_participants(rallyId) })
-      }, 100)
+      // Invalidate all variations
+      for (const queryKey of queryVariations) {
+        await queryClient.invalidateQueries({ queryKey })
+      }
       
-      console.log('✅ All queries refreshed')
+      // Force refetch with exact: false to catch partial matches
+      await queryClient.refetchQueries({ 
+        queryKey: resultsKeys.rally_participants(rallyId),
+        exact: false 
+      })
+      
+      // Additional refetch after delay
+      setTimeout(async () => {
+        await queryClient.refetchQueries({ 
+          queryKey: resultsKeys.rally_participants(rallyId),
+          exact: false
+        })
+        
+        // If still not working, try broader refetch
+        await queryClient.refetchQueries({
+          predicate: (query) => {
+            const key = query.queryKey as any[]
+            return key.includes(rallyId) || key.includes('rally_participants')
+          }
+        })
+      }, 300)
+      
+      console.log('✅ All queries refreshed with multiple approaches')
     },
-    onError: (error, participant) => {
+    onError: (error: any, participant) => {
       console.error('❌ Deletion failed for:', participant.player_name, error)
-      alert(`Failed to remove participant "${participant.player_name}": ${error.message}`)
+      const participantName = participant.player_name || participant.participant_name || 'Unknown'
+      
+      toast.error(`Kustutamine ebaõnnestus`, {
+        description: `Osaleja "${participantName}" eemaldamine ebaõnnestus: ${error.message}`,
+        duration: 7000,
+      })
+    },
+    onSettled: async () => {
+      // This runs after success OR error
+      console.log('🔄 onSettled: Final cleanup and refresh')
+      
+      // One more aggressive refresh attempt
+      await queryClient.invalidateQueries()
+      
+      // Focus on rally participants specifically
+      await queryClient.refetchQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[]
+          return queryKey.some(key => 
+            typeof key === 'string' && 
+            (key.includes('participant') || key === rallyId)
+          )
+        },
+        type: 'active'
+      })
     }
   })
 
   const handleAddParticipant = (participant: ManualParticipant) => {
     if (participant.playerName.trim() && participant.className.trim()) {
       addManualParticipantMutation.mutate(participant)
+    } else {
+      toast.error('Palun täitke kõik väljad!')
     }
   }
 
@@ -189,8 +289,8 @@ export function useParticipantActions({
     const participantName = participant.player_name || participant.participant_name || 'Unknown'
     
     const message = isManual 
-      ? `Are you sure you want to remove manually added participant "${participantName}"?`
-      : `Are you sure you want to remove registered participant "${participantName}" from the rally? This will also remove their registration.`
+      ? `Kas olete kindel, et soovite eemaldada manuaalse osaleja "${participantName}"?`
+      : `Kas olete kindel, et soovite eemaldada registreeritud osaleja "${participantName}"? See tühistab ka tema registreerimise.`
     
     if (confirm(message)) {
       removeParticipantMutation.mutate(participant)

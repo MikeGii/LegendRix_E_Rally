@@ -3,6 +3,7 @@
 
 import { Rally } from '@/hooks/useRallyManagement'
 import { useState } from 'react'
+import { AlertCircle } from 'lucide-react'
 
 interface RalliesGridProps {
   rallies: Rally[]
