@@ -1,7 +1,7 @@
 // src/components/auth/ProfileCompletionWrapper.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { ProfileCompletionForm } from './ProfileCompletionForm'
 
@@ -13,14 +13,23 @@ export function ProfileCompletionWrapper({ children }: ProfileCompletionWrapperP
   const { user, loading } = useAuth()
   const [showCompletionForm, setShowCompletionForm] = useState(false)
   const [checkComplete, setCheckComplete] = useState(false)
+  const previousUserIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     // Only check when:
     // 1. Not loading
     // 2. User exists (authenticated)
-    // 3. Haven't checked yet
-    // 4. User is actually logged in (not just on landing page)
+    // 3. Haven't checked yet for this user
+    // 4. User ID has changed (new login)
     if (!loading && user && !checkComplete) {
+      // Skip if we already checked this user
+      if (previousUserIdRef.current === user.id) {
+        return
+      }
+
+      // Store the user ID to prevent rechecking
+      previousUserIdRef.current = user.id
+
       console.log('🔍 Checking if authenticated user needs profile completion:', {
         userId: user.id,
         email: user.email,
@@ -41,9 +50,10 @@ export function ProfileCompletionWrapper({ children }: ProfileCompletionWrapperP
       
       setCheckComplete(true)
     } else if (!loading && !user) {
-      // User is not authenticated (on landing page, etc.) - just continue normally
-      console.log('ℹ️ No authenticated user - skipping profile completion check')
-      setCheckComplete(true)
+      // User logged out - reset state
+      previousUserIdRef.current = null
+      setCheckComplete(false)
+      setShowCompletionForm(false)
     }
   }, [user, loading, checkComplete])
 
@@ -51,20 +61,14 @@ export function ProfileCompletionWrapper({ children }: ProfileCompletionWrapperP
     console.log('✅ Profile completion finished')
     setShowCompletionForm(false)
     
-    // Force a page reload to get updated user data
-    window.location.reload()
+    // Don't reload - just let the component continue
+    // The user data will be updated through the auth state
   }
 
-  // Show loading only if auth is loading, not for profile completion check
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading...</p>
-        </div>
-      </div>
-    )
+  // Don't show loading screen - just pass through to children
+  // This prevents the flash during login
+  if (loading && !showCompletionForm) {
+    return <>{children}</>
   }
 
   // Show completion form only for authenticated users who need it
