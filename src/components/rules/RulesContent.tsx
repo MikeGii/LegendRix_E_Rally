@@ -158,12 +158,54 @@ export function RulesContent() {
         </div>
       </section>
 
-      {/* Section 3: Võistkondade reeglid */}
+
+      {/* Section 4: Võistkondliku mängu reeglid */}
       <section>
         <h2 className="text-3xl font-black text-red-500 font-['Orbitron'] tracking-wider mb-8 uppercase">
-          4. VÕISTKONDADE REEGLID
+          4. VÕISTKONDLIKU MÄNGU REEGLID
         </h2>
+        <div className="space-y-6 pl-4">
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-red-400">4.1 Võistkonna ülesehitus</h3>
+            <ul className="space-y-2 pl-6 list-disc text-white">
+              <li>Igal võistkonnal peab olema võistkonna pealik</li>
+              <li>Võistkonna pealiku määrab administraator</li>
+              <li>Võistkonda haldab võistkonna pealik</li>
+            </ul>
+          </div>
+          
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-red-400">4.2 Võistkonna pealiku kohustused</h3>
+            <ul className="space-y-2 pl-6 list-disc text-white">
+              <li>Võistkonna pealik saab vastu võtta ainult neid liikmeid, kes võistlevad võistkonna poolt määratud võistlusklassis</li>
+              <li>Võistkonna pealik on kohustatud jälgima, et tema võistkonna liikmed sõidavad võistkonnale määratud sõidukiga (sõiduki tootmisaasta ei ole määratud)</li>
+            </ul>
+          </div>
+          
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-red-400">4.3 Võistkonna pealiku õigused</h3>
+            <ul className="space-y-2 pl-6 list-disc text-white">
+              <li>Võistkonna pealik saab vastu võtta enda võistkonda liikmeid</li>
+              <li>Võistkonna pealik saab eemaldada enda võistkonnast liikmeid</li>
+            </ul>
+          </div>
 
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-red-400">4.4 Võistkonna liikme kohustused</h3>
+            <ul className="space-y-2 pl-6 list-disc text-white">
+              <li>Võistkonna liige on kohustatud sõitma võistkonnale määratud sõidukiga</li>
+              <li>Võistkonna liige on kohustatud ennast registreerima üritusel võistkonna poolt määratud võistlusklassi</li>
+            </ul>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-red-400">4.5 Võistkonna sõidu üldreeglid</h3>
+            <ul className="space-y-2 pl-6 list-disc text-white">
+              <li>Võistkonna punktid tulenevad individuaalsõidu arvestusest, eraldi võistkonna sõite ei ole</li>
+              <li>Võistkonna sõitudes lähevad arvesse iga ürituse kolme parima võistkonna liikme ajad</li>
+            </ul>
+          </div>
+        </div>
       </section>
 
     </div>
