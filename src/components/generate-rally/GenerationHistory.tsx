@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/AuthProvider'
+import { useMutation } from '@tanstack/react-query'
 import '@/styles/futuristic-theme.css'
 
 interface GenerationRecord {
@@ -53,6 +54,33 @@ export function GenerationHistory({ refreshKey }: { refreshKey?: number }) {
       console.error('Error loading generation history:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Delete generation record mutation
+  const deleteGenerationMutation = useMutation({
+    mutationFn: async (recordId: string) => {
+      const { error } = await supabase
+        .from('rally_generation_history')
+        .delete()
+        .eq('id', recordId)
+        .eq('user_id', user?.id)
+
+      if (error) throw error
+      return recordId
+    },
+    onSuccess: () => {
+      loadHistory()
+    },
+    onError: (error) => {
+      console.error('Error deleting generation record:', error)
+      alert('Viga kirje kustutamisel')
+    }
+  })
+
+  const handleDelete = async (recordId: string) => {
+    if (window.confirm('Kas oled kindel, et soovid selle genereerimise ajaloo kustutada?')) {
+      deleteGenerationMutation.mutate(recordId)
     }
   }
 
@@ -152,7 +180,18 @@ export function GenerationHistory({ refreshKey }: { refreshKey?: number }) {
                         </div>
                       </div>
                     </div>
-                    <div className="ml-4">
+                    <div className="ml-4 flex items-center space-x-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(record.id)
+                        }}
+                        disabled={deleteGenerationMutation.isPending}
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Kustuta kirje"
+                      >
+                        <span className="text-xl">🗑️</span>
+                      </button>
                       <div className={`transform transition-transform duration-200 ${expandedRecord === record.id ? 'rotate-180' : ''}`}>
                         <span className="text-gray-400 text-xl">⌄</span>
                       </div>

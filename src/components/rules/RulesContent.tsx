@@ -5,7 +5,10 @@ export function RulesContent() {
   return (
     <div className="max-w-4xl mx-auto space-y-16">
       {/* Privacy Policy Section */}
-{/* Privacy Policy Section */}
+      <section>
+        <p className="text-xl text-red-400">Viimati uuendatud 30.06.2025</p>
+      </section>
+      
       <section>
         <h2 className="text-3xl font-black text-red-500 font-['Orbitron'] tracking-wider mb-8 uppercase">
           1. PRIVAATSUSPOLIITIKA
@@ -153,6 +156,7 @@ export function RulesContent() {
               <li>Mängijal on rangelt soovituslik sõita hooaja vältel ühe ja sama sõidukiga, kuid seda ei saa kohustada</li>
               <li>Mängija, kes kuulub tiimi, peab järgima tiimi poolt määratud korraldusi ja reegleid</li>
               <li>Kui mängija lahkub poole ürituse pealt ja ei põhjenda oma lahkumist administraatoritele, võib see kaasa tuua ajutise osaluskeelu või ka jäädava konto blokeerimise</li>
+              <li>Kui mängija on rikkunud korduvalt reegleid ja on ajutiselt blokeeritud üritustelt osalemast, siis on võimalik kasutajakonto taastada makstes <span className="font-bold text-red-400">LegendRix</span> toetuskontole trahvisumma. Summa on kokkuleppel administraatoriga</li>
             </ul>
           </div>
         </div>
@@ -171,6 +175,7 @@ export function RulesContent() {
               <li>Igal võistkonnal peab olema võistkonna pealik</li>
               <li>Võistkonna pealiku määrab administraator</li>
               <li>Võistkonda haldab võistkonna pealik</li>
+              <li>Võistkond koosneb 4 liikmest (võistkonna pealik kaasaarvatud).</li>
             </ul>
           </div>
           

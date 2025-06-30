@@ -268,13 +268,16 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
                 <span className="text-sm text-gray-300 leading-relaxed group-hover:text-white transition-colors">
                   Kinnitan, et olen tutvunud võistluste reeglitega ja nõustun nendega. 
                   Mõistan, et tiimi kandideerimine ei garanteeri automaatset vastuvõtmist.
-                  <br /><br />
-                  <strong className="text-red-400">Reeglid:</strong>
-                  <br />• Tiimi liikmed peavad kasutama tiimile määratud sõidukit
-                  <br />• Tiimi liikmed peavad võistlema tiimile määratud klassis
-                  <br />• Tiimi suurus on piiratud vastavalt võistluste tingimustele
-                  <br />• Tiimi pealik otsustab tiimi tegevus üle
-                  <br />• Kõik liikmed peavad järgima võistluse reegleid ja ausat mängu põhimõtteid
+                    <br /><strong className="text-red-400">Reeglid: </strong>
+                    
+                    <a 
+                      href="/rules" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-red-400 hover:text-red-300 underline transition-colors duration-200"
+                    >
+                      Vaata tiimi reegleid siit
+                    </a>
                 </span>
               </label>
             </div>
