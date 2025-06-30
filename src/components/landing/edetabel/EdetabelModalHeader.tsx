@@ -2,8 +2,8 @@
 'use client'
 
 interface EdetabelModalHeaderProps {
-  viewType: 'rallies' | 'championships'
-  onViewTypeChange: (type: 'rallies' | 'championships') => void
+  viewType: 'rallies' | 'championships' | 'teams'
+  onViewTypeChange: (type: 'rallies' | 'championships' | 'teams') => void
   ralliesCount: number
   championshipsCount: number
   // Rally filters
@@ -38,7 +38,9 @@ export function EdetabelModalHeader({
         <p className="text-gray-400">
           {viewType === 'rallies' 
             ? 'Avalikud ralli tulemused'
-            : 'Avalikud koondarvestuste tulemused'
+            : viewType === 'championships'
+            ? 'Avalikud koondarvestuste tulemused'
+            : 'Tiimide edetabel'
           }
         </p>
       </div>
@@ -64,7 +66,17 @@ export function EdetabelModalHeader({
                 : 'text-gray-400 hover:text-red-400/70'
             }`}
           >
-            🏆 Meistrivõistlused ({championshipsCount})
+            🏆 Koondarvestused ({championshipsCount})
+          </button>
+          <button
+            onClick={() => onViewTypeChange('teams')}
+            className={`px-6 py-2 rounded-lg text-sm font-['Orbitron'] uppercase tracking-wider transition-all duration-300 ${
+              viewType === 'teams'
+                ? 'bg-red-600/20 text-red-400 border border-red-500/50'
+                : 'text-gray-400 hover:text-red-400/70'
+            }`}
+          >
+            👥 Tiimid
           </button>
         </div>
 

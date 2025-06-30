@@ -9,6 +9,7 @@ import { ChampionshipResultsModal } from '@/components/edetabel/ChampionshipResu
 import { EdetabelModalHeader } from './edetabel/EdetabelModalHeader'
 import { RalliesListView } from './edetabel/RalliesListView'
 import { ChampionshipsListView } from './edetabel/ChampionshipsListView'
+import { TeamListView } from './edetabel/TeamListView'
 
 interface EdetabelModalProps {
   isOpen: boolean
@@ -20,7 +21,7 @@ const RALLIES_PER_PAGE = 10
 
 export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: EdetabelModalProps) {
   // State management
-  const [viewType, setViewType] = useState<'rallies' | 'championships'>('rallies')
+  const [viewType, setViewType] = useState<'rallies' | 'championships' | 'teams'>('rallies')
   const [selectedRallyId, setSelectedRallyId] = useState<string | null>(null)
   const [selectedChampionship, setSelectedChampionship] = useState<PublicChampionship | null>(null)
   const [isChampionshipModalOpen, setIsChampionshipModalOpen] = useState(false)
@@ -90,7 +91,7 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
   const selectedRally = publicRallies.find(r => r.id === selectedRallyId)
 
   // Handlers
-  const handleViewTypeChange = (type: 'rallies' | 'championships') => {
+  const handleViewTypeChange = (type: 'rallies' | 'championships' | 'teams') => {
     setViewType(type)
     setCurrentPage(1)
   }
@@ -163,11 +164,15 @@ export function EdetabelModal({ isOpen, onClose, onChampionshipModalToggle }: Ed
                     onPageChange={setCurrentPage}
                     onRallyClick={setSelectedRallyId}
                   />
-                ) : (
+                ) : viewType === 'championships' ? (
                   <ChampionshipsListView
                     championships={publicChampionships}
                     isLoading={isLoadingChampionships}
                     onChampionshipClick={handleChampionshipClick}
+                  />
+                ) : (
+                  <TeamListView
+                    isLoading={false}
                   />
                 )}
               </div>
