@@ -4,6 +4,7 @@
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useAuth } from '@/components/AuthProvider'
+import { RulesContent } from '@/components/rules/RulesContent'
 import '@/styles/futuristic-theme.css'
 
 export default function RulesPage() {
@@ -84,45 +85,7 @@ export default function RulesPage() {
           </div>
 
           {/* Rules Content */}
-          <div className="max-w-4xl mx-auto space-y-12">
-            {/* Section 1: Üldised reeglid */}
-            <section className="tech-border rounded-2xl p-8 bg-black/50">
-              <h2 className="text-2xl font-bold text-red-400 font-['Orbitron'] tracking-wider mb-6">
-                1. ÜLDISED REEGLID
-              </h2>
-              <div className="space-y-4 text-gray-300">
-                <p>
-                  Siia tuleb üldiste reeglite sisu...
-                </p>
-              </div>
-            </section>
-
-            {/* Section 2: Registreerimise reeglid */}
-            <section className="tech-border rounded-2xl p-8 bg-black/50">
-              <h2 className="text-2xl font-bold text-red-400 font-['Orbitron'] tracking-wider mb-6">
-                2. REGISTREERIMISE REEGLID
-              </h2>
-              <div className="space-y-4 text-gray-300">
-                <p>
-                  Siia tuleb registreerimise reeglite sisu...
-                </p>
-              </div>
-            </section>
-
-            {/* Section 3: Võistkondade reeglid */}
-            <section className="tech-border rounded-2xl p-8 bg-black/50">
-              <h2 className="text-2xl font-bold text-red-400 font-['Orbitron'] tracking-wider mb-6">
-                3. VÕISTKONDADE REEGLID
-              </h2>
-              <div className="space-y-4 text-gray-300">
-                <p>
-                  Siia tuleb võistkondade reeglite sisu...
-                </p>
-              </div>
-            </section>
-
-            {/* Add more sections as needed */}
-          </div>
+          <RulesContent />
         </div>
       </main>
     </div>
