@@ -93,6 +93,13 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
       priority: 'primary'
     },
     {
+      icon: '📜',
+      label: 'Reeglid',
+      description: 'Platvormi reeglid ja tingimused',
+      action: () => navigateTo('/rules'),
+      priority: 'primary'
+    },
+    {
       icon: '⚙️',
       label: 'Kasutaja Sätted',
       description: 'Profiili ja eelistuste haldamine',
