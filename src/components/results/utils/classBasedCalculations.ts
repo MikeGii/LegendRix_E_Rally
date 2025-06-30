@@ -12,16 +12,14 @@ export function calculateClassBasedPositions(
   results: Record<string, ParticipantResult>
 ): CalculatedPosition[] {
   // Filter to only participants with points > 0
-  const participantsWithPoints = Object.values(results).filter(result => 
-    result.overallPoints && result.overallPoints > 0
-  )
+  const allParticipants = Object.values(results)
 
-  if (participantsWithPoints.length === 0) {
+  if (allParticipants.length === 0) {
     return []
   }
 
   // Sort by overall points (descending), then by extra points (descending) for tiebreaker
-  const sortedByOverallPoints = [...participantsWithPoints].sort((a, b) => {
+  const sortedByOverallPoints = [...allParticipants].sort((a, b) => {
     const overallPointsDiff = (b.overallPoints || 0) - (a.overallPoints || 0)
     if (overallPointsDiff !== 0) {
       return overallPointsDiff
@@ -31,7 +29,7 @@ export function calculateClassBasedPositions(
   })
 
   // Group by class for class positions
-  const participantsByClass = _.groupBy(participantsWithPoints, 'className')
+  const participantsByClass = _.groupBy(allParticipants, 'className')
 
   const calculatedPositions: CalculatedPosition[] = []
 

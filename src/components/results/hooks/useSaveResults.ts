@@ -335,8 +335,8 @@ async function updateRallyResultsStatus(rallyId: string): Promise<void> {
 
     const hasAllResults = allParticipants.every(p => 
       p.overall_position !== null || 
-      (p.total_points !== null && p.total_points > 0) ||
-      (p.extra_points !== null && p.extra_points > 0)
+      p.total_points !== null ||  // Removed > 0 check
+      p.extra_points !== null     // Removed > 0 check
     )
 
     // Check if record exists
