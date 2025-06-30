@@ -82,23 +82,33 @@ export function UserRegistrationsSection({ registrations }: UserRegistrationsSec
   }
 
   // Helper function to check if rally is in the past (competition_date + 24 hours)
-  const isRallyInPast = (rallyCompetitionDate: string | undefined) => {
-    if (!rallyCompetitionDate) return false
+  const isRallyInPast = (registration: UserRallyRegistration) => {
+    // Primary check: use rally status from database
+    if (registration.rally_status === 'completed' || registration.rally_status === 'cancelled') {
+      return true
+    }
     
-    const competitionDate = new Date(rallyCompetitionDate)
+    // Secondary check: if no competition date, keep in current
+    if (!registration.rally_competition_date) return false
+    
+    // Fallback check: use 2-hour rule only if status is not 'active' or 'registration_open'
+    const competitionDate = new Date(registration.rally_competition_date)
     const now = new Date()
     const twoHoursLater = new Date(competitionDate.getTime() + (2 * 60 * 60 * 1000))
     
-    return now > twoHoursLater
+    // Only move to past if time has passed AND rally is not in an active state
+    return now > twoHoursLater && 
+           registration.rally_status !== 'active' && 
+           registration.rally_status !== 'registration_open'
   }
 
   // Filter current and past registrations
   const currentRegistrations = registrations.filter(reg => 
-    !isRallyInPast(reg.rally_competition_date)
+    !isRallyInPast(reg)
   )
   
   const pastRegistrations = registrations.filter(reg => 
-    isRallyInPast(reg.rally_competition_date)
+    isRallyInPast(reg)
   )
 
   // Sort registrations by competition date
