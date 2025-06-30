@@ -58,7 +58,6 @@ export function calculatePositionsFromPoints(
       result: results[id],
       overallPoints: (results[id]?.totalPoints || 0) + (results[id]?.extraPoints || 0)
     }))
-    .filter(p => p.overallPoints > 0)
     .sort((a, b) => {
       // Primary sort: overall points (descending - higher is better)
       if (b.overallPoints !== a.overallPoints) {
@@ -78,7 +77,6 @@ export function calculatePositionsFromPoints(
   // Calculate class positions within each class
   participantsByClass.forEach((classParticipants, className) => {
     const participantsWithPoints = classParticipants
-      .filter(p => p.result.overallPoints > 0)
       .sort((a, b) => {
         // Primary sort: overall points (descending)
         if (b.result.overallPoints !== a.result.overallPoints) {
