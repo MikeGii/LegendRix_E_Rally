@@ -1,38 +1,66 @@
-// src/components/landing/Footer.tsx - Compact Black and Red Theme
+// src/components/landing/Footer.tsx - Updated with 3 columns
+'use client'
+
+import { useRouter } from 'next/navigation'
+
 export function Footer() {
+  const router = useRouter()
+
   return (
     <footer className="relative mt-16 border-t border-red-500/30">
       {/* Subtle background gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black to-transparent"></div>
       
-      <div className="relative max-w-7xl mx-auto px-6 py-4">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-3">
-          {/* Contact Section */}
-          <div className="text-center md:text-left">
-            <h5 className="text-sm font-bold text-red-500 mb-1 font-['Orbitron'] uppercase tracking-wider">
-              Kontakt
-            </h5>
-            <a 
-              href="mailto:info@legendrix.ee" 
-              className="text-red-400/70 hover:text-red-400 transition-colors duration-300 text-sm"
-            >
-              info@legendrix.ee
-            </a>
+      <div className="relative max-w-7xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
+          {/* Column 1: Kontakt */}
+          <div className="flex justify-center">
+            <div className="text-left">
+              <h5 className="text-sm font-bold text-red-500 mb-2 font-['Orbitron'] uppercase tracking-wider">
+                Kontakt
+              </h5>
+              <a 
+                href="mailto:info@legendrix.ee" 
+                className="text-gray-400 hover:text-red-400 transition-colors duration-300 text-sm"
+              >
+                info@legendrix.ee
+              </a>
+            </div>
           </div>
 
-          {/* Divider for desktop */}
-          <div className="hidden md:block w-px h-8 bg-red-500/30"></div>
+          {/* Column 2: Informatsioon */}
+          <div className="flex justify-center">
+            <div className="text-left">
+              <h5 className="text-sm font-bold text-red-500 mb-2 font-['Orbitron'] uppercase tracking-wider">
+                Informatsioon
+              </h5>
+              <button
+                onClick={() => router.push('/rules')}
+                className="text-gray-400 hover:text-red-400 transition-colors duration-300 text-sm block"
+              >
+                Reeglid
+              </button>
+            </div>
+          </div>
 
-          {/* Copyright Section */}
-          <div className="text-center md:text-right">
-            <p className="text-red-400/70 text-xs">
-              © 2025 LegendRix. Kõik õigused kaitstud.
-            </p>
+          {/* Column 3: Copyright */}
+          <div className="flex justify-center">
+            <div className="text-left">
+              <h5 className="text-sm font-bold text-red-500 mb-2 font-['Orbitron'] uppercase tracking-wider">
+                &nbsp;
+              </h5>
+              <p className="text-gray-400 text-xs">
+                © 2025 LegendRix
+              </p>
+              <p className="text-gray-500 text-xs">
+                Kõik õigused kaitstud
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Bottom accent line - thinner and more subtle */}
-        <div className="mt-3 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent"></div>
+        {/* Bottom accent line */}
+        <div className="h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent"></div>
       </div>
     </footer>
   )
