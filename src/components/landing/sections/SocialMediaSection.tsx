@@ -117,7 +117,7 @@ export function SocialMediaSection() {
 
         {/* Discord */}
         <a 
-          href="https://discord.gg/legendrix" 
+          href="https://discord.gg/uaE9pkD7Ym" 
           target="_blank" 
           rel="noopener noreferrer"
           className="group relative"
