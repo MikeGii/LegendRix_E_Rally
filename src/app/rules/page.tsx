@@ -80,7 +80,7 @@ export default function RulesPage() {
               <span className="text-red-500">REEGLID</span>
             </h1>
             <p className="text-gray-400 text-lg">
-              LegendRix E-Rally platvormi kasutustingimused ja reeglid
+              LegendRix E-spordikeskuse platvormi privaatsuspoliitika, kasutustingimused ja reeglid
             </p>
           </div>
 
