@@ -73,7 +73,7 @@ export function RulesContent() {
         </div>
       </section>
 
-      {/* Section 1: Üldised reeglid */}
+      {/* Section 2: Üldised reeglid */}
       <section>
         <h2 className="text-3xl font-black text-red-500 font-['Orbitron'] tracking-wider mb-8 uppercase">
           2. ÜLDISED REEGLID
@@ -99,12 +99,40 @@ export function RulesContent() {
         </div>
       </section>
 
-      {/* Section 2: Registreerimise reeglid */}
+      {/* Section 3: Tegevustes osavõtu reeglid */}
       <section>
         <h2 className="text-3xl font-black text-red-500 font-['Orbitron'] tracking-wider mb-8 uppercase">
-          3. REGISTREERIMISE REEGLID
+          3. TEGEVUSTES OSAVÕTU REEGLID
         </h2>
+        <div className="space-y-6 pl-4">
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-red-400">3.1 Osalemise eeltingimused</h3>
+            <ul className="space-y-2 pl-6 list-disc text-white">
+              <li>Iga kasutaja peab omama legaalsel viisil saadud/soetatud mängu, milles üritus läbi viiakse</li>
+              <li>Iga kasutaja peab omama võimalust läbi Discord keskkonna liituda antud üritusel läbiviidava kõnesillaga</li>
+              <li>Iga kasutaja peab olema veendunud, et tema poolt kasutatavad seadmed (arvuti, mikrofon ja teised lisaseadmed) on töökorras ja valmis kasutamiseks</li>
+              <li>Teised üritusel osalevad isikud ei pea ootama, kui kellelgi tekivad ürituse vältel tehnilised probleemid</li>
+            </ul>
+          </div>
+          
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-red-400">3.2 Registreerimise kord</h3>
+            <ul className="space-y-2 pl-6 list-disc text-white">
+              <li>Üritusele tuleb registreerida läbi legendrix.ee keskkonna loodud registreerimisvormi</li>
+              <li>Üritusele registreerimata kasutajakontosid üritusel ei arvestata ning vajadusel eemaldatakse ilma hoiatamata mängus olevast lobbyst</li>
+              <li>Üritusele ei ole võimalik registreeruda kui registreerimiseks ettenähtud tähtaeg on möödunud</li>
+            </ul>
+          </div>
 
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-red-400">3.3 Osalejate piirangud ja teavitused</h3>
+            <ul className="space-y-2 pl-6 list-disc text-white">
+              <li>Üritustel võib olla piiratud arv kohti</li>
+              <li>Administraatoritel on õigus vajadusel tühistada registreeringuid kui pole kinni peetud kokkulepitud ürituse korraldusest (näiteks tasulised üritused või toetajatele mõeldud üritused)</li>
+              <li>Uutest üritustest teavitatakse kasutajaid e-posti teel, et kõik mängijad saaksid õigeaegselt registreeruda</li>
+            </ul>
+          </div>
+        </div>
       </section>
 
       {/* Section 3: Võistkondade reeglid */}
