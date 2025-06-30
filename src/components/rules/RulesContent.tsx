@@ -132,6 +132,29 @@ export function RulesContent() {
               <li>Uutest üritustest teavitatakse kasutajaid e-posti teel, et kõik mängijad saaksid õigeaegselt registreeruda</li>
             </ul>
           </div>
+
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-red-400">3.4 Registreerimisega nõustumine</h3>
+            <p className="text-white mb-3 pl-6">Üritusele registreerides mängija kinnitab, et:</p>
+            <ul className="space-y-2 pl-6 list-disc text-white">
+              <li>Tema mängus osalemist võidakse otseülekandes avalikult kuvada <span className="font-bold text-red-400">LegendRix</span> kanalite jälgijatele ja pealtvaatajatele</li>
+              <li>Tema mängus sooritatud tulemused võidakse avalikult legendrix.ee keskkonnas kuvada</li>
+              <li>Tema käest võidakse <span className="font-bold text-red-400">LegendRix</span> otseülekandes avalikult üle kõnesilla küsida kommentaare ja tagasisidet mängus tehtud soorituste kohta</li>
+              <li>Mõistab heatava põhimõtet ja kui on omale registreerinud koha üritusele, siis on ka nõutud osavõtt</li>
+              <li>Registreeringu mitte tühistamise ja administraatorite mitte teavitamise korral (kui tühistamine pole võimalik) kui osavõtt pole võimalik, võib see tuua kaasa kasutajakonto kustutamise</li>
+            </ul>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-red-400">3.5 Üritustel osavõtu kord</h3>
+            <ul className="space-y-2 pl-6 list-disc text-white">
+              <li>Mängija, kes osaleb tiitlivõistlustel (meistrivõistlused, karikavõistlused) määrab omale hooaja alguses esimese registreerimisega, millises võistlusklassis ta osaleb hooaja vältel</li>
+              <li>Hooaja kestel ei ole lubatud võistlusklassi muuta - mängijale, kes muudab võistlusklassi hooaja vältel, tulemusi ei arvestata</li>
+              <li>Mängijal on rangelt soovituslik sõita hooaja vältel ühe ja sama sõidukiga, kuid seda ei saa kohustada</li>
+              <li>Mängija, kes kuulub tiimi, peab järgima tiimi poolt määratud korraldusi ja reegleid</li>
+              <li>Kui mängija lahkub poole ürituse pealt ja ei põhjenda oma lahkumist administraatoritele, võib see kaasa tuua ajutise osaluskeelu või ka jäädava konto blokeerimise</li>
+            </ul>
+          </div>
         </div>
       </section>
 
