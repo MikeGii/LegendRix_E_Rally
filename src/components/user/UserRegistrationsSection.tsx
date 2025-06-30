@@ -87,9 +87,9 @@ export function UserRegistrationsSection({ registrations }: UserRegistrationsSec
     
     const competitionDate = new Date(rallyCompetitionDate)
     const now = new Date()
-    const twentyFourHoursLater = new Date(competitionDate.getTime() + (24 * 60 * 60 * 1000))
+    const twoHoursLater = new Date(competitionDate.getTime() + (2 * 60 * 60 * 1000))
     
-    return now > twentyFourHoursLater
+    return now > twoHoursLater
   }
 
   // Filter current and past registrations
