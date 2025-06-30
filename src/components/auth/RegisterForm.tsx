@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '@/components/AuthProvider'
+import { useRouter } from 'next/navigation'
 
 interface RegisterFormData {
   name: string
@@ -23,6 +24,7 @@ interface RegisterFormProps {
 export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const router = useRouter()
   
   // Add error boundary for useAuth
   let auth;
@@ -242,7 +244,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         )}
       </div>
 
-      {/* Rules Section with futuristic styling */}
+      {/* Rules Section with Link to Rules Page */}
       <div className="relative bg-black/40 backdrop-blur-md border border-gray-800 rounded-xl p-6 space-y-4">
         {/* Animated corner accents */}
         <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-red-500/50"></div>
@@ -250,34 +252,26 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-red-500/50"></div>
         <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-red-500/50"></div>
         
-        <h3 className="font-['Orbitron'] font-bold text-red-400 uppercase tracking-wider mb-3">Reeglid</h3>
+        <h3 className="font-['Orbitron'] font-bold text-red-400 uppercase tracking-wider mb-3">Kasutustingimused</h3>
         
-        <div className="space-y-3 text-sm text-gray-300">
-          <div className="flex items-start space-x-3">
-            <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">1.</span>
-            <p>EWRC on sõbralik keskkond, kus pole kohta vihkamisele, kiusamisele ja rassismile.</p>
-          </div>
-          
-          <div className="flex items-start space-x-3">
-            <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">2.</span>
-            <p>EWRC meeskonnal on õigus tühistada konto, mis rikub reegleid.</p>
-          </div>
-          
-          <div className="flex items-start space-x-3">
-            <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">3.</span>
-            <p>Iga võistleja vastutab oma andmete, paroolide ja konto turvalisuse eest.</p>
-          </div>
-          
-          <div className="flex items-start space-x-3">
-            <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">4.</span>
-            <p>Võistlustel sõitmiseks peab olema EWRC konto ja olema võistlusele registreeritud.</p>
-          </div>
-          
-          <div className="flex items-start space-x-3">
-            <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">5.</span>
-            <p>Võistlustel peab kasutama sama mängija nime, mis on registreerimise juures märgitud.</p>
-          </div>
-          
+        <p className="text-sm text-gray-300">
+          Enne registreerumist palun tutvu LegendRix platvormi reeglitega.
+        </p>
+        
+        {/* Link to Rules Page */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => router.push('/rules')}
+            className="group px-6 py-3 bg-gradient-to-r from-red-600/20 to-red-700/20 border border-red-500/50 rounded-lg hover:border-red-400 hover:bg-red-600/30 transition-all duration-300 flex items-center space-x-3"
+          >
+            <span className="text-red-400 group-hover:text-red-300 font-['Orbitron'] uppercase tracking-wider text-sm font-bold">
+              Vaata reegleid
+            </span>
+            <span className="text-red-400 group-hover:text-red-300 transition-all duration-300 group-hover:translate-x-1">
+              →
+            </span>
+          </button>
         </div>
 
         <div className="flex items-start space-x-3 pt-3 border-t border-gray-800">
@@ -291,7 +285,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
             className="mt-1 w-4 h-4 bg-black/60 border-gray-700 rounded text-red-500 focus:ring-red-500/50 focus:ring-2 disabled:opacity-50"
           />
           <label htmlFor="agreeToRules" className="text-sm text-gray-300 cursor-pointer">
-            Olen tutvunud ja nõustun eelnimetatud reeglitega
+            Olen tutvunud LegendRix reeglitega ja nõustun kõigi tingimustega
           </label>
         </div>
         {errors.agreeToRules && (
