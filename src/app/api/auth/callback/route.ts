@@ -76,37 +76,27 @@ export async function GET(request: NextRequest) {
       if (data.session && data.user) {
         console.log('✅ Email verified successfully')
         
-        // Check if user record exists in database
-        const { data: existingUser, error: fetchError } = await supabase
+        // User should already exist from the trigger during registration
+        // Just update their email_verified status
+        const { error: updateError } = await supabase
           .from('users')
-          .select('*')
-          .eq('id', data.user.id)
-          .maybeSingle()
-
-        if (fetchError && fetchError.code !== 'PGRST116') {
-          console.error('❌ Error fetching user:', fetchError)
-        }
-
-        // Create user record if it doesn't exist
-        if (!existingUser) {
-          const userMetadata = data.user.user_metadata || {}
-          const newUserData = {
-            id: data.user.id,
-            email: data.user.email!,
-            name: userMetadata.name || data.user.email!,
-            player_name: userMetadata.player_name || null,
-            role: data.user.email === 'ewrc.admin@ideemoto.ee' ? 'admin' : 'user',
+          .update({
             email_verified: true,
-            admin_approved: data.user.email === 'ewrc.admin@ideemoto.ee',
-            status: data.user.email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval'
-          }
+            status: data.user.email === 'ewrc.admin@ideemoto.ee' ? 'approved' : 'pending_approval',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', data.user.id)
 
-          await supabase.from('users').insert([newUserData])
+        if (updateError) {
+          console.error('⚠️ Could not update email verification status:', updateError)
+          // Don't fail - the email was verified in auth system
         }
         
         return NextResponse.redirect(`${requestUrl.origin}/?verified=true`)
       }
-    } catch (error) {
+    
+    }
+     catch (error) {
       console.error('❌ Email verification error:', error)
       return NextResponse.redirect(`${requestUrl.origin}/?error=verification_failed`)
     }
