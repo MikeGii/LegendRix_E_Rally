@@ -1,4 +1,4 @@
-// src/components/GameManagement.tsx - VISUAL REDESIGN ONLY
+// src/components/GameManagement.tsx - Fixed Header Layout
 'use client'
 
 import { useState } from 'react'
@@ -27,6 +27,10 @@ export function GameManagement() {
   const { data: gameClasses = [] } = useGameClasses(selectedGameId)
   const { data: eventTracks = [] } = useEventTracks(selectedEventId)
   const { data: gameVehicles = [] } = useGameVehicles(selectedGameId)
+  
+  const handleBackToAdmin = () => {
+    window.location.href = '/admin-dashboard'
+  }
 
   const tabs: Tab[] = [
     { 
@@ -144,13 +148,16 @@ export function GameManagement() {
         {/* Unified Admin Header - Futuristic Style */}
         <div className="mb-8">
           <div className="tech-border rounded-2xl bg-gray-900/50 backdrop-blur-xl p-8">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
+              {/* Left Side - Title and Description */}
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-red-500/20 rounded-xl flex items-center justify-center border border-red-500/30">
+                <div className="w-16 h-16 bg-gradient-to-br from-red-900/30 to-red-800/20 
+                              border border-red-500/30 rounded-xl flex items-center justify-center
+                              shadow-[0_0_15px_rgba(255,0,64,0.5)]">
                   <span className="text-3xl">🎮</span>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold font-['Orbitron'] text-white">
+                  <h1 className="text-3xl font-bold font-['Orbitron'] text-white tracking-wider">
                     Mängude haldamine
                   </h1>
                   <p className="text-gray-400 mt-1">
@@ -159,13 +166,38 @@ export function GameManagement() {
                 </div>
               </div>
               
-              {/* Juhend Button */}
-              <button
-                onClick={() => setIsInstructionsOpen(true)}
-                className="px-6 py-3 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white font-['Orbitron'] font-medium rounded-xl border border-gray-600 hover:border-gray-500 transition-all duration-300 shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] uppercase tracking-wider text-sm"
-              >
-                Juhend
-              </button>
+              {/* Right Side - Stacked Buttons */}
+              <div className="flex flex-col space-y-3">
+                {/* Juhend Button */}
+                <button
+                  onClick={() => setIsInstructionsOpen(true)}
+                  className="group px-6 py-3 bg-gradient-to-r from-gray-800 to-gray-900
+                           hover:from-red-900/20 hover:to-red-800/20
+                           border border-gray-700 hover:border-red-500/50
+                           rounded-xl transition-all duration-300
+                           text-white font-['Orbitron'] font-medium tracking-wider
+                           shadow-lg hover:shadow-[0_0_20px_rgba(255,0,64,0.3)]
+                           flex items-center justify-center space-x-2"
+                >
+                  <span className="text-lg">📖</span>
+                  <span className="uppercase text-sm">Juhend</span>
+                </button>
+                
+                {/* Tagasi Button */}
+                <button
+                  onClick={handleBackToAdmin}
+                  className="group px-6 py-3 bg-gradient-to-r from-gray-800 to-gray-900
+                           hover:from-red-900/20 hover:to-red-800/20
+                           border border-gray-700 hover:border-red-500/50
+                           rounded-xl transition-all duration-300
+                           text-white font-['Orbitron'] font-medium tracking-wider
+                           shadow-lg hover:shadow-[0_0_20px_rgba(255,0,64,0.3)]
+                           flex items-center justify-center space-x-2"
+                >
+                  <span className="text-red-400 group-hover:text-red-300 transition-colors">←</span>
+                  <span className="uppercase text-sm">Tagasi</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
