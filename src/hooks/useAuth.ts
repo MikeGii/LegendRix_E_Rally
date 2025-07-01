@@ -245,7 +245,6 @@ export function useAuth() {
   }
 
   const register = async (email: string, password: string, name: string, playerName?: string): Promise<AuthResponse> => {
-    
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -266,6 +265,10 @@ export function useAuth() {
       }
 
       if (data.user) {
+        // The trigger now handles creating the user record with all fields including player_name
+        // No need to create or update anything here
+        console.log('✅ User registered successfully')
+        
         return {
           success: true,
           data: data.user
@@ -283,7 +286,7 @@ export function useAuth() {
       }
     }
   }
-
+    
   const logout = async (): Promise<void> => {
     
     try {

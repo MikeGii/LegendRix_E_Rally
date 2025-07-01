@@ -1,4 +1,4 @@
-// src/components/UserManagement.tsx - Updated with Unified Admin Design
+// src/components/UserManagement.tsx - Fixed Version
 'use client'
 
 import { useState } from 'react'
@@ -21,12 +21,32 @@ export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [currentAction, setCurrentAction] = useState<UserAction | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
+  const [showAllPending, setShowAllPending] = useState(false)
+  const [showAllApproved, setShowAllApproved] = useState(false)
+  const [pendingPage, setPendingPage] = useState(1)
+  const [approvedPage, setApprovedPage] = useState(1)
+
+  // Constants
+  const INITIAL_DISPLAY = 10
+  const ITEMS_PER_PAGE = 20
 
   // Data Hooks
   const { data: users = [], isLoading, error, refetch } = useAllUsers()
   const userActionMutation = useUserAction()
   const deleteUserMutation = useDeleteUser()
   const promoteUserMutation = usePromoteUser()
+
+  // Sort function
+  const sortUsers = (users: ExtendedUser[]) => {
+    return [...users].sort((a, b) => {
+      // First, sort by role (admins first)
+      if (a.role === 'admin' && b.role !== 'admin') return -1
+      if (a.role !== 'admin' && b.role === 'admin') return 1
+      
+      // Then sort alphabetically by name
+      return a.name.toLowerCase().localeCompare(b.name.toLowerCase(), 'et-EE')
+    })
+  }
 
   // Filter users based on search
   const filteredUsers = users.filter(user => 
@@ -35,15 +55,50 @@ export function UserManagement() {
     (user.player_name && user.player_name.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
-  // Separate pending and approved users
-  const pendingUsers = filteredUsers.filter(user => 
-    user.status === 'pending_email' || 
-    (user.status === 'pending_approval' && user.email_verified && !user.admin_approved)
+  // Separate and sort pending and approved users
+  const allPendingUsers = sortUsers(
+    filteredUsers.filter(user => 
+      user.status === 'pending_email' || 
+      (user.status === 'pending_approval' && user.email_verified && !user.admin_approved)
+    )
   )
 
-  const approvedUsers = filteredUsers.filter(user => 
-    user.status === 'approved' || user.admin_approved
+  const allApprovedUsers = sortUsers(
+    filteredUsers.filter(user => 
+      user.status === 'approved' || user.admin_approved
+    )
   )
+
+  // Pagination logic for pending users
+  const getPendingUsersToDisplay = () => {
+    if (!showAllPending) {
+      return allPendingUsers.slice(0, INITIAL_DISPLAY)
+    }
+    const startIndex = (pendingPage - 1) * ITEMS_PER_PAGE
+    const endIndex = startIndex + ITEMS_PER_PAGE
+    return allPendingUsers.slice(startIndex, endIndex)
+  }
+
+  // Pagination logic for approved users
+  const getApprovedUsersToDisplay = () => {
+    if (!showAllApproved) {
+      return allApprovedUsers.slice(0, INITIAL_DISPLAY)
+    }
+    const startIndex = (approvedPage - 1) * ITEMS_PER_PAGE
+    const endIndex = startIndex + ITEMS_PER_PAGE
+    return allApprovedUsers.slice(startIndex, endIndex)
+  }
+
+  const pendingUsers = getPendingUsersToDisplay()
+  const approvedUsers = getApprovedUsersToDisplay()
+
+  // Calculate total pages
+  const totalPendingPages = Math.ceil(allPendingUsers.length / ITEMS_PER_PAGE)
+  const totalApprovedPages = Math.ceil(allApprovedUsers.length / ITEMS_PER_PAGE)
+
+  // Check if there are more users to show
+  const hasMorePending = !showAllPending ? allPendingUsers.length > INITIAL_DISPLAY : pendingPage < totalPendingPages
+  const hasMoreApproved = !showAllApproved ? allApprovedUsers.length > INITIAL_DISPLAY : approvedPage < totalApprovedPages
 
   // Event Handlers
   const handleAction = (type: ActionType, user: ExtendedUser) => {
@@ -120,18 +175,46 @@ export function UserManagement() {
     }
   }
 
+  // Handle show more for pending users
+  const handleShowMorePending = () => {
+    if (!showAllPending) {
+      setShowAllPending(true)
+      setPendingPage(1)
+    } else {
+      setPendingPage(pendingPage + 1)
+    }
+  }
+
+  // Handle show more for approved users
+  const handleShowMoreApproved = () => {
+    if (!showAllApproved) {
+      setShowAllApproved(true)
+      setApprovedPage(1)
+    }
+  }
+
+  // Handle page change for approved users
+  const handleApprovedPageChange = (page: number) => {
+    setApprovedPage(page)
+  }
+
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-24 h-24 bg-gradient-to-br from-red-900/30 to-red-800/20 
+                        border border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-4
+                        shadow-[0_0_20px_rgba(255,0,64,0.3)]">
             <span className="text-4xl text-red-400">❌</span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-4">Viga andmete laadimisel</h2>
-          <p className="text-slate-400 mb-6">Kasutajate andmeid ei õnnestunud laadida.</p>
+          <p className="text-gray-400 mb-6">Kasutajate andmeid ei õnnestunud laadida.</p>
           <button
             onClick={() => refetch()}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium"
+            className="px-6 py-3 bg-gradient-to-r from-red-800 to-red-900 
+                     hover:from-red-700 hover:to-red-800 
+                     text-white rounded-xl font-medium border border-red-500/30
+                     shadow-[0_0_15px_rgba(255,0,64,0.3)]"
           >
             Proovi uuesti
           </button>
@@ -141,8 +224,25 @@ export function UserManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-gray-950">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 grid-pattern opacity-[0.02]"></div>
+        
+        {/* Gradient Orbs */}
+        <div className="absolute top-20 left-20 w-96 h-96 bg-red-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-40 right-40 w-96 h-96 bg-gray-600/10 rounded-full blur-3xl animate-pulse" 
+          style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-900/5 rounded-full blur-3xl animate-pulse" 
+          style={{ animationDelay: '4s' }}></div>
+        
+        {/* Scan Line Effect */}
+        <div className="scan-line"></div>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 max-w-7xl mx-auto p-6 space-y-8">
         
         {/* Unified Admin Header */}
         <AdminPageHeader
@@ -150,53 +250,96 @@ export function UserManagement() {
           description="Halda kõiki kasutajakontosid ja õigusi"
           icon="👥"
           stats={[
-            { label: 'Kinnitatud', value: approvedUsers.length, color: 'green' },
-            { label: 'Ootab kinnitust', value: pendingUsers.length, color: 'yellow' },
+            { label: 'Kinnitatud', value: allApprovedUsers.length, color: 'green' },
+            { label: 'Ootab kinnitust', value: allPendingUsers.length, color: 'yellow' },
             { label: 'Kokku kasutajaid', value: users.length, color: 'blue' }
           ]}
           onRefresh={refetch}
           isLoading={isLoading}
         />
 
-        {/* Search */}
-        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-          <UserManagementSearch 
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-          />
+        {/* Search Section with Futuristic Style */}
+        <div className="tech-border rounded-2xl p-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 to-black/50"></div>
+          <div className="relative z-10">
+            <UserManagementSearch 
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+            />
+          </div>
         </div>
 
         {/* Pending Users Section */}
-        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-              <span className="text-yellow-400 text-xl">⏳</span>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-white">Kinnitust ootavad kasutajad</h2>
-              <p className="text-slate-400">Kasutajad, kes vajavad admin kinnitust</p>
+        {allPendingUsers.length > 0 && (
+          <div className="tech-border rounded-2xl p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 to-black/50"></div>
+            
+            {/* Section Header */}
+            <div className="relative z-10">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 
+                              border border-yellow-500/30 rounded-xl flex items-center justify-center
+                              shadow-[0_0_15px_rgba(234,179,8,0.5)]">
+                  <span className="text-yellow-400 text-xl">⏳</span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-white font-['Orbitron'] tracking-wider">
+                    Kinnitust ootavad kasutajad
+                  </h2>
+                  <p className="text-gray-400 text-sm">Kasutajad, kes vajavad admin kinnitust</p>
+                </div>
+                {/* Decorative Line */}
+                <div className="flex-1 h-px bg-gradient-to-r from-yellow-500/20 to-transparent"></div>
+              </div>
+              
+              <PendingUsersTable
+                users={pendingUsers}
+                isLoading={isLoading}
+                onAction={handleAction}
+                actionLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending ? 'loading' : null}
+              />
             </div>
           </div>
-          
-          <PendingUsersTable
-            users={pendingUsers}
-            isLoading={isLoading}
-            onAction={handleAction}
-            actionLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending ? 'loading' : null}
-          />
-        </div>
+        )}
 
         {/* All Users Section */}
-        <div className="bg-slate-800/30 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-          <AllUsersTable
-            users={approvedUsers}
-            isLoading={isLoading}
-            onAction={handleAction}
-            actionLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending ? 'loading' : null}
-          />
+        <div className="tech-border rounded-2xl p-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 to-black/50"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-900/30 to-green-800/20 
+                            border border-green-500/30 rounded-xl flex items-center justify-center
+                            shadow-[0_0_15px_rgba(34,197,94,0.5)]">
+                <span className="text-green-400 text-xl">✓</span>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-white font-['Orbitron'] tracking-wider">
+                  Kõik kasutajad
+                </h2>
+                <p className="text-gray-400 text-sm">Registreeritud ja kinnitatud kasutajad</p>
+              </div>
+              {/* Decorative Line */}
+              <div className="flex-1 h-px bg-gradient-to-r from-green-500/20 to-transparent"></div>
+            </div>
+            
+            <AllUsersTable
+              users={approvedUsers}
+              totalUsers={allApprovedUsers.length}
+              isLoading={isLoading}
+              onAction={handleAction}
+              actionLoading={userActionMutation.isPending || deleteUserMutation.isPending || promoteUserMutation.isPending ? 'loading' : null}
+              hasMore={hasMoreApproved}
+              onShowMore={handleShowMoreApproved}
+              isShowingAll={showAllApproved}
+              currentPage={approvedPage}
+              totalPages={totalApprovedPages}
+              onPageChange={handleApprovedPageChange}
+            />
+          </div>
         </div>
 
-        {/* Action Confirmation Modal */}
+        {/* Action Modal */}
         {currentAction && (
           <UserActionModal
             isOpen={!!currentAction}

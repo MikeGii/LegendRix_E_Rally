@@ -1,4 +1,4 @@
-// src/components/user-management/UserTable.tsx - Estonian Translation & No Last Login
+// src/components/user-management/UserTable.tsx - Redesigned with Futuristic Theme
 import { ExtendedUser } from '@/hooks/useExtendedUsers'
 import { UserTableRow } from './UserTableRow'
 
@@ -11,17 +11,26 @@ interface UserTableProps {
 
 export function UserTable({ users, onAction, actionLoading, showApprovalActions }: UserTableProps) {
   return (
-    <div className="bg-slate-900/50 rounded-xl border border-slate-700/30 overflow-hidden">
+    <div className="bg-black/50 rounded-xl border border-gray-800/50 overflow-hidden shadow-[0_0_20px_rgba(255,0,64,0.1)]">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-700/50">
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Konto nimi</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Mängijanimi</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Roll</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">E-mail</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Konto loodud</th>
-              <th className="text-left p-4 font-medium text-slate-300 bg-slate-800/30">Tegevused</th>
+            <tr className="border-b border-gray-800/50 bg-gradient-to-r from-gray-900/50 to-black/50">
+              <th className="text-left px-6 py-4 font-medium text-gray-300 font-['Orbitron'] tracking-wider text-sm">
+                Konto nimi
+              </th>
+              <th className="text-left px-6 py-4 font-medium text-gray-300 font-['Orbitron'] tracking-wider text-sm">
+                Mängijanimi
+              </th>
+              <th className="text-left px-6 py-4 font-medium text-gray-300 font-['Orbitron'] tracking-wider text-sm">
+                E-mail
+              </th>
+              <th className="text-left px-6 py-4 font-medium text-gray-300 font-['Orbitron'] tracking-wider text-sm">
+                Konto loodud
+              </th>
+              <th className="text-center px-6 py-4 font-medium text-gray-300 font-['Orbitron'] tracking-wider text-sm">
+                Tegevused
+              </th>
             </tr>
           </thead>
           <tbody>
