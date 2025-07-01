@@ -1,5 +1,5 @@
-// src/components/user-management/UserTableRow.tsx - Redesigned with Email Privacy
-import { useState, useRef, useEffect } from 'react'
+// src/components/user-management/UserTableRow.tsx - Simplified with Inline Actions
+import { useState } from 'react'
 import { ExtendedUser } from '@/hooks/useExtendedUsers'
 
 interface UserTableRowProps {
@@ -19,20 +19,6 @@ export function UserTableRow({
 }: UserTableRowProps) {
   const [showEmail, setShowEmail] = useState(false)
   const [showFullName, setShowFullName] = useState(false)
-  const [showActions, setShowActions] = useState(false)
-  const actionsMenuRef = useRef<HTMLDivElement>(null)
-
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
-        setShowActions(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   const formatEstonianDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('et-EE', {
@@ -64,7 +50,7 @@ export function UserTableRow({
     <tr className={`border-b border-gray-800/30 hover:bg-gray-900/30 transition-all duration-200 ${
       user.role === 'admin' 
         ? 'bg-gradient-to-r from-yellow-900/10 to-orange-900/10' 
-        : index % 2 === 0 ? 'bg-gray-900/10' : ''
+        : ''
     }`}>
       {/* Account Name Column */}
       <td className="px-6 py-4">
@@ -182,89 +168,78 @@ export function UserTableRow({
         <span className="text-gray-400 text-sm">{formatEstonianDate(user.created_at)}</span>
       </td>
 
-      {/* Actions Column */}
+      {/* Actions Column - Simplified */}
       <td className="px-6 py-4">
-        <div className="relative flex justify-center" ref={actionsMenuRef}>
-          <button
-            onClick={() => setShowActions(!showActions)}
-            disabled={actionLoading === user.id}
-            className="p-2 hover:bg-gray-800/50 rounded-lg transition-colors
-                     disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {actionLoading === user.id ? (
-              <div className="w-5 h-5 border-2 border-gray-600 border-t-red-500 rounded-full animate-spin" />
-            ) : (
-              <svg className="w-5 h-5 text-gray-400 hover:text-gray-200" 
-                   fill="currentColor" viewBox="0 0 24 24">
-                <circle cx="12" cy="5" r="2" />
-                <circle cx="12" cy="12" r="2" />
-                <circle cx="12" cy="19" r="2" />
-              </svg>
-            )}
-          </button>
-
-          {showActions && (
-            <div className="absolute right-0 top-10 z-20 
-                          bg-gray-900 border border-gray-700 rounded-lg shadow-xl 
-                          shadow-black/50 min-w-[200px] py-1">
+        <div className="flex items-center justify-center space-x-2">
+          {actionLoading === user.id ? (
+            <div className="w-6 h-6 border-2 border-gray-600 border-t-red-500 rounded-full animate-spin" />
+          ) : (
+            <>
+              {/* For pending users - show approve/reject buttons */}
               {showApprovalActions && user.status !== 'approved' && (
                 <>
                   <button
-                    onClick={() => {
-                      onAction('approve', user)
-                      setShowActions(false)
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-green-400 
-                             hover:bg-green-900/30 hover:text-green-300 transition-colors
-                             flex items-center space-x-2"
+                    onClick={() => onAction('approve', user)}
+                    className="p-2 bg-green-900/20 hover:bg-green-900/30 
+                             border border-green-500/30 hover:border-green-500/50
+                             rounded-lg transition-all duration-200 group"
+                    title="Kinnita kasutaja"
                   >
-                    <span>✅</span>
-                    <span>Kinnita kasutaja</span>
+                    <svg className="w-5 h-5 text-green-400 group-hover:text-green-300" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} 
+                            d="M5 13l4 4L19 7" />
+                    </svg>
                   </button>
                   <button
-                    onClick={() => {
-                      onAction('reject', user)
-                      setShowActions(false)
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-orange-400 
-                             hover:bg-orange-900/30 hover:text-orange-300 transition-colors
-                             flex items-center space-x-2"
+                    onClick={() => onAction('reject', user)}
+                    className="p-2 bg-red-900/20 hover:bg-red-900/30 
+                             border border-red-500/30 hover:border-red-500/50
+                             rounded-lg transition-all duration-200 group"
+                    title="Lükka tagasi"
                   >
-                    <span>❌</span>
-                    <span>Lükka tagasi</span>
+                    <svg className="w-5 h-5 text-red-400 group-hover:text-red-300" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} 
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
-                  <div className="h-px bg-gray-700 my-1" />
                 </>
               )}
               
-              {user.role !== 'admin' && (
-                <button
-                  onClick={() => {
-                    onAction('make_admin', user)
-                    setShowActions(false)
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-purple-400 
-                           hover:bg-purple-900/30 hover:text-purple-300 transition-colors
-                           flex items-center space-x-2"
-                >
-                  <span>👑</span>
-                  <span>Tee administraatoriks</span>
-                </button>
+              {/* For all users - show admin/delete buttons */}
+              {!showApprovalActions && (
+                <>
+                  {user.role !== 'admin' && (
+                    <button
+                      onClick={() => onAction('make_admin', user)}
+                      className="p-2 bg-purple-900/20 hover:bg-purple-900/30 
+                               border border-purple-500/30 hover:border-purple-500/50
+                               rounded-lg transition-all duration-200 group"
+                      title="Tee administraatoriks"
+                    >
+                      <svg className="w-5 h-5 text-purple-400 group-hover:text-purple-300" 
+                           fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2.86-2h8.28l.57-2H7.43l.43 2zm1-4h6.28l.57-2H8.43l.43 2zm10.14 9c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1v-1h14v1z"/>
+                      </svg>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onAction('delete', user)}
+                    className="p-2 bg-red-900/20 hover:bg-red-900/30 
+                             border border-red-500/30 hover:border-red-500/50
+                             rounded-lg transition-all duration-200 group"
+                    title="Kustuta kasutaja"
+                  >
+                    <svg className="w-5 h-5 text-red-400 group-hover:text-red-300" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </>
               )}
-              
-              <button
-                onClick={() => {
-                  onAction('delete', user)
-                  setShowActions(false)
-                }}
-                className="w-full px-4 py-2 text-left text-sm text-red-400 
-                         hover:bg-red-900/30 hover:text-red-300 transition-colors
-                         flex items-center space-x-2"
-              >
-                <span>🗑️</span>
-                <span>Kustuta kasutaja</span>
-              </button>
-            </div>
+            </>
           )}
         </div>
       </td>
