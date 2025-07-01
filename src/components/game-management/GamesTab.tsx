@@ -1,10 +1,11 @@
-// src/components/game-management/GamesTab.tsx - FIXED VERSION (mutation properties)
+// src/components/game-management/GamesTab.tsx - FUTURISTIC REDESIGN
 'use client'
 
 import { useState } from 'react'
 import { Game } from '@/types'
 import { useGames, useCreateGame, useUpdateGame, useDeleteGame } from '@/hooks/useGameManagement'
 import { Modal } from '@/components/ui/Modal'
+import '@/styles/futuristic-theme.css'
 
 interface GamesTabProps {
   selectedGameId?: string
@@ -61,7 +62,7 @@ export function GamesTab({ selectedGameId, onGameSelect }: GamesTabProps) {
   }
 
   const handleDeleteGame = async (gameId: string) => {
-    if (!confirm('Are you sure you want to delete this game? This will also delete all related content.')) {
+    if (!confirm('Kas oled kindel, et soovid selle mängu kustutada? See kustutab ka kõik seotud andmed.')) {
       return
     }
 
@@ -74,11 +75,15 @@ export function GamesTab({ selectedGameId, onGameSelect }: GamesTabProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading games...</p>
+      <div className="flex items-center justify-center py-16">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
+          <div 
+            className="absolute inset-0 w-16 h-16 border-4 border-orange-500/20 border-b-orange-500 rounded-full animate-spin" 
+            style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}
+          ></div>
         </div>
+        <p className="ml-4 text-gray-400 font-['Orbitron']">Laadin mänge...</p>
       </div>
     )
   }
@@ -86,31 +91,38 @@ export function GamesTab({ selectedGameId, onGameSelect }: GamesTabProps) {
   if (games.length === 0) {
     return (
       <div className="space-y-6">
+        {/* Empty State Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-white">Games (0)</h2>
-            <p className="text-slate-400">Create and manage games for your rally platform</p>
+            <h2 className="text-2xl font-bold font-['Orbitron'] text-white uppercase tracking-wider">
+              Mängud <span className="text-red-500">(0)</span>
+            </h2>
+            <p className="text-gray-400 mt-1">Loo ja halda rallimängude struktuuri</p>
           </div>
-          <button
-            onClick={handleCreateGame}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
-          >
-            + Create Game
-          </button>
         </div>
 
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl text-slate-500">🎮</span>
+        {/* Empty State Content */}
+        <div className="tech-border rounded-2xl bg-gray-900/30 backdrop-blur-xl p-12">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-red-500/20">
+              <span className="text-5xl text-red-400">🎮</span>
+            </div>
+            <h3 className="text-xl font-semibold font-['Orbitron'] text-white mb-2 uppercase">
+              Mänge ei leitud
+            </h3>
+            <p className="text-gray-400 mb-8 max-w-md mx-auto">
+              Alusta oma esimese mängu loomisega rallide korraldamiseks
+            </p>
+            <button
+              onClick={handleCreateGame}
+              className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-['Orbitron'] font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-[0_0_30px_rgba(255,0,64,0.5)] uppercase tracking-wider group"
+            >
+              <span className="flex items-center gap-2">
+                <span>+</span>
+                <span>Loo esimene mäng</span>
+              </span>
+            </button>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No Games Created</h3>
-          <p className="text-slate-400 mb-4">Create your first game to start managing rally competitions</p>
-          <button
-            onClick={handleCreateGame}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
-          >
-            Create First Game
-          </button>
         </div>
 
         {/* Create/Edit Modal */}
@@ -121,24 +133,24 @@ export function GamesTab({ selectedGameId, onGameSelect }: GamesTabProps) {
             setEditingGame(null)
             setFormData({ name: '' })
           }}
-          title={editingGame ? 'Edit Game' : 'Create New Game'}
+          title={editingGame ? 'Muuda mängu' : 'Loo uus mäng'}
         >
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Game Name *
+              <label className="block text-sm font-medium font-['Orbitron'] text-gray-300 mb-3 uppercase tracking-wider">
+                Mängu nimi *
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter game name"
+                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                placeholder="Sisesta mängu nimi"
                 required
               />
             </div>
 
-            <div className="flex space-x-3 pt-4">
+            <div className="flex gap-3 pt-4">
               <button
                 type="button"
                 onClick={() => {
@@ -146,18 +158,18 @@ export function GamesTab({ selectedGameId, onGameSelect }: GamesTabProps) {
                   setEditingGame(null)
                   setFormData({ name: '' })
                 }}
-                className="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-all duration-200"
+                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-['Orbitron'] rounded-xl font-medium transition-all duration-200 uppercase tracking-wider"
               >
-                Cancel
+                Tühista
               </button>
               <button
                 type="submit"
                 disabled={createGameMutation.isPending || updateGameMutation.isPending}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-['Orbitron'] rounded-xl font-medium transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-[0_0_20px_rgba(255,0,64,0.3)] uppercase tracking-wider"
               >
                 {createGameMutation.isPending || updateGameMutation.isPending 
-                  ? 'Saving...' 
-                  : editingGame ? 'Update Game' : 'Create Game'
+                  ? 'Salvestamine...' 
+                  : editingGame ? 'Uuenda' : 'Loo mäng'
                 }
               </button>
             </div>
@@ -171,69 +183,79 @@ export function GamesTab({ selectedGameId, onGameSelect }: GamesTabProps) {
   
   return (
     <div className="space-y-6">
-      
       {/* Header with Create Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">Games ({games.length})</h2>
-          <p className="text-slate-400">Manageeri mänge, vali mäng, et jätkata komponentide lisamist/muutmist!</p>
+          <h2 className="text-2xl font-bold font-['Orbitron'] text-white uppercase tracking-wider">
+            Mängud <span className="text-red-500">({games.length})</span>
+          </h2>
+          <p className="text-gray-400 mt-1">Vali mäng komponentide haldamiseks</p>
         </div>
         <button
           onClick={handleCreateGame}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
+          className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-['Orbitron'] font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-[0_0_30px_rgba(255,0,64,0.5)] uppercase tracking-wider group"
         >
-          + Create Game
+          <span className="flex items-center gap-2">
+            <span className="text-xl">+</span>
+            <span>Loo mäng</span>
+          </span>
         </button>
       </div>
 
       {/* Games Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {games.map((game) => (
           <div 
             key={game.id} 
             className={`
-              bg-slate-800/50 rounded-xl border p-6 transition-all duration-200 cursor-pointer
+              relative tech-border rounded-2xl p-6 transition-all duration-300 cursor-pointer group
               ${selectedGameId === game.id 
-                ? 'border-blue-500 bg-blue-500/10' 
-                : 'border-slate-700/50 hover:border-slate-600'
+                ? 'bg-gradient-to-br from-red-900/20 to-orange-900/10 border-red-500/50 shadow-[0_0_30px_rgba(255,0,64,0.3)]' 
+                : 'bg-gray-900/30 border-gray-700/50 hover:bg-gray-900/50 hover:border-gray-600/50 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]'
               }
             `}
             onClick={() => onGameSelect(game.id)}
           >
-            {/* Game Header */}
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <span className="text-blue-400 text-xl">🎮</span>
+            {/* Active Indicator */}
+            {selectedGameId === game.id && (
+              <div className="absolute top-2 right-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              </div>
+            )}
+
+            {/* Game Icon & Header */}
+            <div className="flex items-start gap-4 mb-4">
+              <div className={`
+                w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300
+                ${selectedGameId === game.id 
+                  ? 'bg-gradient-to-br from-red-500/30 to-orange-500/20 border border-red-500/50 shadow-[0_0_20px_rgba(255,0,64,0.3)]' 
+                  : 'bg-gray-800/50 border border-gray-700/50 group-hover:border-gray-600/50'
+                }
+              `}>
+                <span className="text-2xl">🎮</span>
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-white">{game.name}</h3>
-                <p className="text-sm text-slate-400">
-                  Created {new Date(game.created_at).toLocaleDateString()}
+                <h3 className="font-bold font-['Orbitron'] text-white text-lg uppercase tracking-wide">
+                  {game.name}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Loodud {new Date(game.created_at).toLocaleDateString('et-EE')}
                 </p>
               </div>
             </div>
 
-            {/* Game Status */}
-            <div className="mb-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                game.is_active 
-                  ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                  : 'bg-red-500/20 text-red-400 border-red-500/30'
-              }`}>
-                {game.is_active ? 'ACTIVE' : 'INACTIVE'}
-              </span>
-            </div>
 
-            {/* Game Actions */}
-            <div className="flex space-x-2">
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   handleEditGame(game)
                 }}
-                className="flex-1 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg text-sm font-medium transition-all duration-200"
+                className="flex-1 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white border border-gray-700/50 hover:border-gray-600/50 rounded-lg text-sm font-['Orbitron'] font-medium transition-all duration-200 uppercase tracking-wider"
               >
-                Edit
+                Muuda
               </button>
               <button
                 onClick={(e) => {
@@ -241,16 +263,21 @@ export function GamesTab({ selectedGameId, onGameSelect }: GamesTabProps) {
                   handleDeleteGame(game.id)
                 }}
                 disabled={deleteGameMutation.isPending}
-                className="flex-1 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                className="flex-1 px-3 py-2 bg-red-900/20 hover:bg-red-900/30 text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/50 rounded-lg text-sm font-['Orbitron'] font-medium transition-all duration-200 disabled:opacity-50 uppercase tracking-wider"
               >
-                Delete
+                Kustuta
               </button>
             </div>
+
+            {/* Selection Glow Effect */}
+            {selectedGameId === game.id && (
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-red-500/10 to-orange-500/10 pointer-events-none"></div>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Create/Edit Modal - FIXED mutation properties */}
+      {/* Create/Edit Modal */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => {
@@ -258,24 +285,24 @@ export function GamesTab({ selectedGameId, onGameSelect }: GamesTabProps) {
           setEditingGame(null)
           setFormData({ name: '' })
         }}
-        title={editingGame ? 'Edit Game' : 'Create New Game'}
+        title={editingGame ? 'Muuda mängu' : 'Loo uus mäng'}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Game Name *
+            <label className="block text-sm font-medium font-['Orbitron'] text-gray-300 mb-3 uppercase tracking-wider">
+              Mängu nimi *
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter game name (e.g., Dirt Rally 2.0)"
+              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+              placeholder="Sisesta mängu nimi"
               required
             />
           </div>
 
-          <div className="flex space-x-3 pt-4">
+          <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={() => {
@@ -283,18 +310,18 @@ export function GamesTab({ selectedGameId, onGameSelect }: GamesTabProps) {
                 setEditingGame(null)
                 setFormData({ name: '' })
               }}
-              className="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-all duration-200"
+              className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-['Orbitron'] rounded-xl font-medium transition-all duration-200 uppercase tracking-wider"
             >
-              Cancel
+              Tühista
             </button>
             <button
               type="submit"
               disabled={createGameMutation.isPending || updateGameMutation.isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-['Orbitron'] rounded-xl font-medium transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-[0_0_20px_rgba(255,0,64,0.3)] uppercase tracking-wider"
             >
               {createGameMutation.isPending || updateGameMutation.isPending 
-                ? 'Saving...' 
-                : editingGame ? 'Update Game' : 'Create Game'
+                ? 'Salvestamine...' 
+                : editingGame ? 'Uuenda' : 'Loo mäng'
               }
             </button>
           </div>
