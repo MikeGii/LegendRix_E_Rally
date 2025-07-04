@@ -17,7 +17,6 @@ export interface TransformedRally {
   max_participants: number
   status: 'upcoming' | 'registration_open' | 'registration_closed' | 'active' | 'completed' | 'cancelled'
   rules: string
-  is_featured: boolean
   is_active: boolean
   created_by: string
   created_at: string
@@ -81,7 +80,6 @@ export const rallyKeys = {
   lists: () => [...rallyKeys.all, 'list'] as const,
   list: (filters?: any) => [...rallyKeys.lists(), { filters }] as const,
   upcoming: (limit?: number) => [...rallyKeys.all, 'upcoming', limit] as const,
-  featured: (limit?: number) => [...rallyKeys.all, 'featured', limit] as const,
   adminAll: (limit?: number) => [...rallyKeys.all, 'admin-all', limit] as const,
   userRegistrations: (userId?: string) => [...rallyKeys.all, 'user-registrations', userId] as const,
 }

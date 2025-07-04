@@ -21,7 +21,6 @@ interface Rally {
   registration_deadline: string
   max_participants?: number
   status: 'upcoming' | 'registration_open' | 'registration_closed' | 'active' | 'completed' | 'cancelled'
-  is_featured: boolean
   is_active: boolean
   registered_participants?: number
   total_events?: number
