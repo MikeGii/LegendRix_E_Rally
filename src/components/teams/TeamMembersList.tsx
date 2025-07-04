@@ -86,22 +86,22 @@ export function TeamMembersList({ teamId }: TeamMembersListProps) {
   const { data: members = [], isLoading } = useQuery({
     queryKey: ['team-members', teamId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_members')
-        .select(`
-          user_id,
-          role,
-          joined_at,
-          status,
-          users (
-            name,
-            player_name
-          )
-        `)
-        .eq('team_id', teamId)
-        .in('status', ['approved', 'removal_requested'])
-        .order('role', { ascending: false }) // Manager first
-        .order('joined_at', { ascending: true })
+    const { data, error } = await supabase
+      .from('team_members')
+      .select(`
+        user_id,
+        role,
+        joined_at,
+        status,
+        users:users!team_members_user_id_fkey (
+          name,
+          player_name
+        )
+      `)
+      .eq('team_id', teamId)
+      .in('status', ['approved', 'removal_requested'])
+      .order('role', { ascending: false }) // Manager first
+      .order('joined_at', { ascending: true })
 
       if (error) {
         console.error('Error fetching team members:', error)

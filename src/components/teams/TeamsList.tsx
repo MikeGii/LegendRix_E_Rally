@@ -12,21 +12,21 @@ function useTeamMembers(teamId: string) {
   return useQuery({
     queryKey: ['team-members', teamId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_members')
-        .select(`
-          user_id,
-          role,
-          joined_at,
-          users (
-            name,
-            player_name
-          )
-        `)
-        .eq('team_id', teamId)
-        .eq('status', 'approved')
-        .order('role', { ascending: false }) // Manager first
-        .order('joined_at', { ascending: true })
+    const { data, error } = await supabase
+      .from('team_members')
+      .select(`
+        user_id,
+        role,
+        joined_at,
+        users:users!team_members_user_id_fkey (
+          name,
+          player_name
+        )
+      `)
+      .eq('team_id', teamId)
+      .eq('status', 'approved')
+      .order('role', { ascending: false })
+      .order('joined_at', { ascending: true })
 
       if (error) {
         console.error('Error fetching team members:', error)
