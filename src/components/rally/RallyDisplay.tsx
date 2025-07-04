@@ -122,13 +122,6 @@ export function RallyDisplay({
                     <p className="text-sm text-slate-400">{rally.game_name}</p>
                   </div>
                 </div>
-                
-                {/* Featured Badge */}
-                {rally.is_featured && (
-                  <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full text-xs font-medium">
-                    ⭐ ESILETÕSTETUD
-                  </span>
-                )}
               </div>
 
               {/* Rally Status */}
@@ -300,12 +293,6 @@ export function RallyDisplay({
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
                   <h3 className="text-xl font-bold text-white">{rally.name}</h3>
-                  
-                  {rally.is_featured && (
-                    <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg px-2 py-1">
-                      <span className="text-yellow-300 text-xs font-medium">ESILETÕSTETUD</span>
-                    </div>
-                  )}
                 </div>
                 
                 <p className="text-slate-400 text-sm mb-4 leading-relaxed">
