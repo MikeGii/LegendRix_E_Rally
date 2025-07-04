@@ -34,25 +34,26 @@ function useRemoveTeamMember() {
       }
 
       // Remove the team member
-      const { error: deleteError } = await supabase
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+
+      if (!currentUser) {
+        throw new Error('Kasutaja pole autentitud')
+      }
+
+      // Update the team member status to removal_requested
+      const { error: updateError } = await supabase
         .from('team_members')
-        .delete()
+        .update({ 
+          status: 'removal_requested',
+          removal_requested_at: new Date().toISOString(),
+          removal_requested_by: currentUser.id
+        })
         .eq('team_id', teamId)
         .eq('user_id', userId)
 
-      if (deleteError) {
-        console.error('Error removing team member:', deleteError)
-        throw deleteError
-      }
-
-      // Update user's has_team status
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ has_team: false })
-        .eq('id', userId)
-
       if (updateError) {
-        console.error('Error updating user status:', updateError)
+        console.error('Error requesting team member removal:', updateError)
+        throw updateError
       }
 
       return { teamId, userId }
@@ -116,7 +117,7 @@ export function TeamMembersList({ teamId }: TeamMembersListProps) {
         teamId,
         userId: memberId
       })
-      alert('Mängija edukalt eemaldatud!')
+      alert('Eemaldamise taotlus saadetud! Admin peab selle kinnitama.')
     } catch (error: any) {
       alert(error.message || 'Viga mängija eemaldamisel')
     }

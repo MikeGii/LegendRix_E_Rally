@@ -38,7 +38,7 @@ function useAllPendingApplications() {
           team_id,
           user_id,
           applied_at,
-          user:users(
+          user:users!team_members_user_id_fkey(
             id,
             name,
             player_name,

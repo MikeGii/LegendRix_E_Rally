@@ -577,3 +577,116 @@ export function useHandleApplication() {
     },
   })
 }
+
+// Hook to fetch all team removal requests (for admins)
+export function useTeamRemovalRequests() {
+  return useQuery({
+    queryKey: ['team-removal-requests'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select(`
+          id,
+          team_id,
+          user_id,
+          removal_requested_at,
+          removal_requested_by,
+          team:teams(
+            id,
+            team_name
+          ),
+          user:users!team_members_user_id_fkey(
+            id,
+            name,
+            player_name
+          ),
+          requested_by:users!team_members_removal_requested_by_fkey(
+            id,
+            name,
+            player_name
+          )
+        `)
+        .eq('status', 'removal_requested')
+        .order('removal_requested_at', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching removal requests:', error)
+        throw error
+      }
+
+      // Transform the data
+      return (data || []).map(item => ({
+        id: item.id,
+        team_id: item.team_id,
+        user_id: item.user_id,
+        removal_requested_at: item.removal_requested_at,
+        team: Array.isArray(item.team) ? item.team[0] : item.team,
+        user: Array.isArray(item.user) ? item.user[0] : item.user,
+        requested_by: Array.isArray(item.requested_by) ? item.requested_by[0] : item.requested_by
+      }))
+    },
+    staleTime: 30 * 1000,
+  })
+}
+
+// Hook to approve/reject removal requests (for admins)
+export function useHandleRemovalRequest() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ requestId, action, userId, teamId }: {
+      requestId: string
+      action: 'approve' | 'reject'
+      userId: string
+      teamId: string
+    }) => {
+      if (action === 'approve') {
+        // Delete the team member record
+        const { error: deleteError } = await supabase
+          .from('team_members')
+          .delete()
+          .eq('id', requestId)
+
+        if (deleteError) {
+          console.error('Error removing team member:', deleteError)
+          throw deleteError
+        }
+
+        // Update user's has_team status
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ has_team: false })
+          .eq('id', userId)
+
+        if (updateError) {
+          console.error('Error updating user status:', updateError)
+        }
+      } else {
+        // Reject - restore the member's status to approved
+        const { error } = await supabase
+          .from('team_members')
+          .update({ 
+            status: 'approved',
+            removal_requested_at: null,
+            removal_requested_by: null
+          })
+          .eq('id', requestId)
+
+        if (error) {
+          console.error('Error rejecting removal request:', error)
+          throw error
+        }
+      }
+
+      return { requestId, action }
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['team-removal-requests'] })
+      queryClient.invalidateQueries({ queryKey: ['team-members', variables.teamId] })
+      queryClient.invalidateQueries({ queryKey: teamKeys.all })
+      queryClient.invalidateQueries({ queryKey: teamKeys.userTeamStatus(variables.userId) })
+      queryClient.invalidateQueries({ queryKey: teamKeys.userTeam(variables.userId) })
+    },
+  })
+}
