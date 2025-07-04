@@ -159,7 +159,6 @@ export async function POST(request: NextRequest) {
         registration_deadline: rally.registration_deadline,
         max_participants: rally.max_participants,
         rules: rally.rules,
-        is_featured: rally.is_featured,
         games: rally.games,
         game_types: rally.game_types
       },

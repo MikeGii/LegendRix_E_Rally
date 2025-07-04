@@ -13,7 +13,6 @@ interface RallyEmailData {
     registration_deadline: string
     max_participants?: number
     rules?: string
-    is_featured: boolean
     games?: { name: string }
     game_types?: { name: string }
   }
@@ -190,15 +189,6 @@ export function generateRallyNotificationEmail(data: RallyEmailData): { subject:
             </div>
 
             <!-- Competition Status -->
-            ${rally.is_featured ? `
-              <div style="text-align: center; margin: 30px 0;">
-                <span style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); color: #451a03; padding: 12px 24px; border-radius: 25px; font-size: 14px; font-weight: 700; display: inline-block; box-shadow: 0 8px 32px rgba(251, 191, 36, 0.3); border: 1px solid rgba(251, 191, 36, 0.3);">
-                  <span style="margin-right: 6px;">⭐</span>
-                  Esile tõstetud ralli
-                </span>
-              </div>
-            ` : ''}
-
             <!-- Footer Info -->
             <div style="border-top: 1px solid rgba(148, 163, 184, 0.2); padding-top: 30px; margin-top: 40px; text-align: center;">
               <p style="color: #94a3b8; font-size: 16px; margin: 0 0 12px 0; font-weight: 500;">
