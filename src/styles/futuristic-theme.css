@@ -567,3 +567,385 @@ body.modal-open {
 }
 
 /* Custom scrollbar for modal */
+
+/* Mobile Responsive Enhancements for Futuristic Theme */
+/* Add this to your src/styles/futuristic-theme.css */
+
+/* ========================================
+   BASE MOBILE STYLES
+   ======================================== */
+
+/* Ensure proper viewport behavior */
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+/* Prevent horizontal scroll on mobile */
+body {
+  overflow-x: hidden;
+  min-width: 320px;
+}
+
+/* ========================================
+   RESPONSIVE TYPOGRAPHY
+   ======================================== */
+
+/* Base font scaling */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px; /* Scale down base font */
+  }
+}
+
+/* Heading responsive sizes */
+h1, .text-6xl {
+  font-size: clamp(2rem, 8vw, 4rem);
+  line-height: 1.2;
+}
+
+h2, .text-5xl {
+  font-size: clamp(1.75rem, 6vw, 3rem);
+  line-height: 1.3;
+}
+
+h3, .text-4xl {
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
+  line-height: 1.4;
+}
+
+h4, .text-3xl {
+  font-size: clamp(1.25rem, 4vw, 2rem);
+}
+
+/* Mobile-specific text sizes */
+@media (max-width: 768px) {
+  .text-shadow-lg {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  }
+  
+  /* Reduce letter spacing on mobile */
+  .tracking-tight {
+    letter-spacing: -0.025em;
+  }
+}
+
+/* ========================================
+   LAYOUT & SPACING
+   ======================================== */
+
+/* Container adjustments */
+@media (max-width: 1024px) {
+  .max-w-7xl {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .max-w-7xl {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Reduce section padding */
+  section {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+}
+
+/* ========================================
+   NAVIGATION & HEADER
+   ======================================== */
+
+/* Mobile navigation styles */
+@media (max-width: 768px) {
+  /* Hide desktop nav items */
+  .desktop-nav {
+    display: none;
+  }
+  
+  /* Show mobile menu button */
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 0, 64, 0.3);
+    border-radius: 0.5rem;
+    color: white;
+    transition: all 0.3s ease;
+  }
+  
+  .mobile-menu-btn:hover {
+    background: rgba(255, 0, 64, 0.1);
+    border-color: rgba(255, 0, 64, 0.5);
+  }
+  
+  /* Mobile menu overlay */
+  .mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .mobile-menu.open {
+    transform: translateX(0);
+  }
+  
+  .mobile-menu-item {
+    padding: 1rem;
+    margin: 0.5rem 0;
+    font-size: 1.25rem;
+    text-align: center;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .mobile-menu-item:hover {
+    background: rgba(255, 0, 64, 0.1);
+    border-color: rgba(255, 0, 64, 0.3);
+  }
+}
+
+/* ========================================
+   BUTTONS & INTERACTIVE ELEMENTS
+   ======================================== */
+
+/* Touch-friendly button sizes */
+@media (max-width: 768px) {
+  .futuristic-btn {
+    min-height: 44px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Stack buttons on mobile */
+  .button-group {
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+  }
+  
+  .button-group .futuristic-btn {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   HERO SECTION
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* Hero content adjustments */
+  .hero-content {
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+  
+  /* Hero background effects */
+  .hero-bg-gradient {
+    background-size: 200% 200%;
+  }
+  
+  /* Reduce animation complexity on mobile */
+  .scan-line {
+    display: none;
+  }
+  
+  /* Simplify grid pattern on mobile */
+  .grid-pattern {
+    background-size: 50px 50px;
+    opacity: 0.02;
+  }
+}
+
+/* ========================================
+   CARDS & MODALS
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* Card layouts */
+  .tech-border {
+    padding: 1.5rem;
+    margin: 0.5rem;
+  }
+  
+  /* Modal adjustments */
+  .modal-content {
+    max-height: calc(100vh - 2rem);
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+  
+  /* Full-width modals on mobile */
+  @media (max-width: 640px) {
+    .modal-content {
+      margin: 0;
+      border-radius: 0;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+  }
+}
+
+/* ========================================
+   FEATURES SECTION
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* Feature grid responsive */
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  /* Feature card mobile optimization */
+  .feature-card {
+    padding: 1.5rem;
+  }
+  
+  .feature-icon {
+    font-size: 2rem;
+    width: 60px;
+    height: 60px;
+  }
+}
+
+/* ========================================
+   SUPPORTERS SECTION
+   ======================================== */
+
+@media (max-width: 768px) {
+  .supporters-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .supporter-card {
+    padding: 1rem;
+  }
+  
+  .supporter-name {
+    font-size: 1.5rem;
+    word-break: break-word;
+  }
+}
+
+/* ========================================
+   FOOTER
+   ======================================== */
+
+@media (max-width: 768px) {
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 2rem;
+  }
+  
+  .footer-links {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .social-links {
+    justify-content: center;
+  }
+}
+
+/* ========================================
+   UTILITIES & HELPERS
+   ======================================== */
+
+/* Hide on mobile */
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+/* Show only on mobile */
+.show-mobile {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .show-mobile {
+    display: block !important;
+  }
+}
+
+/* Responsive spacing utilities */
+@media (max-width: 640px) {
+  .space-y-8 {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
+  }
+  
+  .gap-8 {
+    gap: 1.5rem;
+  }
+  
+  .p-8 {
+    padding: 1.5rem;
+  }
+}
+
+/* ========================================
+   PERFORMANCE OPTIMIZATIONS
+   ======================================== */
+
+/* Reduce animations on mobile for better performance */
+@media (max-width: 768px) and (prefers-reduced-motion: no-preference) {
+  * {
+    animation-duration: 0.5s !important;
+  }
+  
+  /* Disable complex animations */
+  .animate-pulse,
+  .scan-line,
+  .gradient-shift {
+    animation: none !important;
+  }
+}
+
+/* Touch feedback */
+@media (hover: none) {
+  button:active,
+  a:active {
+    transform: scale(0.98);
+  }
+}
+
+/* ========================================
+   LANDSCAPE MOBILE ADJUSTMENTS
+   ======================================== */
+
+@media (max-width: 812px) and (orientation: landscape) {
+  /* Reduce heights in landscape */
+  .hero-section {
+    min-height: 100vh;
+    padding: 2rem;
+  }
+  
+  .modal-content {
+    max-height: 90vh;
+  }
+}

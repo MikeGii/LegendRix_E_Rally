@@ -51,6 +51,7 @@ function HomeContent() {
   const [isEdetabelModalOpen, setIsEdetabelModalOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [isChampionshipModalOpen, setIsChampionshipModalOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   // Existing state and effect hooks remain the same
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [showVerification, setShowVerification] = useState(false)
@@ -85,6 +86,24 @@ function HomeContent() {
       handleErrorFromURL()
     }
   }, [user, authLoading, isMounted, showAuthError])
+
+  useEffect(() => {
+    // Close mobile menu on route change or user state change
+    setIsMobileMenuOpen(false)
+  }, [user])
+
+  useEffect(() => {
+    // Lock body scroll when mobile menu is open
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isMobileMenuOpen])
 
   const isAnyModalOpen = useModalState(isCompetitionsModalOpen, isEdetabelModalOpen, showAuthModal, isChampionshipModalOpen)
   const blurClasses = isAnyModalOpen ? 'blur-md transition-all duration-300' : ''
@@ -139,32 +158,32 @@ function HomeContent() {
       <header className={`fixed top-0 left-0 right-0 z-50 ${blurClasses}`}>
         <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl border-b border-red-500/20"></div>
         
-        <div className="relative max-w-7xl mx-auto px-6">
-          <div className="flex justify-between items-center h-24 py-6">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex justify-between items-center h-20 sm:h-24 py-4 sm:py-6">
             {/* Logo with futuristic styling and pulsing effect */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="relative group">
-                <div className="absolute inset-0 bg-red-500 blur-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
-                <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-red-500/30 bg-gradient-to-br from-red-600/20 to-purple-600/20 backdrop-blur-sm p-1 group-hover:ring-red-500/50 transition-all neon-glow">
-                  <div className="w-full h-full rounded-xl overflow-hidden relative">
+                <div className="absolute inset-0 bg-red-500 blur-xl sm:blur-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
+                <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl ring-2 ring-red-500/30 bg-gradient-to-br from-red-600/20 to-purple-600/20 backdrop-blur-sm p-1 group-hover:ring-red-500/50 transition-all neon-glow">
+                  <div className="w-full h-full rounded-lg sm:rounded-xl overflow-hidden relative">
                     <Image
                       src="/image/rally-cover.png"
                       alt="LegendRix Rally"
                       fill
                       className="object-cover"
                       priority
-                      sizes="56px"
+                      sizes="(max-width: 640px) 48px, 56px"
                     />
                   </div>
                 </div>
               </div>
-              <h1 className="text-3xl font-black text-white font-['Orbitron'] tracking-wider">
+              <h1 className="text-xl sm:text-3xl font-black text-white font-['Orbitron'] tracking-wider">
                 LEGEND<span className="text-red-500">RIX</span>
               </h1>
             </div>
 
-            {/* User Section with futuristic buttons */}
-            <div className="flex items-center space-x-4">
+            {/* Desktop Navigation - Hidden on mobile */}
+            <div className="hidden md:flex items-center space-x-4">
               {user ? (
                 <>
                   <button
@@ -203,8 +222,85 @@ function HomeContent() {
                 </button>
               )}
             </div>
+
+            {/* Mobile Menu Button - Visible only on mobile */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden relative z-50 p-2 text-white"
+              aria-label="Toggle menu"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                {isMobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu Overlay - Only visible on mobile */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-40 bg-black/95 backdrop-blur-xl">
+            <div className="flex flex-col items-center justify-center h-full space-y-6 px-6">
+              {user ? (
+                <>
+                  <button
+                    onClick={() => {
+                      handleGoToDashboard()
+                      setIsMobileMenuOpen(false)
+                    }}
+                    disabled={isLoggingOut}
+                    className="w-full max-w-xs tech-border group px-6 py-4 text-white rounded-lg font-bold transition-all duration-300"
+                  >
+                    <div className="flex items-center justify-center space-x-3">
+                      <span className="text-lg neon-glow">⚡</span>
+                      <span className="font-['Orbitron']">TÖÖLAUD</span>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      handleLogout()
+                      setIsMobileMenuOpen(false)
+                    }}
+                    disabled={isLoggingOut}
+                    className="w-full max-w-xs tech-border group px-6 py-4 text-white rounded-lg font-bold transition-all duration-300"
+                  >
+                    <div className="flex items-center justify-center space-x-3">
+                      <span className="text-lg">
+                        {isLoggingOut ? '⏳' : '🚪'}
+                      </span>
+                      <span className="font-['Orbitron']">{isLoggingOut ? 'VÄLJUMINE...' : 'VÄLJU'}</span>
+                    </div>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    handleOpenAuth()
+                    setIsMobileMenuOpen(false)
+                  }}
+                  className="w-full max-w-xs tech-border group px-8 py-4 text-white rounded-lg font-bold transition-all duration-300"
+                >
+                  <div className="flex items-center justify-center space-x-3">
+                    <span className="text-lg neon-glow">👤</span>
+                    <span className="font-['Orbitron'] uppercase tracking-wide">Logi sisse</span>
+                  </div>
+                </button>
+              )}
+
+              {/* Close button at the bottom */}
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="mt-8 text-gray-400 hover:text-white transition-colors"
+              >
+                <span className="font-['Orbitron'] text-sm uppercase tracking-wider">Sulge menüü</span>
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Cover Photo with futuristic overlay */}
