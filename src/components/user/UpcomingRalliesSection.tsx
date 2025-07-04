@@ -212,13 +212,6 @@ export function UpcomingRalliesSection({ rallies, isLoading, canAccessRallies }:
                             {getStatusDisplayText(currentStatus)}
                           </span>
                           
-                          {/* Featured badge */}
-                          {rally.is_featured && (
-                            <span className="text-xs px-3 py-1 rounded-full bg-gradient-to-r from-yellow-900/20 to-yellow-800/10 text-yellow-400 border border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.3)] font-['Orbitron'] uppercase">
-                              ⭐ Esiletõstetud
-                            </span>
-                          )}
-                          
                           {/* Registration status */}
                           {isUserRegistered && (
                             <span className="text-xs px-3 py-1 rounded-full bg-gradient-to-r from-green-900/20 to-green-800/10 text-green-400 border border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.3)] font-['Orbitron'] uppercase">

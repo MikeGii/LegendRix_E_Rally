@@ -15,7 +15,6 @@ export interface Rally {
   max_participants?: number
   status: 'upcoming' | 'registration_open' | 'registration_closed' | 'active' | 'completed' | 'cancelled'
   rules?: string
-  is_featured: boolean
   is_active: boolean
   created_by?: string
   created_at: string
@@ -141,7 +140,6 @@ export function useCreateRally() {
       registration_deadline: string
       max_participants?: number
       rules?: string
-      is_featured?: boolean
     }) => {
       console.log('🔄 Creating rally:', rallyData.name)
       
@@ -186,7 +184,6 @@ export function useUpdateRally() {
       registration_deadline?: string
       max_participants?: number
       rules?: string
-      is_featured?: boolean
       status?: string
     }) => {
       console.log('🔄 Updating rally:', id)

@@ -26,8 +26,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
     registration_deadline_date: '', // Date only (YYYY-MM-DD)
     registration_deadline_time: '', // Time only (HH:MM)
     max_participants: '',
-    rules: '',
-    is_featured: false
+    rules: ''
   })
   
   const [selectedEvents, setSelectedEvents] = useState<string[]>([])
@@ -92,8 +91,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
         registration_deadline_date: registrationDateTime.date,
         registration_deadline_time: registrationDateTime.time,
         max_participants: rally.max_participants?.toString() || '',
-        rules: rally.rules || '',
-        is_featured: rally.is_featured || false
+        rules: rally.rules || ''
       })
     }
   }, [rally])
@@ -193,8 +191,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
         competition_date: combineDateTime(formData.competition_date, formData.competition_time),
         registration_deadline: combineDateTime(formData.registration_deadline_date, formData.registration_deadline_time),
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : undefined,
-        rules: formData.rules,
-        is_featured: formData.is_featured
+        rules: formData.rules
       }
 
       if (rally) {
@@ -318,8 +315,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
       registration_deadline_date: '',
       registration_deadline_time: '',
       max_participants: '',
-      rules: '',
-      is_featured: false
+      rules: ''
     })
     setSelectedEvents([])
     setSelectedTracks({})
@@ -497,19 +493,6 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
                   className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Kirjelda ralli reegleid..."
                 />
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="is_featured"
-                  checked={formData.is_featured}
-                  onChange={handleInputChange}
-                  className="w-5 h-5 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <label className="ml-3 text-sm font-medium text-slate-300">
-                  Märgi esiletõstetud ralliks
-                </label>
               </div>
             </div>
           )}

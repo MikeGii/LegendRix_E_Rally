@@ -93,11 +93,6 @@ export function RallyDetails({ rally }: RallyDetailsProps) {
                     {statusText}
                   </span>
                   
-                  {rally.is_featured && (
-                    <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-yellow-900/30 to-yellow-800/20 text-yellow-400 border border-yellow-500/30 rounded-lg text-xs font-bold font-['Orbitron'] uppercase tracking-wider shadow-[0_0_15px_rgba(234,179,8,0.3)]">
-                      ⭐ ESILETÕSTETUD
-                    </span>
-                  )}
                 </div>
               </div>
             </div>

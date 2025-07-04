@@ -17,7 +17,6 @@ export interface TransformedRally {
   max_participants: number
   status: 'upcoming' | 'registration_open' | 'registration_closed' | 'active' | 'completed' | 'cancelled'
   rules: string
-  is_featured: boolean
   is_active: boolean
   created_by: string
   created_at: string
@@ -81,7 +80,6 @@ export const rallyKeys = {
   lists: () => [...rallyKeys.all, 'list'] as const,
   list: (filters?: any) => [...rallyKeys.lists(), { filters }] as const,
   upcoming: (limit?: number) => [...rallyKeys.all, 'upcoming', limit] as const,
-  featured: (limit?: number) => [...rallyKeys.all, 'featured', limit] as const,
   adminAll: (limit?: number) => [...rallyKeys.all, 'admin-all', limit] as const,
   userRegistrations: (userId?: string) => [...rallyKeys.all, 'user-registrations', userId] as const,
 }
@@ -440,67 +438,6 @@ export function useAllRallies(limit = 20) {
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: false,
-  })
-}
-
-// ============================================================================
-// 2. FEATURED RALLIES HOOK - COMPLETE WITH ALL DATA
-// ============================================================================
-
-export function useFeaturedRallies(limit = 3) {
-  return useQuery({
-    queryKey: rallyKeys.featured(limit),
-    queryFn: async (): Promise<TransformedRally[]> => {
-      console.log('🔄 Loading featured rallies with complete data...')
-      
-      const { data: rallies, error } = await supabase
-        .from('rallies')
-        .select(`
-          *,
-          game:games(name),
-          game_type:game_types(name)
-        `)
-        .eq('is_featured', true)
-        .eq('is_active', true)
-        .in('status', ['upcoming', 'registration_open', 'registration_closed'])
-        .order('competition_date', { ascending: true })
-        .limit(limit)
-
-      if (error) {
-        console.error('Error loading featured rallies:', error)
-        throw error
-      }
-
-      if (!rallies || rallies.length === 0) {
-        console.log('No featured rallies found')
-        return []
-      }
-
-      const rallyIds = rallies.map(rally => rally.id)
-
-      // Load all required data for featured rallies
-      const [participantCounts, { eventsByRally, totalTracksByRally }] = await Promise.all([
-        loadParticipantCounts(rallyIds),
-        loadRallyEventsAndTracks(rallyIds)
-      ])
-
-      // Transform with all data
-      const transformedRallies = rallies.map(rally => 
-        transformRallyWithFullData(rally, participantCounts, eventsByRally, totalTracksByRally)
-      )
-
-      console.log(`✅ Featured rallies loaded: ${transformedRallies.length}`)
-      console.log('📊 Sample featured data:', transformedRallies[0] ? {
-        name: transformedRallies[0].name,
-        participants: transformedRallies[0].registered_participants,
-        events: transformedRallies[0].total_events,
-        tracks: transformedRallies[0].total_tracks,
-        status: transformedRallies[0].real_time_status
-      } : 'No featured rallies')
-      
-      return transformedRallies
-    },
-    staleTime: 10 * 60 * 1000, // 10 minutes
   })
 }
 

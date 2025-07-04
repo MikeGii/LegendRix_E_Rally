@@ -21,7 +21,6 @@ interface Rally {
   registration_deadline: string
   max_participants?: number
   status: 'upcoming' | 'registration_open' | 'registration_closed' | 'active' | 'completed' | 'cancelled'
-  is_featured: boolean
   is_active: boolean
   registered_participants?: number
   total_events?: number
@@ -278,12 +277,6 @@ export function RallyManagement() {
                       <p className="text-sm text-slate-400">{rally.game_name}</p>
                     </div>
                   </div>
-
-                  {rally.is_featured && (
-                    <span className="ml-2 px-2 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full text-xs font-medium">
-                      ⭐ ESILETÕSTETUD
-                    </span>
-                  )}
                 </div>
 
                 {/* Rally Status */}

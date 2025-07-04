@@ -70,7 +70,6 @@ export function useCreateRegistration() {
       queryClient.invalidateQueries({ queryKey: registrationKeys.all })
       queryClient.invalidateQueries({ queryKey: rallyKeys.userRegistrations() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
-      queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.all })
       
@@ -133,7 +132,6 @@ export function useDeleteRegistration() {
       queryClient.invalidateQueries({ queryKey: registrationKeys.all })
       queryClient.invalidateQueries({ queryKey: rallyKeys.userRegistrations() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
-      queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.all })
       
@@ -204,7 +202,6 @@ export function useUpdateRegistration() {
       queryClient.invalidateQueries({ queryKey: registrationKeys.all })
       queryClient.invalidateQueries({ queryKey: rallyKeys.userRegistrations() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.upcoming() })
-      queryClient.invalidateQueries({ queryKey: rallyKeys.featured() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.lists() })
       queryClient.invalidateQueries({ queryKey: rallyKeys.all })
       

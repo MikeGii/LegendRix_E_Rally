@@ -131,7 +131,6 @@ export interface Rally {
   max_participants?: number
   status: 'upcoming' | 'registration_open' | 'registration_closed' | 'active' | 'completed' | 'cancelled'
   rules?: string
-  is_featured: boolean
   is_active: boolean
   created_by?: string
   created_at: string
