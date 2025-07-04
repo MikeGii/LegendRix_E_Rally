@@ -10,6 +10,17 @@ interface TeamMembersListProps {
   teamId: string
 }
 
+interface TeamMember {
+  user_id: string
+  role: string
+  joined_at: string
+  status?: string
+  user: {
+    name: string
+    player_name?: string
+  }
+}
+
 // Hook to remove a team member
 function useRemoveTeamMember() {
   const queryClient = useQueryClient()
@@ -81,13 +92,14 @@ export function TeamMembersList({ teamId }: TeamMembersListProps) {
           user_id,
           role,
           joined_at,
+          status,
           users (
             name,
             player_name
           )
         `)
         .eq('team_id', teamId)
-        .eq('status', 'approved')
+        .in('status', ['approved', 'removal_requested'])
         .order('role', { ascending: false }) // Manager first
         .order('joined_at', { ascending: true })
 
@@ -101,6 +113,7 @@ export function TeamMembersList({ teamId }: TeamMembersListProps) {
         user_id: item.user_id,
         role: item.role,
         joined_at: item.joined_at,
+        status: item.status,
         user: Array.isArray(item.users) ? item.users[0] : item.users
       }))
     },
