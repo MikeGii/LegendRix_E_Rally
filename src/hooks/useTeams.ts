@@ -436,7 +436,11 @@ export function useApplyForTeam() {
         if (existingApplication.status === 'pending') {
           throw new Error('Sa oled juba kandideerinud sellesse tiimi')
         } else if (existingApplication.status === 'rejected') {
-          throw new Error('Sinu taotlus sellesse tiimi on tagasi lükatud')
+          // Delete the rejected application to allow reapplying
+          await supabase
+            .from('team_members')
+            .delete()
+            .eq('id', existingApplication.id)
         }
       }
 
@@ -528,14 +532,28 @@ export function useHandleApplication() {
       }
       
       // Update the application status
-      const { error } = await supabase
-        .from('team_members')
-        .update({ status: newStatus })
-        .eq('id', applicationId)
-
-      if (error) {
-        console.error('Error updating application:', error)
-        throw error
+      if (action === 'reject') {
+        // Delete the application instead of updating status
+        const { error } = await supabase
+          .from('team_members')
+          .delete()
+          .eq('id', applicationId)
+          
+        if (error) {
+          console.error('Error deleting application:', error)
+          throw error
+        }
+      } else {
+        // Update the application status for approval
+        const { error } = await supabase
+          .from('team_members')
+          .update({ status: newStatus })
+          .eq('id', applicationId)
+          
+        if (error) {
+          console.error('Error updating application:', error)
+          throw error
+        }
       }
 
       // If approved, update user's has_team status
