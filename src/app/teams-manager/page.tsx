@@ -9,6 +9,7 @@ import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { TeamCreationForm } from '@/components/teams/TeamCreationForm'
 import { TeamsList } from '@/components/teams/TeamsList'
 import { PendingApplicationsSection } from '@/components/teams/PendingApplicationsSection'
+import { RemovalRequestsSection } from '@/components/teams/RemovalRequestsSection'
 
 export default function TeamsManagerPage() {
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -46,6 +47,9 @@ export default function TeamsManagerPage() {
 
             {/* Pending Applications Section */}
             <PendingApplicationsSection />
+
+            {/* Removal Requests Section */}
+            <RemovalRequestsSection />
           </div>
         </DashboardLayout>
       </ViewProvider>
