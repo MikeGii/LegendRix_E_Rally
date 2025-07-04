@@ -475,21 +475,21 @@ export function useTeamApplications(teamId: string) {
   return useQuery({
     queryKey: ['team-applications', teamId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_members')
-        .select(`
+    const { data, error } = await supabase
+      .from('team_members')
+      .select(`
+        id,
+        applied_at,
+        user:users!team_members_user_id_fkey(
           id,
-          applied_at,
-          user:users(
-            id,
-            name,
-            player_name,
-            email
-          )
-        `)
-        .eq('team_id', teamId)
-        .eq('status', 'pending')
-        .order('applied_at', { ascending: true })
+          name,
+          player_name,
+          email
+        )
+      `)
+      .eq('team_id', teamId)
+      .eq('status', 'pending')
+      .order('applied_at', { ascending: true })
 
       if (error) {
         console.error('Error fetching team applications:', error)
