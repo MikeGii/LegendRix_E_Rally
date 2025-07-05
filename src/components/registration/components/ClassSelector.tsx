@@ -103,8 +103,8 @@ export function ClassSelector({
                       </div>
                       <div>
                         <h4 className={`
-                          font-bold font-['Orbitron'] uppercase tracking-wider transition-colors
-                          ${isSelected ? 'text-red-400' : 'text-white'}
+                          text-sm sm:text-base font-bold font-['Orbitron'] uppercase tracking-wider transition-colors
+                          ${isSelected ? 'text-red-400' : 'text-gray-300'}
                         `}>
                           {gameClass.name}
                         </h4>
