@@ -1,5 +1,7 @@
-// src/components/registration/components/RegistrationRules.tsx - FUTURISTIC RULES COMPONENT
+// src/components/registration/components/RegistrationRules.tsx - SIMPLIFIED WITH RULES BUTTON
 'use client'
+
+import { useRouter } from 'next/navigation'
 
 interface RegistrationRulesProps {
   rulesAccepted: boolean
@@ -7,13 +9,11 @@ interface RegistrationRulesProps {
 }
 
 export function RegistrationRules({ rulesAccepted, onRulesChange }: RegistrationRulesProps) {
-  const rules = [
-    'olen broneerinud omale koha üritusel osalemiseks ja seeläbi on rangelt soovituslik ka osalemine. Enneaegselt registreerimise tühistamata jätmise või ürituse korraldajate mitte teavitamine ürituselt puudumise korral võidakse minu konto sulgeda või ajutiselt peatada.',
-    'olen tutvunud ja nõustun ralli reeglitega ning kohustun neid järgima.',
-    'mõistan, et korraldajatel on õigus mind võistluselt eemaldada reeglite rikkumise korral.',
-    'vastutan ise oma tervisliku seisundi eest ning kinnitan, et olen võimeline osalema.',
-    'annan loa kasutada ürituselt tehtud fotosid ja videomaterjale turunduslikel eesmärkidel.'
-  ]
+  const router = useRouter()
+  
+  const handleOpenRules = () => {
+    window.open('/rules', '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div className="space-y-4">
@@ -30,29 +30,34 @@ export function RegistrationRules({ rulesAccepted, onRulesChange }: Registration
         </div>
       </div>
       
-      {/* Rules Content */}
-      <div className="tech-border rounded-xl bg-black/90 backdrop-blur-xl p-6 relative overflow-hidden">
+      {/* Rules Content Box */}
+      <div className="tech-border rounded-xl bg-black/90 backdrop-blur-xl p-4 sm:p-6 relative overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 grid-pattern opacity-[0.01] pointer-events-none"></div>
         
         <div className="relative z-10 space-y-4">
-          <p className="font-bold text-white font-['Orbitron'] uppercase tracking-wider text-sm">
-            Registreerudes käesolevale üritusele kinnitan, et:
-          </p>
-          
-          <ol className="space-y-3">
-            {rules.map((rule, index) => (
-              <li key={index} className="flex items-start space-x-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-gray-800 to-gray-700 rounded-lg flex items-center justify-center text-xs font-bold text-gray-400 font-['Orbitron'] mt-0.5">
-                  {index + 1}
-                </span>
-                <span className="text-sm text-gray-300 leading-relaxed">{rule}</span>
-              </li>
-            ))}
-          </ol>
+          {/* View Rules Button */}
+          <button
+            type="button"
+            onClick={handleOpenRules}
+            className="w-full relative px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg font-['Orbitron'] uppercase tracking-wider text-sm font-bold transition-all duration-300 hover:from-orange-700 hover:to-orange-800 overflow-hidden group"
+          >
+            {/* Hover effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-700 to-orange-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            {/* Button content */}
+            <div className="relative z-10 flex items-center justify-center space-x-2">
+              <span>📖</span>
+              <span>Vaata reegleid</span>
+              <span className="transform group-hover:translate-x-1 transition-transform duration-300">→</span>
+            </div>
+            
+            {/* Glow effect */}
+            <div className="absolute inset-0 shadow-[0_0_0px_rgba(251,146,60,0)] group-hover:shadow-[0_0_20px_rgba(251,146,60,0.3)] transition-shadow duration-300 pointer-events-none"></div>
+          </button>
           
           {/* Agreement Checkbox */}
-          <div className="mt-6 pt-6 border-t border-gray-800">
+          <div className="pt-4 border-t border-gray-800">
             <label className="flex items-start space-x-3 cursor-pointer group">
               <div className="relative mt-0.5">
                 <input
@@ -76,10 +81,10 @@ export function RegistrationRules({ rulesAccepted, onRulesChange }: Registration
                 </div>
               </div>
               <span className={`
-                text-sm font-medium transition-colors select-none
+                text-xs sm:text-sm font-medium transition-colors select-none
                 ${rulesAccepted ? 'text-red-400' : 'text-gray-300 group-hover:text-white'}
               `}>
-                Olen lugenud ja nõustun kõigi registreerimise tingimustega
+                Olen tutvunud LegendRix reeglitega ja nõustun kõigi tingimustega
               </span>
             </label>
           </div>
