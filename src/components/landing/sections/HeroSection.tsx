@@ -38,7 +38,7 @@ export function HeroSection({ onOpenAuth, onOpenCompetitions, onOpenEdetabel }: 
 
         {/* Subtitle */}
         <p className="text-xl md:text-2xl text-gray-500 mb-16 max-w-4xl mx-auto leading-relaxed font-light">
-          Kogege virtuaalse ralli põnevust. Võistelge sõitjatega üle maailma ja tõestage oma oskusi tipptasemel e-spordi keskkonnas.
+          Kogege virtuaalse ralli põnevust. Võistelge sõitjatega üle Eesti ja tõestage oma oskusi tipptasemel e-spordi keskkonnas.
         </p>
         
         {/* Action Buttons */}

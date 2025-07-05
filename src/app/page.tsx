@@ -145,7 +145,7 @@ function HomeContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-black relative overflow-hidden flex flex-col">
       {/* Futuristic Background Effects */}
       <div className="fixed inset-0 z-0">
         {/* Grid pattern */}
@@ -303,17 +303,39 @@ function HomeContent() {
         )}
       </header>
 
-      {/* Cover Photo with futuristic overlay */}
-      <div className={`relative w-full ${blurClasses}`} style={{ height: '40vh', marginTop: '96px' }}>
+      {/* Cover Photo with futuristic overlay - Fixed */}
+      <div className={`relative w-full ${blurClasses}`} style={{ height: '40vh', marginTop: '80px' }}>
         <div className="absolute inset-0 overflow-hidden">
-          <Image
-            src="/cover-photo.png"
-            alt="LegendRix E-Rally Cover"
-            fill
-            className="object-cover"
-            style={{ objectPosition: 'center 60%' }}
-            priority
-          />
+          {/* Mobile Image - Shows bottom part like desktop */}
+          <div className="block md:hidden absolute inset-0">
+            <Image
+              src="/cover-photo.png"
+              alt="LegendRix E-Rally Cover"
+              fill
+              className="object-cover"
+              style={{ 
+                objectPosition: 'center bottom' // Crops more from top, shows bottom part
+              }}
+              priority
+              sizes="(max-width: 768px) 100vw, 100vw" // This is correct since the container is full width
+            />
+          </div>
+          
+          {/* Desktop Image - Original positioning */}
+          <div className="hidden md:block absolute inset-0">
+            <Image
+              src="/cover-photo.png"
+              alt="LegendRix E-Rally Cover"
+              fill
+              className="object-cover"
+              style={{ 
+                objectPosition: 'center 60%' // Your original desktop setting
+              }}
+              priority
+              sizes="(max-width: 768px) 100vw, 100vw" // This is correct since the container is full width
+            />
+          </div>
+          
           {/* Futuristic overlay effects */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black"></div>
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5"></div>
@@ -329,7 +351,7 @@ function HomeContent() {
       </div>
 
       {/* Main Content with futuristic styling */}
-      <main className={`relative z-10 bg-black ${blurClasses}`}>
+      <main className={`relative z-10 bg-black flex-grow ${blurClasses}`}>
         <div className="max-w-7xl mx-auto px-6 py-20">
           {/* Sections with futuristic theme */}
           <HeroSection 

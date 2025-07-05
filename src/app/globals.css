@@ -560,3 +560,27 @@
 [data-sonner-toast] [data-close-button]:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
+
+/* Add this to your global CSS or as inline styles */
+
+/* Ensure html and body take full height with no margins */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Ensure the Next.js root div has no bottom margin/padding */
+#__next {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* If using a custom app wrapper */
+.app-wrapper {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  padding-bottom: 0 !important; /* Force no bottom padding */
+}
