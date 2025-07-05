@@ -1,4 +1,4 @@
-// src/components/user/UserRegistrationsSection.tsx - REDESIGNED WITH FUTURISTIC BLACK-RED-GRAY THEME
+// src/components/user/UserRegistrationsSection.tsx - MOBILE-FRIENDLY VERSION
 import { useState } from 'react'
 import { UserRallyRegistration } from '@/hooks/useOptimizedRallies'
 
@@ -8,7 +8,6 @@ interface UserRegistrationsSectionProps {
 
 export function UserRegistrationsSection({ registrations }: UserRegistrationsSectionProps) {
   const [showPastRallies, setShowPastRallies] = useState(false)
-  const [expandedRally, setExpandedRally] = useState<string | null>(null)
 
   // Futuristic status color mapping
   const getStatusStyles = (status: string) => {
@@ -146,192 +145,165 @@ export function UserRegistrationsSection({ registrations }: UserRegistrationsSec
   }
 
   return (
-    <div className="tech-border rounded-2xl shadow-[0_0_30px_rgba(255,0,64,0.2)] bg-black/80 backdrop-blur-xl p-8 relative overflow-hidden">
+    <div className="tech-border rounded-2xl shadow-[0_0_30px_rgba(255,0,64,0.2)] bg-black/80 backdrop-blur-xl p-4 sm:p-8 relative overflow-hidden">
       {/* Animated background pattern */}
       <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
       
-      {/* Gradient orb */}
-      <div className="absolute -top-20 -left-20 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
-      
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 relative z-10">
-        <h2 className="text-2xl font-black text-white font-['Orbitron'] uppercase tracking-wider">
-          <span className="text-transparent bg-gradient-to-r from-red-400 to-gray-300 bg-clip-text">
+      {/* Header with futuristic styling - Same as UpcomingRallies */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 relative z-10">
+        <h2 className="text-xl sm:text-2xl font-black text-white flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 font-['Orbitron'] tracking-wider">
+          <span className="text-2xl sm:text-3xl text-red-400 animate-pulse">📋</span>
+          <span className="bg-gradient-to-r from-red-400 to-gray-300 bg-clip-text text-transparent">
             Minu registreeringud
           </span>
         </h2>
         
         {/* Toggle buttons */}
-        <div className="flex bg-gray-900/50 rounded-xl p-1 border border-gray-800">
-          <button
-            onClick={() => setShowPastRallies(false)}
-            className={`px-4 py-2 rounded-lg text-sm font-['Orbitron'] uppercase tracking-wider transition-all duration-300 ${
-              !showPastRallies 
-                ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-[0_0_15px_rgba(255,0,64,0.5)]' 
-                : 'text-gray-400 hover:text-red-400'
-            }`}
-          >
-            Aktiivsed ({currentRegistrations.length})
-          </button>
-          <button
-            onClick={() => setShowPastRallies(true)}
-            className={`px-4 py-2 rounded-lg text-sm font-['Orbitron'] uppercase tracking-wider transition-all duration-300 ${
-              showPastRallies 
-                ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-[0_0_15px_rgba(255,0,64,0.5)]' 
-                : 'text-gray-400 hover:text-red-400'
-            }`}
-          >
-            Lõpetatud ({pastRegistrations.length})
-          </button>
+        <div className="flex justify-center sm:justify-end">
+          <div className="bg-gray-900/70 rounded-xl p-1.5 backdrop-blur-xl border border-gray-800">
+            <button
+              onClick={() => setShowPastRallies(false)}
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-['Orbitron'] uppercase tracking-wider transition-all duration-300 ${
+                !showPastRallies 
+                  ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-[0_0_15px_rgba(255,0,64,0.5)]' 
+                  : 'text-gray-400 hover:text-red-400'
+              }`}
+            >
+              Aktiivsed
+              <span className="ml-1 sm:ml-2 opacity-70">({currentRegistrations.length})</span>
+            </button>
+            <button
+              onClick={() => setShowPastRallies(true)}
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-['Orbitron'] uppercase tracking-wider transition-all duration-300 ${
+                showPastRallies 
+                  ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-[0_0_15px_rgba(255,0,64,0.5)]' 
+                  : 'text-gray-400 hover:text-red-400'
+              }`}
+            >
+              Lõpetatud
+              <span className="ml-1 sm:ml-2 opacity-70">({pastRegistrations.length})</span>
+            </button>
+          </div>
         </div>
       </div>
+      
+      {/* Scan line effect */}
+      <div className="scan-line"></div>
 
       {/* Content */}
-      <div className="relative z-10">
-        {displayRegistrations.length === 0 ? (
-          /* Empty state */
-          <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gradient-to-br from-red-900/50 to-gray-900/50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-500/30 shadow-[0_0_30px_rgba(255,0,64,0.2)]">
-              <span className="text-4xl">{showPastRallies ? '🏆' : '🏁'}</span>
+
+        {/* Animated background effects */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-900/5 to-gray-900/5"></div>
+          <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
+        </div>
+        
+        {/* Content */}
+        <div className="relative z-10 p-4 sm:p-6">
+          {displayRegistrations.length === 0 ? (
+            /* Empty state */
+            <div className="text-center py-16">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-48 sm:w-64 h-48 sm:h-64 bg-red-600/10 rounded-full blur-3xl animate-pulse"></div>
+              </div>
+              <div className="relative">
+                <div className="w-20 sm:w-24 h-20 sm:h-24 bg-gradient-to-br from-red-900/50 to-gray-900/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/30 shadow-[0_0_30px_rgba(255,0,64,0.3)]">
+                  <span className="text-3xl sm:text-4xl text-red-400">
+                    {showPastRallies ? '🏁' : '📋'}
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white mb-2 font-['Orbitron'] uppercase tracking-wide">
+                  {showPastRallies ? 'Lõpetatud registreeringuid pole' : 'Aktiivseid registreeringuid pole'}
+                </h3>
+                <p className="text-gray-500 text-sm sm:text-base">
+                  {showPastRallies 
+                    ? 'Osale rallides, et näha oma tulemusi' 
+                    : 'Registreeru rallile, et alustada'}
+                </p>
+              </div>
             </div>
-            <h3 className="text-lg font-bold text-white mb-2 font-['Orbitron'] uppercase tracking-wide">
-              {showPastRallies ? 'Lõpetatud rallisid ei leitud' : 'Aktiivseid registreeringuid ei ole'}
-            </h3>
-            <p className="text-gray-500">
-              {showPastRallies 
-                ? 'Siin kuvatakse lõppenud rallid' 
-                : 'Registreeri end mõnele tulevale rallile'}
-            </p>
-          </div>
-        ) : (
-          /* Registration cards */
-          <div className="space-y-4">
-            {displayRegistrations.map((registration, index) => {
-              const statusStyles = getStatusStyles(registration.status)
-              const isExpanded = expandedRally === registration.id
-              
-              return (
-                <div
-                  key={registration.id}
-                  className="group relative overflow-hidden"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className={`
-                    relative rounded-xl border transition-all duration-300
-                    ${statusStyles.bg} ${statusStyles.border} ${statusStyles.glow}
-                    hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,0,64,0.3)]
-                  `}>
-                    {/* Animated sweep effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none"></div>
+          ) : (
+            /* Registration list - Simplified without expansion */
+            <div className="space-y-3 sm:space-y-4">
+              {displayRegistrations.map((registration) => {
+                const statusStyles = getStatusStyles(registration.status)
+                
+                return (
+                  <div
+                    key={registration.id}
+                    className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-gray-900/50 to-black/50 border border-gray-800 hover:border-red-500/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,0,64,0.2)]"
+                  >
+                    {/* Animated sweep effect on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                     
-                    <div className="relative p-6">
-                      {/* Main content */}
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          {/* Rally info */}
-                          <div className="flex items-start space-x-4">
-                            {/* Status icon */}
-                            <div className={`
-                              w-12 h-12 rounded-xl flex items-center justify-center
-                              ${statusStyles.bg} border ${statusStyles.border}
-                              ${statusStyles.glow} backdrop-blur-sm
-                            `}>
-                              <span className="text-2xl">{statusStyles.icon}</span>
-                            </div>
-                            
-                            {/* Rally details */}
-                            <div className="flex-1">
-                              <h3 className="text-lg font-bold text-white mb-1 font-['Orbitron'] uppercase tracking-wide group-hover:text-red-400 transition-colors">
-                                {registration.rally_name}
-                              </h3>
-                              
-                              {/* Date and class */}
-                              <div className="flex flex-wrap items-center gap-3 text-sm">
-                                <span className="text-gray-400 flex items-center space-x-1">
-                                  <span>📅</span>
-                                  <span>{formatDate(registration.rally_competition_date)}</span>
-                                </span>
-                                {registration.class_name && (
-                                  <span className="text-gray-400 flex items-center space-x-1">
-                                    <span>🏎️</span>
-                                    <span>{registration.class_name}</span>
-                                  </span>
-                                )}
-                              </div>
-                              
-                              {/* Status badge */}
-                              <div className="mt-3 inline-flex items-center space-x-2">
-                                <span className={`
-                                  px-3 py-1 rounded-lg text-xs font-bold font-['Orbitron'] uppercase tracking-wider
-                                  ${statusStyles.bg} border ${statusStyles.border} ${statusStyles.text}
-                                  backdrop-blur-sm
-                                `}>
-                                  {getStatusText(registration.status)}
-                                </span>
-                                
-                                {/* Registration time */}
-                                <span className="text-xs text-gray-500">
-                                  Registreeritud: {new Date(registration.created_at).toLocaleDateString('et-EE')}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                    {/* Main content */}
+                    <div className="relative p-4 sm:p-6">
+                      <div className="flex flex-col gap-3">
+                        {/* Rally name */}
+                        <h3 className="text-base sm:text-lg font-bold text-white font-['Orbitron'] uppercase tracking-wide">
+                          {registration.rally_name || 'Ralli'}
+                        </h3>
                         
-                        {/* Action button */}
-                        <div className="flex items-center ml-4">
-                          <button
-                            onClick={() => setExpandedRally(isExpanded ? null : registration.id)}
-                            className="p-2 rounded-lg bg-gray-900/50 hover:bg-gray-800/50 border border-gray-800 hover:border-red-500/30 text-gray-400 hover:text-red-400 transition-all duration-300 group/btn"
-                          >
-                            <svg 
-                              className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
-                              fill="none" 
-                              stroke="currentColor" 
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
+                        {/* Rally info grid - Mobile optimized */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-gray-400">
+                          {/* Date and time */}
+                          {registration.rally_competition_date && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-red-400">📅</span>
+                              <span>
+                                {new Date(registration.rally_competition_date).toLocaleDateString('et-EE', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric'
+                                })}
+                                {' '}
+                                <span className="text-gray-500">kell</span>
+                                {' '}
+                                {new Date(registration.rally_competition_date).toLocaleTimeString('et-EE', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Class */}
+                          {registration.class_name && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-red-400">🏎️</span>
+                              <span>Klass: {registration.class_name}</span>
+                            </div>
+                          )}
+                          
+                          {/* Registration status */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-red-400">{statusStyles.icon}</span>
+                            <span className={statusStyles.text}>
+                              {getStatusText(registration.status)}
+                            </span>
+                          </div>
+                          
+                          {/* Registration date */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-red-400">✏️</span>
+                            <span>
+                              Registreeritud: {new Date(registration.created_at).toLocaleDateString('et-EE', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      
-                      {/* Expanded details */}
-                      {isExpanded && (
-                        <div className="mt-4 pt-4 border-t border-gray-800/50">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-xs text-gray-500 uppercase tracking-wider font-['Orbitron'] mb-1">Võistluse aeg</p>
-                              <p className="text-sm text-gray-300">
-                                {registration.rally_competition_date 
-                                  ? new Date(registration.rally_competition_date).toLocaleString('et-EE', {
-                                      day: 'numeric',
-                                      month: 'long',
-                                      year: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })
-                                  : 'Määramata'}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500 uppercase tracking-wider font-['Orbitron'] mb-1">Registreerimise ID</p>
-                              <p className="text-sm text-gray-300 font-mono">{registration.id.slice(0, 8)}...</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-      
-      {/* Bottom gradient line */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent"></div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
     </div>
   )
 }
