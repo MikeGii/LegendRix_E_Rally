@@ -174,9 +174,7 @@ export function ForgotPasswordForm({ onBackToLogin }: ForgotPasswordFormProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center mb-6">
-        <h3 className="font-['Orbitron'] text-lg font-bold text-white mb-2 uppercase tracking-wider">
-          Parooli taastamine
-        </h3>
+
         <p className="text-gray-400 text-sm">
           Sisesta oma e-maili aadress ja saadame sulle parooli lähtestamise lingi.
         </p>

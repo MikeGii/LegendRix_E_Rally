@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Orbitron font */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+import '@/styles/futuristic-theme.css'
+
 /* Custom base styles */
 @layer base {
   :root {
@@ -583,4 +587,21 @@ html, body {
   margin: 0;
   padding: 0;
   padding-bottom: 0 !important; /* Force no bottom padding */
+}
+
+/* Font utility classes */
+@layer utilities {
+  .font-script {
+    font-family: var(--font-dancing-script), 'Dancing Script', cursive;
+  }
+  
+  .font-script-fallback {
+    font-family: var(--font-dancing-script), 'Dancing Script', 'Great Vibes', 'Allura', cursive;
+  }
+  
+  /* Orbitron font utility */
+  .font-orbitron {
+    font-family: 'Orbitron', monospace;
+    font-display: swap;
+  }
 }

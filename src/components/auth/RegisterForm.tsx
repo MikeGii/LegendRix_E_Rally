@@ -252,7 +252,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-red-500/50"></div>
         <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-red-500/50"></div>
         
-        <h3 className="font-['Orbitron'] font-bold text-red-400 uppercase tracking-wider mb-3">Kasutustingimused</h3>
+        <h3 className="font-['Orbitron'] font-bold text-red-400 uppercase tracking-wider mb-3 text-sm">Kasutustingimused</h3>
         
         <p className="text-sm text-gray-300">
           Enne registreerumist palun tutvu LegendRix platvormi reeglitega.
