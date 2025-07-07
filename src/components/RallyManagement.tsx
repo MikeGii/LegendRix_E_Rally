@@ -273,7 +273,7 @@ export function RallyManagement() {
                       <span className="text-blue-400 text-lg">🏁</span>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-white">{rally.name}</h3>
+                      <h3 className="font-semibold text-white text-base">{rally.name}</h3>
                       <p className="text-sm text-slate-400">{rally.game_name}</p>
                     </div>
                   </div>
