@@ -87,7 +87,9 @@ export function useApproveResults() {
         throw new Error('Tulemusi pole veel sisestatud. Sisestage enne kinnitamist vähemalt mõned tulemused.')
       }
 
-      // FIXED: Check if record exists first, then update or insert
+      // REMOVE ALL THE TEAM RESULTS POPULATION CODE - IT'S NOT NEEDED
+
+      // KEEP YOUR EXISTING STATUS UPDATE CODE
       const { data: existingStatus, error: checkError } = await supabase
         .from('rally_results_status')
         .select('rally_id')
@@ -138,6 +140,9 @@ export function useApproveResults() {
       queryClient.invalidateQueries({ queryKey: resultsKeys.rally_results_status(rallyId) })
       queryClient.invalidateQueries({ queryKey: resultsKeys.completed_rallies() })
       queryClient.invalidateQueries({ queryKey: resultsKeys.approved_rallies() })
+      queryClient.invalidateQueries({ queryKey: ['rallies-with-team-results'] })
+      queryClient.invalidateQueries({ queryKey: ['team-rally-results'] })
+      queryClient.invalidateQueries({ queryKey: ['team-rally-totals'] })
     },
     onError: (error: any) => {
       console.error('Tulemuste kinnitamine ebaõnnestus:', error)
