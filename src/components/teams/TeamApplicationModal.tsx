@@ -57,7 +57,7 @@ export function TeamApplicationModal({ team, onClose, onApply }: TeamApplication
         .select(`
           user_id,
           role,
-          users (
+          users:users!team_members_user_id_fkey (
             name,
             player_name
           )

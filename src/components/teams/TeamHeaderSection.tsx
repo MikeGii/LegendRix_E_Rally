@@ -9,6 +9,34 @@ import { TeamApplicationModal } from './TeamApplicationModal'
 // Available Teams Table Component with futuristic design
 function AvailableTeamsTable({ onSelectTeam }: { onSelectTeam: (team: Team) => void }) {
   const { data: teams = [], isLoading } = useTeams()
+  const [sortBy, setSortBy] = useState<'class' | 'members'>('class')
+
+  // Helper function to get class priority
+  const getClassPriority = (className: string): number => {
+    const lowerName = className.toLowerCase()
+    if (lowerName.includes('pro') && !lowerName.includes('semi')) return 1
+    if (lowerName.includes('semi')) return 2
+    if (lowerName.includes('juunior') || lowerName.includes('junior')) return 3
+    return 4
+  }
+
+  // Sort teams based on selected criteria
+  const sortedTeams = [...teams].sort((a, b) => {
+    if (sortBy === 'class') {
+      const priorityA = getClassPriority(a.game_class?.name || '')
+      const priorityB = getClassPriority(b.game_class?.name || '')
+      if (priorityA !== priorityB) return priorityA - priorityB
+      // If same class, sort by team name
+      return a.team_name.localeCompare(b.team_name)
+    } else {
+      // Sort by free members count (descending - most free spaces first)
+      const freeA = a.max_members_count - a.members_count
+      const freeB = b.max_members_count - b.members_count
+      if (freeA !== freeB) return freeB - freeA // Changed to descending order
+      // If same free count, sort by team name
+      return a.team_name.localeCompare(b.team_name)
+    }
+  })
 
   if (isLoading) {
     return (
@@ -36,16 +64,43 @@ function AvailableTeamsTable({ onSelectTeam }: { onSelectTeam: (team: Team) => v
       {/* Gradient orb for ambience */}
       <div className="absolute bottom-0 right-0 w-64 h-64 gradient-orb gradient-orb-orange opacity-10"></div>
       
-      {/* Header */}
-      <div className="relative z-10 px-8 py-6 border-b border-red-500/20 bg-black/30">
-        <h3 className="text-xl font-bold text-white font-['Orbitron'] uppercase tracking-wider flex items-center gap-3">
-          <span className="text-red-500 text-2xl">⬢</span>
-          Saadaolevad tiimid
-        </h3>
+      {/* Header with Sort Controls */}
+      <div className="relative z-10 px-4 sm:px-8 py-6 border-b border-red-500/20 bg-black/30">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h3 className="text-xl font-bold text-white font-['Orbitron'] uppercase tracking-wider flex items-center gap-3">
+            <span className="text-red-500 text-2xl">⬢</span>
+            Saadaolevad tiimid
+          </h3>
+          
+          {/* Sort Controls */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400 font-['Orbitron'] uppercase">Sorteeri:</span>
+            <button
+              onClick={() => setSortBy('class')}
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-['Orbitron'] text-xs sm:text-sm uppercase font-bold transition-all duration-300 ${
+                sortBy === 'class'
+                  ? 'bg-gradient-to-r from-red-600 to-red-700 text-white border border-red-500 shadow-[0_0_15px_rgba(255,0,64,0.5)]'
+                  : 'bg-gray-800/50 text-gray-400 border border-gray-700 hover:border-red-500/50 hover:text-red-400'
+              }`}
+            >
+              Klass
+            </button>
+            <button
+              onClick={() => setSortBy('members')}
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-['Orbitron'] text-xs sm:text-sm uppercase font-bold transition-all duration-300 ${
+                sortBy === 'members'
+                  ? 'bg-gradient-to-r from-red-600 to-red-700 text-white border border-red-500 shadow-[0_0_15px_rgba(255,0,64,0.5)]'
+                  : 'bg-gray-800/50 text-gray-400 border border-gray-700 hover:border-red-500/50 hover:text-red-400'
+              }`}
+            >
+              Vabad kohad
+            </button>
+          </div>
+        </div>
       </div>
       
-      {/* Table */}
-      <div className="relative z-10 p-8">
+      {/* Desktop Table View - Original Design */}
+      <div className="relative z-10 p-8 hidden sm:block">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -68,62 +123,58 @@ function AvailableTeamsTable({ onSelectTeam }: { onSelectTeam: (team: Team) => v
               </tr>
             </thead>
             <tbody>
-              {teams.map((team, index) => {
-                const fillPercentage = (team.members_count / team.max_members_count) * 100
-                const isFull = fillPercentage >= 100
-                
+              {sortedTeams.map((team, index) => {
+                const isFull = team.members_count >= team.max_members_count
                 return (
                   <tr 
-                    key={team.id} 
+                    key={team.id}
                     className={`border-b border-gray-800/50 transition-all duration-300 hover:bg-red-500/5 ${
-                      index % 2 === 0 ? 'bg-gray-900/20' : ''
+                      index % 2 === 0 ? 'bg-black/20' : 'bg-black/40'
                     }`}
                   >
-                    <td className="py-5 px-4">
-                      <div className="font-bold text-white hover:text-red-400 transition-colors">
-                        {team.team_name}
+                    <td className="py-4 px-4">
+                      <span className="font-bold text-white font-['Orbitron']">{team.team_name}</span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="space-y-1">
+                        <div className="text-gray-300">{team.game?.name}</div>
+                        <div>
+                          <span className="text-xs px-2 py-1 bg-gradient-to-r from-purple-900/30 to-purple-800/20 text-purple-400 rounded-full border border-purple-500/30 font-['Orbitron'] uppercase">
+                            {team.game_class?.name}
+                          </span>
+                        </div>
                       </div>
                     </td>
-                    <td className="py-5 px-4">
-                      <div>
-                        <p className="text-sm text-white font-medium">{team.game?.name || 'N/A'}</p>
-                        <p className="text-xs text-gray-500 mt-1 font-['Orbitron']">{team.game_class?.name || 'N/A'}</p>
-                      </div>
-                    </td>
-                    <td className="py-5 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-red-900/30 to-red-800/20 border border-red-500/30 rounded-lg flex items-center justify-center">
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-orange-900/30 to-orange-800/20 rounded-lg flex items-center justify-center border border-orange-500/30">
                           <span className="text-xs">👤</span>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-300">{team.manager?.player_name}</p>
+                        <span className="text-orange-400 font-medium">{team.manager?.player_name}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex flex-col items-center gap-2">
+                        <span className={`font-bold font-['Orbitron'] ${
+                          isFull ? 'text-red-400' : 'text-green-400'
+                        }`}>
+                          {team.members_count} / {team.max_members_count}
+                        </span>
+                        <div className="w-24 h-2 bg-gray-800 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-500 ${
+                              isFull ? 'bg-gradient-to-r from-red-600 to-red-500' : 'bg-gradient-to-r from-green-600 to-green-500'
+                            }`}
+                            style={{ width: `${(team.members_count / team.max_members_count) * 100}%` }}
+                          />
                         </div>
                       </div>
                     </td>
-                    <td className="py-5 px-4">
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="flex items-center gap-2">
-                            <span className="text-2xl font-bold text-white font-['Orbitron']">{team.members_count}</span>
-                            <span className="text-gray-500">/</span>
-                            <span className="text-lg text-gray-400 font-['Orbitron']">{team.max_members_count}</span>
-                          </div>
-                          <div className="w-24 h-1 bg-gray-800 rounded-full overflow-hidden mt-2">
-                            <div 
-                              className={`h-full transition-all duration-500 ease-out ${
-                                isFull ? 'bg-red-500' : fillPercentage > 75 ? 'bg-orange-500' : 'bg-green-500'
-                              }`}
-                              style={{ width: `${fillPercentage}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-5 px-4 text-center">
+                    <td className="py-4 px-4 text-center">
                       <button
                         onClick={() => onSelectTeam(team)}
                         disabled={isFull}
-                        className={`px-6 py-2.5 rounded-xl font-['Orbitron'] uppercase tracking-wider text-sm font-bold transition-all duration-200 transform hover:scale-105 ${
+                        className={`px-4 py-2 rounded-lg font-bold transition-all duration-300 text-sm font-['Orbitron'] uppercase tracking-wider ${
                           isFull
                             ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
                             : 'futuristic-btn bg-gradient-to-r from-green-900/50 to-green-800/30 border border-green-500/50 text-green-400 hover:shadow-[0_0_20px_rgba(34,197,94,0.5)]'
@@ -137,6 +188,70 @@ function AvailableTeamsTable({ onSelectTeam }: { onSelectTeam: (team: Team) => v
               })}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Mobile Card View - Visible only on mobile */}
+      <div className="relative z-10 p-4 sm:hidden">
+        <div className="space-y-4">
+          {sortedTeams.map((team) => {
+            const isFull = team.members_count >= team.max_members_count
+            return (
+              <div
+                key={team.id}
+                className="bg-gradient-to-br from-gray-900/80 to-black/80 rounded-xl border border-red-500/30 p-4 space-y-3"
+              >
+                {/* Team Name */}
+                <h4 className="font-bold text-white font-['Orbitron'] text-lg">
+                  {team.team_name}
+                </h4>
+                
+                {/* Game and Class */}
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-300">{team.game?.name}</span>
+                  <span className="px-2 py-0.5 bg-gradient-to-r from-purple-900/30 to-purple-800/20 text-purple-400 rounded-full border border-purple-500/30 font-['Orbitron'] uppercase text-xs">
+                    {team.game_class?.name}
+                  </span>
+                </div>
+                
+                {/* Team Head */}
+                <div className="text-sm">
+                  <span className="text-gray-400">Pealik: </span>
+                  <span className="text-orange-400 font-medium">{team.manager?.player_name}</span>
+                </div>
+                
+                {/* Members Count */}
+                <div className="flex items-center gap-3">
+                  <span className={`font-bold font-['Orbitron'] ${
+                    isFull ? 'text-red-400' : 'text-green-400'
+                  }`}>
+                    {team.members_count}/{team.max_members_count} liiget
+                  </span>
+                  <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${
+                        isFull ? 'bg-gradient-to-r from-red-600 to-red-500' : 'bg-gradient-to-r from-green-600 to-green-500'
+                      }`}
+                      style={{ width: `${(team.members_count / team.max_members_count) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                
+                {/* Apply Button */}
+                <button
+                  onClick={() => onSelectTeam(team)}
+                  disabled={isFull}
+                  className={`w-full px-4 py-3 rounded-lg font-bold transition-all duration-300 text-sm font-['Orbitron'] uppercase tracking-wider ${
+                    isFull
+                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
+                      : 'futuristic-btn bg-gradient-to-r from-green-900/50 to-green-800/30 border border-green-500/50 text-green-400 hover:shadow-[0_0_20px_rgba(34,197,94,0.5)]'
+                  }`}
+                >
+                  {isFull ? '✖ Täis' : '✓ Kandideeri'}
+                </button>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
