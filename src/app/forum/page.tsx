@@ -7,13 +7,25 @@ import { useAuth } from '@/components/AuthProvider'
 import { ForumHeader } from '@/components/forum/ForumHeader'
 import { CreatePostModal } from '@/components/forum/CreatePostModal'
 import { ForumPosts } from '@/components/forum/ForumPosts'
+import { useCreateForumPost } from '@/hooks/useForumPosts'
+import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { EditPostModal } from '@/components/forum/EditPostModal'
+import { useUpdateForumPost, useDeleteForumPost, ForumPost } from '@/hooks/useForumPosts'
 import '@/styles/futuristic-theme.css'
 
-export default function ForumPage() {
-  const { user } = useAuth()
-  const router = useRouter()
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+function ForumContent() {
+    const { user } = useAuth()
+    const router = useRouter()
+    const [showCreateModal, setShowCreateModal] = useState(false)
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const createPostMutation = useCreateForumPost()
+    const { showToast } = useToast()
+
+    const updatePostMutation = useUpdateForumPost()
+    const deletePostMutation = useDeleteForumPost()
+
+    const [editingPost, setEditingPost] = useState<ForumPost | null>(null)
+    const [showEditModal, setShowEditModal] = useState(false)
 
   const handleSearch = (query: string) => {
     console.log('Searching for:', query)
@@ -24,11 +36,51 @@ export default function ForumPage() {
     setShowCreateModal(true)
   }
 
-  const handleSubmitPost = (title: string, content: string) => {
-    console.log('New post:', { title, content })
-    // TODO: Implement post submission logic
-    setShowCreateModal(false)
+  const handleSubmitPost = async (title: string, content: string) => {
+    try {
+      await createPostMutation.mutateAsync({ title, content })
+      showToast({ message: 'Postitus edukalt loodud!', type: 'success' })
+      setShowCreateModal(false)
+    } catch (error) {
+      console.error('Error creating post:', error)
+      showToast({ message: 'Postituse loomine ebaõnnestus', type: 'error' })
+    }
   }
+
+  const handleEdit = (post: ForumPost) => {
+  setEditingPost(post)
+  setShowEditModal(true)
+}
+
+const handleUpdatePost = async (title: string, content: string) => {
+  if (!editingPost) return
+  
+  try {
+    await updatePostMutation.mutateAsync({
+      postId: editingPost.post_id,
+      title,
+      content
+    })
+    showToast({ message: 'Postitus edukalt uuendatud!', type: 'success' })
+    setShowEditModal(false)
+    setEditingPost(null)
+  } catch (error) {
+    console.error('Error updating post:', error)
+    showToast({ message: 'Postituse uuendamine ebaõnnestus', type: 'error' })
+  }
+}
+
+const handleDelete = async (postId: string) => {
+  if (confirm('Kas olete kindel, et soovite selle postituse kustutada?')) {
+    try {
+      await deletePostMutation.mutateAsync(postId)
+      showToast({ message: 'Postitus edukalt kustutatud!', type: 'success' })
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      showToast({ message: 'Postituse kustutamine ebaõnnestus', type: 'error' })
+    }
+  }
+}
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -162,9 +214,9 @@ export default function ForumPage() {
           </div>
 
           {/* Forum Posts Table */}
-          <div className="max-w-6xl mx-auto">
-            <ForumPosts />
-          </div>
+            <div className="max-w-6xl mx-auto">
+            <ForumPosts onEdit={handleEdit} onDelete={handleDelete} />
+            </div>
         </div>
       </main>
 
@@ -174,6 +226,28 @@ export default function ForumPage() {
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleSubmitPost}
       />
+
+    {/* Edit Post Modal */}
+      {editingPost && (
+        <EditPostModal 
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false)
+            setEditingPost(null)
+          }}
+          onSubmit={handleUpdatePost}
+          initialTitle={editingPost.post_title}
+          initialContent={editingPost.post_text}
+        />
+      )}
     </div>
+  )
+}
+
+export default function ForumPage() {
+  return (
+    <ToastProvider>
+      <ForumContent />
+    </ToastProvider>
   )
 }
