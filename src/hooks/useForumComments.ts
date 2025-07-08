@@ -265,19 +265,20 @@ export function useIsCommentLiked(commentId: string) {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: ['comment_like', commentId, user?.id],
-    queryFn: async (): Promise<boolean> => {
+    queryKey: ['comment-liked', commentId, user?.id || ''],  // Use a direct array instead of commentKeys
+    queryFn: async () => {
       if (!user?.id) return false
-
+      
       const { data, error } = await supabase
         .from('comment_likes')
         .select('id')
-        .eq('user_id', user.id)
         .eq('comment_id', commentId)
-        .single()
-
-      return !!data && !error
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      return !!data
     },
     enabled: !!user?.id && !!commentId,
+    staleTime: 30 * 1000,
   })
 }

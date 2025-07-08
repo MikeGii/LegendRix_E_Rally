@@ -112,7 +112,7 @@ const formatDate = (dateString: string) => {
         </div>
       )}
 
-      {/* Posts Table */}
+      {/* Posts Section */}
       {filteredPosts.length === 0 ? (
         <div className="tech-border rounded-xl bg-black/90 backdrop-blur-xl p-8">
           <p className="text-gray-400 text-center">
@@ -123,108 +123,154 @@ const formatDate = (dateString: string) => {
           </p>
         </div>
       ) : (
-        <div className="tech-border rounded-xl bg-black/90 backdrop-blur-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-800 bg-gray-900/50">
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-400 font-['Orbitron'] uppercase tracking-wider">
-                    Pealkiri
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-400 font-['Orbitron'] uppercase tracking-wider hidden sm:table-cell">
-                    Autor
-                  </th>
-                  {!currentFolder && (
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-400 font-['Orbitron'] uppercase tracking-wider hidden md:table-cell">
-                      Kaust
-                    </th>
+        <>
+          {/* Mobile View - Cards */}
+          <div className="md:hidden space-y-4">
+            {filteredPosts.map((post) => (
+              <div 
+                key={post.post_id}
+                className="tech-border rounded-xl bg-black/90 backdrop-blur-xl p-4 space-y-3"
+              >
+                {/* Post Title - Clickable */}
+                <h3 
+                  className="text-white font-medium text-base cursor-pointer hover:text-red-400 transition-colors"
+                  onClick={() => onViewPost?.(post)}
+                >
+                  {post.post_title}
+                </h3>
+
+                {/* Post Meta */}
+                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                  <span className="flex items-center">
+                    <span className="mr-1">👤</span>
+                    {post.users?.player_name || post.users?.name || 'Tundmatu'}
+                  </span>
+                  <span>•</span>
+                  <span>{formatDate(post.post_date_time)}</span>
+                </div>
+
+                {/* Comments Count */}
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 text-xs flex items-center">
+                    <span className="mr-1">💬</span>
+                    {post.comments_count || 0} kommentaari
+                  </span>
+
+                  {/* Action Buttons - Only for post owner */}
+                  {user && user.id === post.post_creator && (
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => onEdit(post)}
+                        className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors group"
+                        title="Muuda postitust"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 group-hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => onDelete(post.post_id)}
+                        className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors group"
+                        title="Kustuta postitus"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 group-hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   )}
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-400 font-['Orbitron'] uppercase tracking-wider">
-                    Kuupäev
-                  </th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-gray-400 font-['Orbitron'] uppercase tracking-wider">
-                    Tegevused
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredPosts.map((post) => (
-                  <tr
-                    key={post.post_id}
-                    className="hover:bg-gray-900/50 transition-colors duration-200"
-                  >
-                    <td className="px-6 py-4">
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop View - Table (unchanged) */}
+          <div className="hidden md:block tech-border rounded-xl bg-black/90 backdrop-blur-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-800 bg-gray-900/50">
+                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-400 font-['Orbitron'] uppercase tracking-wider">
+                      Pealkiri
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-400 font-['Orbitron'] uppercase tracking-wider hidden sm:table-cell">
+                      Autor
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-400 font-['Orbitron'] uppercase tracking-wider">
+                      Kuupäev
+                    </th>
+                    <th className="px-6 py-4 text-center text-sm font-bold text-gray-400 font-['Orbitron'] uppercase tracking-wider">
+                      Tegevused
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {filteredPosts.map((post) => (
+                    <tr
+                      key={post.post_id}
+                      className="hover:bg-gray-900/50 transition-colors duration-200"
+                    >
+                      <td className="px-6 py-4">
                         <div>
-                        <h3 
+                          <h3 
                             className="text-white font-medium text-sm sm:text-base cursor-pointer hover:text-red-400 transition-colors"
                             onClick={() => onViewPost?.(post)}
-                        >
-                            {post.post_title}
-                        </h3>
-                        {/* Comments count */}
-                        <div className="flex items-center space-x-3 mt-1">
-                          <span className="text-gray-500 text-xs sm:hidden">
-                            {post.users?.player_name || post.users?.name || 'Tundmatu'}
-                          </span>
-                          <span className="text-gray-500 text-xs flex items-center">
-                            <span className="mr-1">💬</span>
-                            {post.comments_count || 0} kommentaari
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 hidden sm:table-cell">
-                      <p className="text-gray-300 text-sm">
-                        {post.users?.player_name || post.users?.name || 'Tundmatu'}
-                      </p>
-                    </td>
-                    {!currentFolder && (
-                      <td className="px-6 py-4 hidden md:table-cell">
-                        {post.sub_folder && (
-                          <button
-                            onClick={() => onFolderClick?.(post.sub_folder!)}
-                            className="text-xs px-2 py-1 bg-gray-800/50 border border-gray-700/50 rounded text-gray-400 hover:text-white hover:border-gray-600 transition-colors"
                           >
-                            📁 {post.sub_folder}
-                          </button>
+                            {post.post_title}
+                          </h3>
+                          {/* Comments count */}
+                          <div className="flex items-center space-x-3 mt-1">
+                            <span className="text-gray-500 text-xs sm:hidden">
+                              {post.users?.player_name || post.users?.name || 'Tundmatu'}
+                            </span>
+                            <span className="text-gray-500 text-xs flex items-center">
+                              <span className="mr-1">💬</span>
+                              {post.comments_count || 0} kommentaari
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 hidden sm:table-cell">
+                        <p className="text-gray-300 text-sm">
+                          {post.users?.player_name || post.users?.name || 'Tundmatu'}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-gray-400 text-sm">
+                          {formatDate(post.post_date_time)}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        {user && user.id === post.post_creator && (
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => onEdit(post)}
+                              className="p-1.5 rounded hover:bg-gray-800 transition-colors group"
+                              title="Muuda postitust"
+                            >
+                              <svg className="w-4 h-4 text-gray-400 group-hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => onDelete(post.post_id)}
+                              className="p-1.5 rounded hover:bg-gray-800 transition-colors group"
+                              title="Kustuta postitus"
+                            >
+                              <svg className="w-4 h-4 text-gray-400 group-hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
                         )}
                       </td>
-                    )}
-                    <td className="px-6 py-4">
-                      <p className="text-gray-400 text-sm">
-                        {formatDate(post.post_date_time)}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      {user && user.id === post.post_creator && (
-                        <div className="flex items-center justify-center space-x-2">
-                          <button
-                            onClick={() => onEdit(post)}
-                            className="p-1.5 rounded hover:bg-gray-800 transition-colors group"
-                            title="Muuda postitust"
-                          >
-                            <svg className="w-4 h-4 text-gray-400 group-hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => onDelete(post.post_id)}
-                            className="p-1.5 rounded hover:bg-gray-800 transition-colors group"
-                            title="Kustuta postitus"
-                          >
-                            <svg className="w-4 h-4 text-gray-400 group-hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
