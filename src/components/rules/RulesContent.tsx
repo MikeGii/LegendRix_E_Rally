@@ -6,7 +6,7 @@ export function RulesContent() {
     <div className="max-w-4xl mx-auto space-y-16">
       {/* Privacy Policy Section */}
       <section>
-        <p className="text-xl text-red-400">Viimati uuendatud 30.06.2025</p>
+        <p className="text-xl text-red-400">Viimati uuendatud 08.07.2025</p>
       </section>
       
       <section>
@@ -27,8 +27,8 @@ export function RulesContent() {
             <h3 className="text-xl font-bold text-red-400">1.2 Kogutavad andmed</h3>
             <p className="text-white mb-3 pl-6">Registreerimisel kogume järgmisi isikuandmeid:</p>
             <ul className="space-y-2 pl-6 list-disc text-white">
-              <li><span className="font-bold">Nimi</span> - Võitjate auhindade (karikad, medalid) korrektse graveerimise tagamiseks</li>
-              <li><span className="font-bold">Mängijanimi (player_name)</span> - Edetabelites kuvamiseks ja sidumiseks mänguplatvormide kasutajanimedega (Steam, Epic Games, PlayStation jne)</li>
+              <li><span className="font-bold">Nimi</span> - Võitjate auhindade (karikad, medalid) korrektse graveerimise tagamiseks. Kasutajaprofiili nime veebilehel avalikult ei kuvata</li>
+              <li><span className="font-bold">Mängijanimi</span> - Edetabelites kuvamiseks ja sidumiseks mänguplatvormide kasutajanimedega (Steam, Epic Games, PlayStation jne)</li>
               <li><span className="font-bold">E-posti aadress</span> - Teavituste ja meeldetuletuste saatmiseks ning parooli taastamise võimaldamiseks</li>
             </ul>
           </div>
@@ -96,7 +96,7 @@ export function RulesContent() {
             <ul className="space-y-2 pl-6 list-disc text-white">
               <li>Kõik isikud, kes omavad legendrix.ee lehel oma kasutajakontot on kohustatud käituma austavalt ja heatahtlikult teiste kasutaja omanike suhtes mängu platvormi kasutamise vältel</li>
               <li>Keelatud on mistahes viisil mängureeglitest kõrvale kaldumine ja ebaaus mänguviis</li>
-              <li>Reeglite rikkumine võib kaasa tuua konto sulgemise</li>
+              <li>Reeglite rikkumine võib kaasa tuua konto sulgemise ning mängija saavutuste kustutamine lõplikult kõikidest edetabelitest</li>
             </ul>
           </div>
         </div>
@@ -175,7 +175,7 @@ export function RulesContent() {
               <li>Igal võistkonnal peab olema võistkonna pealik</li>
               <li>Võistkonna pealiku määrab administraator</li>
               <li>Võistkonda haldab võistkonna pealik</li>
-              <li>Võistkond koosneb 4 liikmest (võistkonna pealik kaasaarvatud).</li>
+              <li>Võistkond koosneb 3-5 liikmest (võistkonna pealik kaasaarvatud).</li>
             </ul>
           </div>
           

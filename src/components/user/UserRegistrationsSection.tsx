@@ -200,18 +200,16 @@ export function UserRegistrationsSection({ registrations }: UserRegistrationsSec
         
         {/* Content */}
         <div className="relative z-10 p-4 sm:p-6">
-          {displayRegistrations.length === 0 ? (
-            /* Empty state */
-            <div className="text-center py-16">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-48 sm:w-64 h-48 sm:h-64 bg-red-600/10 rounded-full blur-3xl animate-pulse"></div>
+        {displayRegistrations.length === 0 ? (
+          /* Empty state - Compact version */
+          <div className="text-center py-8">
+            <div className="flex items-center justify-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-900/30 to-gray-900/30 rounded-full flex items-center justify-center border border-red-500/20">
+              <span className="text-3xl sm:text-4xl text-red-400">
+                {showPastRallies ? '🏁' : '📋'}
+              </span>
               </div>
-              <div className="relative">
-                <div className="w-20 sm:w-24 h-20 sm:h-24 bg-gradient-to-br from-red-900/50 to-gray-900/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/30 shadow-[0_0_30px_rgba(255,0,64,0.3)]">
-                  <span className="text-3xl sm:text-4xl text-red-400">
-                    {showPastRallies ? '🏁' : '📋'}
-                  </span>
-                </div>
+              <div className="text-left">
                 <h3 className="text-base sm:text-lg font-bold text-white mb-2 font-['Orbitron'] uppercase tracking-wide">
                   {showPastRallies ? 'Lõpetatud registreeringuid pole' : 'Aktiivseid registreeringuid pole'}
                 </h3>
@@ -222,6 +220,7 @@ export function UserRegistrationsSection({ registrations }: UserRegistrationsSec
                 </p>
               </div>
             </div>
+          </div>
           ) : (
             /* Registration list - Simplified without expansion */
             <div className="space-y-3 sm:space-y-4">
