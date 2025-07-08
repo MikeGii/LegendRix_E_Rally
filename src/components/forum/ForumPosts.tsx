@@ -9,9 +9,10 @@ import '@/styles/futuristic-theme.css'
 interface ForumPostsProps {
   onEdit: (post: ForumPost) => void
   onDelete: (postId: string) => void
+  onViewPost: (post: ForumPost) => void
 }
 
-export function ForumPosts({ onEdit, onDelete }: ForumPostsProps) {
+export function ForumPosts({ onEdit, onDelete, onViewPost }: ForumPostsProps) {
   const { data: posts = [], isLoading, error } = useForumPosts()
   const { user } = useAuth()
 
@@ -84,21 +85,24 @@ const formatDate = (dateString: string) => {
                 className="hover:bg-gray-900/50 transition-colors duration-200"
                 >
                 <td className="px-6 py-4">
-                    <div>
-                    <h3 className="text-white font-medium text-sm sm:text-base">
-                        {post.post_title}
+                <div>
+                    <h3 
+                    className="text-white font-medium text-sm sm:text-base cursor-pointer hover:text-red-400 transition-colors"
+                    onClick={() => onViewPost(post)}
+                    >
+                    {post.post_title}
                     </h3>
                     {/* Comments count */}
                     <div className="flex items-center space-x-3 mt-1">
-                        <span className="text-gray-500 text-xs sm:hidden">
+                    <span className="text-gray-500 text-xs sm:hidden">
                         {post.users?.player_name || post.users?.name || 'Tundmatu'}
-                        </span>
-                        <span className="text-gray-500 text-xs flex items-center">
+                    </span>
+                    <span className="text-gray-500 text-xs flex items-center">
                         <span className="mr-1">💬</span>
                         {post.comments_count || 0} kommentaari
-                        </span>
+                    </span>
                     </div>
-                    </div>
+                </div>
                 </td>
                 <td className="px-6 py-4 hidden sm:table-cell">
                     <p className="text-gray-300 text-sm">
@@ -110,30 +114,35 @@ const formatDate = (dateString: string) => {
                     {formatDate(post.post_date_time)}
                     </p>
                 </td>
-                <td className="px-6 py-4">
-                    {user && user.id === post.post_creator && (
-                    <div className="flex items-center justify-center space-x-2">
+                    <td className="px-6 py-4">
+                    {user && (user.id === post.post_creator || user.role === 'admin') && (
+                        <div className="flex items-center justify-center space-x-2">
+                        {/* Edit button - only for post creator */}
+                        {user.id === post.post_creator && (
+                            <button
+                            onClick={() => onEdit(post)}
+                            className="p-1.5 rounded hover:bg-gray-800 transition-colors group"
+                            title="Muuda postitust"
+                            >
+                            <svg className="w-4 h-4 text-gray-400 group-hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            </button>
+                        )}
+                        
+                        {/* Delete button - for post creator OR admin */}
                         <button
-                        onClick={() => onEdit(post)}
-                        className="p-1.5 rounded hover:bg-gray-800 transition-colors group"
-                        title="Muuda postitust"
+                            onClick={() => onDelete(post.post_id)}
+                            className="p-1.5 rounded hover:bg-gray-800 transition-colors group"
+                            title="Kustuta postitus"
                         >
-                        <svg className="w-4 h-4 text-gray-400 group-hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        </button>
-                        <button
-                        onClick={() => onDelete(post.post_id)}
-                        className="p-1.5 rounded hover:bg-gray-800 transition-colors group"
-                        title="Kustuta postitus"
-                        >
-                        <svg className="w-4 h-4 text-gray-400 group-hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-gray-400 group-hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                            </svg>
                         </button>
-                    </div>
+                        </div>
                     )}
-                </td>
+                    </td>
                 </tr>
             ))}
           </tbody>

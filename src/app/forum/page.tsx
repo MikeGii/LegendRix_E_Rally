@@ -11,6 +11,8 @@ import { useCreateForumPost } from '@/hooks/useForumPosts'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { EditPostModal } from '@/components/forum/EditPostModal'
 import { useUpdateForumPost, useDeleteForumPost, ForumPost } from '@/hooks/useForumPosts'
+import { PostViewModal } from '@/components/forum/PostViewModal'
+import { useCreateComment } from '@/hooks/useForumComments'
 import '@/styles/futuristic-theme.css'
 
 function ForumContent() {
@@ -26,6 +28,11 @@ function ForumContent() {
 
     const [editingPost, setEditingPost] = useState<ForumPost | null>(null)
     const [showEditModal, setShowEditModal] = useState(false)
+
+    const [viewingPost, setViewingPost] = useState<ForumPost | null>(null)
+    const [showViewModal, setShowViewModal] = useState(false)
+
+    const createCommentMutation = useCreateComment()
 
   const handleSearch = (query: string) => {
     console.log('Searching for:', query)
@@ -79,6 +86,21 @@ const handleDelete = async (postId: string) => {
       console.error('Error deleting post:', error)
       showToast({ message: 'Postituse kustutamine ebaõnnestus', type: 'error' })
     }
+  }
+}
+
+const handleViewPost = (post: ForumPost) => {
+  setViewingPost(post)
+  setShowViewModal(true)
+}
+
+const handleComment = async (postId: string, commentText: string) => {
+  try {
+    await createCommentMutation.mutateAsync({ postId, commentText })
+    showToast({ message: 'Kommentaar lisatud!', type: 'success' })
+  } catch (error) {
+    console.error('Error creating comment:', error)
+    showToast({ message: 'Kommentaari lisamine ebaõnnestus', type: 'error' })
   }
 }
 
@@ -215,7 +237,11 @@ const handleDelete = async (postId: string) => {
 
           {/* Forum Posts Table */}
             <div className="max-w-6xl mx-auto">
-            <ForumPosts onEdit={handleEdit} onDelete={handleDelete} />
+            <ForumPosts 
+                onEdit={handleEdit} 
+                onDelete={handleDelete}
+                onViewPost={handleViewPost}
+            />
             </div>
         </div>
       </main>
@@ -240,6 +266,17 @@ const handleDelete = async (postId: string) => {
           initialContent={editingPost.post_text}
         />
       )}
+
+      {/* Post View Modal */}
+      <PostViewModal 
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false)
+          setViewingPost(null)
+        }}
+        post={viewingPost}
+        onComment={handleComment}
+      />
     </div>
   )
 }

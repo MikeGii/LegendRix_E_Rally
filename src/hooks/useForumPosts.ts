@@ -33,7 +33,8 @@ export function useForumPosts() {
   return useQuery({
     queryKey: forumKeys.lists(),
     queryFn: async (): Promise<ForumPost[]> => {
-      const { data, error } = await supabase
+      // First get all posts with user info
+      const { data: posts, error: postsError } = await supabase
         .from('forum_posts')
         .select(`
           *,
@@ -44,14 +45,35 @@ export function useForumPosts() {
         `)
         .order('post_date_time', { ascending: false })
 
-      if (error) {
-        console.error('Error fetching forum posts:', error)
-        throw error
+      if (postsError) {
+        console.error('Error fetching forum posts:', postsError)
+        throw postsError
       }
 
-      return data || []
+      // Then get comment counts for each post
+      const postIds = posts.map(p => p.post_id)
+      const { data: commentCounts, error: countError } = await supabase
+        .from('forum_comments')
+        .select('post_id')
+        .in('post_id', postIds)
+
+      if (countError) {
+        console.error('Error fetching comment counts:', countError)
+      }
+
+      // Count comments per post
+      const countsMap = new Map<string, number>()
+      commentCounts?.forEach(comment => {
+        countsMap.set(comment.post_id, (countsMap.get(comment.post_id) || 0) + 1)
+      })
+
+      // Merge the counts with posts
+      return posts.map(post => ({
+        ...post,
+        comments_count: countsMap.get(post.post_id) || 0
+      }))
     },
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
   })
 }
@@ -108,11 +130,30 @@ export function useDeleteForumPost() {
         throw new Error('User must be authenticated to delete posts')
       }
 
-      const { error } = await supabase
+      // First check if user is admin
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (userError) {
+        console.error('Error checking user role:', userError)
+        throw userError
+      }
+
+      // Build the delete query
+      let query = supabase
         .from('forum_posts')
         .delete()
         .eq('post_id', postId)
-        .eq('post_creator', user.id) // Security check
+
+      // Only add creator check if not admin
+      if (userData?.role !== 'admin') {
+        query = query.eq('post_creator', user.id)
+      }
+
+      const { error } = await query
 
       if (error) {
         console.error('Error deleting forum post:', error)
