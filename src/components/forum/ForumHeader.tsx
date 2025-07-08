@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@/components/AuthProvider'
 import '@/styles/futuristic-theme.css'
 
 interface ForumHeaderProps {
@@ -10,6 +11,7 @@ interface ForumHeaderProps {
 
 export function ForumHeader({ onSearch, onCreatePost }: ForumHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const { user } = useAuth()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,25 +46,33 @@ export function ForumHeader({ onSearch, onCreatePost }: ForumHeaderProps) {
               </div>
             </form>
 
-            {/* Create Post Button */}
-            <button
-              onClick={onCreatePost}
-              className="group relative px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-['Orbitron'] uppercase tracking-wider text-sm font-bold transition-all duration-300 hover:from-red-700 hover:to-red-800 overflow-hidden"
-            >
-              {/* Hover effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-red-700 to-red-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              
-              {/* Button content */}
-              <div className="relative z-10 flex items-center justify-center space-x-2">
-                <span className="text-lg">✏️</span>
-                <span className="font-bold">Loo postitus</span>
-              </div>
+            {/* Create Post Button or Login Message */}
+            {user ? (
+              <button
+                onClick={onCreatePost}
+                className="group relative px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-['Orbitron'] uppercase tracking-wider text-sm font-bold transition-all duration-300 hover:from-red-700 hover:to-red-800 overflow-hidden"
+              >
+                {/* Hover effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-red-700 to-red-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                {/* Button content */}
+                <div className="relative z-10 flex items-center justify-center space-x-2">
+                  <span className="text-lg">✏️</span>
+                  <span className="font-bold">Loo postitus</span>
+                </div>
 
-              {/* Glow effect on hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute inset-0 blur-xl bg-red-500/30"></div>
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute inset-0 blur-xl bg-red-500/30"></div>
+                </div>
+              </button>
+            ) : (
+              <div className="px-6 py-3 bg-gray-900/50 border border-gray-700/50 rounded-lg">
+                <p className="text-gray-500 font-['Orbitron'] text-sm text-center">
+                  Postituse loomiseks pead olema sisse loginud
+                </p>
               </div>
-            </button>
+            )}
           </div>
 
           {/* Mobile Search Button (optional alternative design) */}

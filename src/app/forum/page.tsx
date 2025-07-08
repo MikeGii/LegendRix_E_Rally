@@ -1,14 +1,17 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useAuth } from '@/components/AuthProvider'
 import { ForumHeader } from '@/components/forum/ForumHeader'
+import { CreatePostModal } from '@/components/forum/CreatePostModal'
 import '@/styles/futuristic-theme.css'
 
 export default function ForumPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   const handleSearch = (query: string) => {
     console.log('Searching for:', query)
@@ -16,8 +19,13 @@ export default function ForumPage() {
   }
 
   const handleCreatePost = () => {
-    console.log('Create new post')
-    // TODO: Implement create post logic
+    setShowCreateModal(true)
+  }
+
+  const handleSubmitPost = (title: string, content: string) => {
+    console.log('New post:', { title, content })
+    // TODO: Implement post submission logic
+    setShowCreateModal(false)
   }
 
   return (
@@ -88,6 +96,9 @@ export default function ForumPage() {
             <h1 className="text-5xl font-black text-white font-['Orbitron'] tracking-wider mb-4">
               <span className="text-red-500">FOORUM</span>
             </h1>
+            <p className="text-gray-400 text-lg">
+              LegendRix kogukonna arutelud ja teadaanded
+            </p>
           </div>
 
           {/* Forum Header with Search and Create Post */}
@@ -108,6 +119,13 @@ export default function ForumPage() {
           </div>
         </div>
       </main>
+
+      {/* Create Post Modal */}
+      <CreatePostModal 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleSubmitPost}
+      />
     </div>
   )
 }
