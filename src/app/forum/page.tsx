@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { useAuth } from '@/components/AuthProvider'
 import { ForumHeader } from '@/components/forum/ForumHeader'
@@ -18,6 +18,9 @@ import '@/styles/futuristic-theme.css'
 function ForumContent() {
     const { user } = useAuth()
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const currentFolder = searchParams.get('folder')
+
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const createPostMutation = useCreateForumPost()
@@ -34,75 +37,88 @@ function ForumContent() {
 
     const createCommentMutation = useCreateComment()
 
-  const handleSearch = (query: string) => {
-    console.log('Searching for:', query)
-    // TODO: Implement search logic
-  }
-
-  const handleCreatePost = () => {
-    setShowCreateModal(true)
-  }
-
-  const handleSubmitPost = async (title: string, content: string) => {
-    try {
-      await createPostMutation.mutateAsync({ title, content })
-      showToast({ message: 'Postitus edukalt loodud!', type: 'success' })
-      setShowCreateModal(false)
-    } catch (error) {
-      console.error('Error creating post:', error)
-      showToast({ message: 'Postituse loomine ebaõnnestus', type: 'error' })
+    const handleSearch = (query: string) => {
+        console.log('Searching for:', query)
+        // TODO: Implement search logic
     }
-  }
 
-  const handleEdit = (post: ForumPost) => {
-  setEditingPost(post)
-  setShowEditModal(true)
-}
-
-const handleUpdatePost = async (title: string, content: string) => {
-  if (!editingPost) return
-  
-  try {
-    await updatePostMutation.mutateAsync({
-      postId: editingPost.post_id,
-      title,
-      content
-    })
-    showToast({ message: 'Postitus edukalt uuendatud!', type: 'success' })
-    setShowEditModal(false)
-    setEditingPost(null)
-  } catch (error) {
-    console.error('Error updating post:', error)
-    showToast({ message: 'Postituse uuendamine ebaõnnestus', type: 'error' })
-  }
-}
-
-const handleDelete = async (postId: string) => {
-  if (confirm('Kas olete kindel, et soovite selle postituse kustutada?')) {
-    try {
-      await deletePostMutation.mutateAsync(postId)
-      showToast({ message: 'Postitus edukalt kustutatud!', type: 'success' })
-    } catch (error) {
-      console.error('Error deleting post:', error)
-      showToast({ message: 'Postituse kustutamine ebaõnnestus', type: 'error' })
+    const handleCreatePost = () => {
+        setShowCreateModal(true)
     }
-  }
-}
 
-const handleViewPost = (post: ForumPost) => {
-  setViewingPost(post)
-  setShowViewModal(true)
-}
+    const handleSubmitPost = async (title: string, content: string, folder?: string) => {
+        try {
+        await createPostMutation.mutateAsync({ title, content, folder })
+        showToast({ message: 'Postitus edukalt loodud!', type: 'success' })
+        setShowCreateModal(false)
+        
+        // If we created a post in a folder and we're not in that folder, navigate to it
+        if (folder && folder !== currentFolder) {
+            router.push(`/forum?folder=${encodeURIComponent(folder)}`)
+        }
+        } catch (error) {
+        console.error('Error creating post:', error)
+        showToast({ message: 'Postituse loomine ebaõnnestus', type: 'error' })
+        }
+    }
+    
+    const handleEdit = (post: ForumPost) => {
+        setEditingPost(post)
+        setShowEditModal(true)
+    }
 
-const handleComment = async (postId: string, commentText: string) => {
-  try {
-    await createCommentMutation.mutateAsync({ postId, commentText })
-    showToast({ message: 'Kommentaar lisatud!', type: 'success' })
-  } catch (error) {
-    console.error('Error creating comment:', error)
-    showToast({ message: 'Kommentaari lisamine ebaõnnestus', type: 'error' })
-  }
-}
+    const handleUpdatePost = async (title: string, content: string) => {
+        if (!editingPost) return
+        
+        try {
+        await updatePostMutation.mutateAsync({
+            postId: editingPost.post_id,
+            title,
+            content
+        })
+        showToast({ message: 'Postitus edukalt uuendatud!', type: 'success' })
+        setShowEditModal(false)
+        setEditingPost(null)
+        } catch (error) {
+        console.error('Error updating post:', error)
+        showToast({ message: 'Postituse uuendamine ebaõnnestus', type: 'error' })
+        }
+    }
+
+    const handleDelete = async (postId: string) => {
+        if (confirm('Kas olete kindel, et soovite selle postituse kustutada?')) {
+        try {
+            await deletePostMutation.mutateAsync(postId)
+            showToast({ message: 'Postitus edukalt kustutatud!', type: 'success' })
+        } catch (error) {
+            console.error('Error deleting post:', error)
+            showToast({ message: 'Postituse kustutamine ebaõnnestus', type: 'error' })
+        }
+        }
+    }
+
+    const handleViewPost = (post: ForumPost) => {
+    setViewingPost(post)
+    setShowViewModal(true)
+    }
+
+    const handleComment = async (postId: string, commentText: string) => {
+    try {
+        await createCommentMutation.mutateAsync({ postId, commentText })
+        showToast({ message: 'Kommentaar lisatud!', type: 'success' })
+    } catch (error) {
+        console.error('Error creating comment:', error)
+        showToast({ message: 'Kommentaari lisamine ebaõnnestus', type: 'error' })
+    }
+    }
+
+    const handleFolderClick = (folderName: string) => {
+    router.push(`/forum?folder=${encodeURIComponent(folderName)}`)
+    }
+
+    const handleBackToAllPosts = () => {
+    router.push('/forum')
+    }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -215,15 +231,31 @@ const handleComment = async (postId: string, commentText: string) => {
       </header>
 
       {/* Main Content */}
-      <main className="pt-20 min-h-screen">
-        <div className="container mx-auto px-4 py-16">
-          {/* Page Title */}
-          <div className="text-center mb-16">
-            <h1 className="text-5xl font-black text-white font-['Orbitron'] tracking-wider mb-4">
-              <span className="text-red-500">FOORUM</span>
-            </h1>
+      <main className="pt-24 sm:pt-32 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
+          {/* Page Title with current folder info */}
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-purple-500 font-['Orbitron'] uppercase tracking-wider">
+              {currentFolder ? currentFolder : 'Foorum'}
+            </h2>
+            {currentFolder && (
+              <button
+                onClick={handleBackToAllPosts}
+                className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-900/50 border border-gray-700/50 rounded-lg hover:bg-gray-800/50 hover:border-red-500/50 transition-all duration-300 group"
+              >
+                <svg className="w-4 h-4 text-gray-400 group-hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="text-gray-300 group-hover:text-red-400 font-['Orbitron'] uppercase tracking-wider text-sm">
+                  Tagasi kõigi postituste juurde
+                </span>
+              </button>
+            )}
             <p className="text-gray-400 text-lg">
-              LegendRix kogukonna arutelud ja teadaanded
+              {currentFolder 
+                ? `Vaatad postitusi kaustas: ${currentFolder}`
+                : 'Jaga oma mõtteid ja küsimusi kogukonnaga'
+              }
             </p>
           </div>
 
@@ -236,13 +268,15 @@ const handleComment = async (postId: string, commentText: string) => {
           </div>
 
           {/* Forum Posts Table */}
-            <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <ForumPosts 
-                onEdit={handleEdit} 
-                onDelete={handleDelete}
-                onViewPost={handleViewPost}
+              onEdit={handleEdit} 
+              onDelete={handleDelete}
+              onViewPost={handleViewPost}
+              currentFolder={currentFolder}
+              onFolderClick={handleFolderClick}
             />
-            </div>
+          </div>
         </div>
       </main>
 
@@ -253,7 +287,7 @@ const handleComment = async (postId: string, commentText: string) => {
         onSubmit={handleSubmitPost}
       />
 
-    {/* Edit Post Modal */}
+      {/* Edit Post Modal */}
       {editingPost && (
         <EditPostModal 
           isOpen={showEditModal}

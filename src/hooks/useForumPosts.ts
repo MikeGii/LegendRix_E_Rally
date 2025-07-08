@@ -9,6 +9,7 @@ export interface ForumPost {
   post_creator: string
   post_date_time: string
   comments_count?: number
+  sub_folder?: string | null
   users?: {
     name: string
     player_name: string | null
@@ -18,6 +19,7 @@ export interface ForumPost {
 export interface CreatePostInput {
   title: string
   content: string
+  folder?: string
 }
 
 // Query Keys
@@ -84,7 +86,7 @@ export function useCreateForumPost() {
   const { user } = useAuth()
   
   return useMutation({
-    mutationFn: async ({ title, content }: CreatePostInput) => {
+    mutationFn: async ({ title, content, folder }: CreatePostInput) => {
       if (!user?.id) {
         throw new Error('User must be authenticated to create posts')
       }
@@ -94,7 +96,8 @@ export function useCreateForumPost() {
         .insert([{
           post_title: title,
           post_text: content,
-          post_creator: user.id
+          post_creator: user.id,
+          sub_folder: folder  // Add this line
         }])
         .select(`
           *,
