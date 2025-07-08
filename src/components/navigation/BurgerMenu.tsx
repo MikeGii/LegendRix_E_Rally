@@ -100,6 +100,13 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
       priority: 'primary'
     },
     {
+      icon: '💬',
+      label: 'Foorum',
+      description: 'Kogukonna arutelud',
+      action: () => navigateTo('/forum'),
+      priority: 'primary'
+    },
+    {
       icon: '⚙️',
       label: 'Kasutaja Sätted',
       description: 'Profiili ja eelistuste haldamine',

@@ -35,10 +35,16 @@ export function Footer() {
                 Informatsioon
               </h5>
               <button
-                onClick={() => router.push('/rules')}
+                onClick={() => window.open('/rules', '_blank', 'noopener,noreferrer')}
                 className="text-gray-400 hover:text-red-400 transition-colors duration-300 text-sm block mx-auto md:mx-0"
               >
                 Reeglid
+              </button>
+              <button
+                onClick={() => window.open('/forum', '_blank', 'noopener,noreferrer')}
+                className="text-gray-400 hover:text-red-400 transition-colors duration-300 text-sm block mx-auto md:mx-0 mt-2"
+              >
+                Foorum
               </button>
             </div>
           </div>
