@@ -229,10 +229,10 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
                   {item.icon}
                 </span>
                 <div className="flex-1">
-                  <p className="text-gray-300 font-medium group-hover:text-white transition-colors text-sm">
+                  <p className="text-white font-medium group-hover:text-red-400 transition-colors font-['Orbitron'] uppercase tracking-wide text-sm">
                     {item.label}
                   </p>
-                  <p className="text-gray-600 text-xs">
+                  <p className="text-gray-500 text-xs">
                     {item.description}
                   </p>
                 </div>
