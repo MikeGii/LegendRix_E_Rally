@@ -395,7 +395,7 @@ export default function SponsorsPage() {
                           )}
                         </div>
                         <div>
-                          <h4 className="text-white font-medium">{sponsor.name}</h4>
+                          <h4 className="text-white font-medium text-base">{sponsor.name}</h4>
                           <p className="text-slate-400 text-sm">Järjekord: {sponsor.display_order}</p>
                           {sponsor.website_url && (
                             <a 
@@ -516,7 +516,7 @@ export default function SponsorsPage() {
                           <span className="text-pink-400 text-xl">💝</span>
                         </div>
                         <div>
-                          <h4 className="text-white font-medium">{supporter.supporter_name}</h4>
+                          <h4 className="text-white font-medium text-base">{supporter.supporter_name}</h4>
                           <p className="text-slate-400 text-sm">
                             {getMonthName(supporter.donation_month)} {supporter.donation_year}
                           </p>
