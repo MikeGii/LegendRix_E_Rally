@@ -154,7 +154,7 @@ export function UserRegistrationsSection({ registrations }: UserRegistrationsSec
         <h2 className="text-xl sm:text-2xl font-black text-white flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 font-['Orbitron'] tracking-wider">
           <span className="text-2xl sm:text-3xl text-red-400 animate-pulse">📋</span>
           <span className="bg-gradient-to-r from-red-400 to-gray-300 bg-clip-text text-transparent">
-            Minu registreeringud
+            MINU REGISTREERINGUD
           </span>
         </h2>
         
