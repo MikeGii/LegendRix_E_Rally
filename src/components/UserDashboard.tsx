@@ -143,6 +143,9 @@ export function UserDashboard() {
         </div>
 
         {/* Instructions Section */}
+          <div className="mt-8">
+            <SectionDivider variant="mixed" />
+          </div>
         <div className="relative mt-8">
           <Instructions />
         </div>
