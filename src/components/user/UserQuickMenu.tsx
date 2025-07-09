@@ -4,6 +4,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+
 interface QuickMenuItem {
   label: string
   icon: string
@@ -12,7 +13,11 @@ interface QuickMenuItem {
   color: 'red' | 'gray' | 'gradient'
 }
 
-export function UserQuickMenu() {
+interface UserQuickMenuProps {
+  onEdetabelClick?: () => void
+}
+
+export function UserQuickMenu({ onEdetabelClick }: UserQuickMenuProps) {
   const router = useRouter()
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
 
@@ -39,16 +44,20 @@ export function UserQuickMenu() {
       color: 'gray'
     },
     {
-      label: 'Kasutaja sätted',
-      icon: '⚙️',
-      path: '/user-settings',
-      description: 'Muuda oma profiili',
-      color: 'gray'
+      label: 'Vaata Edetabelit',
+      icon: '🏆',
+      path: '#edetabel',
+      description: 'Avalikud tulemused',
+      color: 'red'
     }
   ]
 
   const handleNavigation = (path: string) => {
-    router.push(path)
+    if (path === '#edetabel') {
+      onEdetabelClick?.()
+    } else {
+      router.push(path)
+    }
   }
 
   const getCardStyle = (color: string, isHovered: boolean) => {

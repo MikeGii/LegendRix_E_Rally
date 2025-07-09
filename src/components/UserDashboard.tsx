@@ -11,6 +11,8 @@ import { UpcomingRalliesSection } from '@/components/user/UpcomingRalliesSection
 import { UserRegistrationsSection } from '@/components/user/UserRegistrationsSection'
 import { UserActionPrompt } from '@/components/user/UserActionPrompt'
 import { SectionDivider } from '@/components/landing/SectionDivider'
+import { useState } from 'react'
+import { EdetabelModal } from '@/components/landing/EdetabelModal'
 
 interface StatusMessage {
   type: 'success' | 'warning' | 'info'
@@ -54,6 +56,8 @@ function getStatusMessage(user: any, isAdminAsUser: boolean): StatusMessage | nu
 export function UserDashboard() {
   const { user } = useAuth()
   const { currentView } = useView()
+    
+  const [isEdetabelModalOpen, setIsEdetabelModalOpen] = useState(false)
   
   // Load rally data
   const { data: allRallies = [], isLoading: isLoadingAll } = useAllRallies(20)
@@ -67,6 +71,7 @@ export function UserDashboard() {
   const canAccessRallies = isAdminAsUser || (user.email_verified && user.admin_approved)
 
   return (
+    <>
     <div className="min-h-screen bg-black relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="fixed inset-0 pointer-events-none">
@@ -97,9 +102,8 @@ export function UserDashboard() {
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
         </div>
 
-        {/* Quick Menu with Animations */}
         <div className="relative">
-          <UserQuickMenu />
+          <UserQuickMenu onEdetabelClick={() => setIsEdetabelModalOpen(true)} /> {/* ADD THE PROP HERE */}
           <div className="mt-8">
             <SectionDivider variant="mixed" />
           </div>
@@ -170,5 +174,13 @@ export function UserDashboard() {
         <div className="absolute bottom-0 right-0 h-full w-px bg-gradient-to-t from-red-500 to-transparent"></div>
       </div>
     </div>
+
+    {/* Add EdetabelModal at the root level, outside all other containers */}
+      <EdetabelModal 
+        isOpen={isEdetabelModalOpen}
+        onClose={() => setIsEdetabelModalOpen(false)}
+      />
+    </>
+
   )
 }
