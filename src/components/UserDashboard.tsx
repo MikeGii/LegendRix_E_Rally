@@ -13,6 +13,7 @@ import { UserActionPrompt } from '@/components/user/UserActionPrompt'
 import { SectionDivider } from '@/components/landing/SectionDivider'
 import { useState } from 'react'
 import { EdetabelModal } from '@/components/landing/EdetabelModal'
+import { Instructions } from '@/components/user/Instructions'
 
 interface StatusMessage {
   type: 'success' | 'warning' | 'info'
@@ -139,6 +140,14 @@ export function UserDashboard() {
             isLoading={isLoadingAll}
             canAccessRallies={canAccessRallies}
           />
+        </div>
+
+        {/* Instructions Section */}
+          <div className="mt-8">
+            <SectionDivider variant="mixed" />
+          </div>
+        <div className="relative mt-8">
+          <Instructions />
         </div>
 
         {/* Action Prompt with Pulsing Effect */}
