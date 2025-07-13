@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { TransformedRally, useUserRallyRegistrations, UserRallyRegistration } from '@/hooks/useOptimizedRallies'
 import { useRallyRegistrations, RallyRegistration } from '@/hooks/useRallyRegistrations'
+import { usePlayerTeam } from '@/hooks/usePlayerTeam'
 import { 
   getRallyStatus, 
   getStatusDisplayText, 
@@ -35,6 +36,45 @@ interface RallyDetailModalProps {
   onRegister?: () => void
   userRegistration?: UserRallyRegistration
   onUnregister?: () => void
+}
+
+function ParticipantRowWithTeam({ participant, index, classIndex }: { 
+  participant: RallyRegistration, 
+  index: number, 
+  classIndex: number 
+}) {
+  const { data: teamData } = usePlayerTeam(participant.user_id)
+  
+  return (
+    <div
+      className="flex items-center justify-between p-4 bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl border border-gray-800 hover:border-gray-700 transition-all duration-300"
+      style={{ animationDelay: `${(classIndex * 50) + (index * 30)}ms` }}
+    >
+      <div className="flex items-center space-x-3">
+        <div className="w-10 h-10 bg-gradient-to-br from-red-600/20 to-gray-600/20 rounded-lg flex items-center justify-center text-white font-bold font-['Orbitron']">
+          {index + 1}
+        </div>
+        <div>
+          <p className="text-white font-medium">
+            {participant.user_player_name || participant.user_name || 'Tundmatu'}
+          </p>
+          {teamData && (
+            <p className="text-blue-400 text-sm font-medium mt-1">
+              🏁 {teamData.team_name}
+              {teamData.vehicle_name && (
+                <span className="text-gray-400 ml-2">• {teamData.vehicle_name}</span>
+              )}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="text-xs text-gray-600">
+          {new Date(participant.created_at).toLocaleDateString('et-EE')}
+        </p>
+      </div>
+    </div>
+  )
 }
 
 export function RallyDetailModal({ rally, onClose, onRegister, userRegistration: propUserRegistration, onUnregister }: RallyDetailModalProps) {
@@ -241,40 +281,42 @@ export function RallyDetailModal({ rally, onClose, onRegister, userRegistration:
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             {activeTab === 'info' ? (
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 {/* Rally Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                   {/* Game info */}
-                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-3 md:p-4 border border-gray-800">
                     <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Mäng</label>
-                    <p className="text-white font-medium mt-1">{rally.game_name || 'N/A'}</p>
+                    <p className="text-white font-medium mt-1 font-['Orbitron'] text-sm md:text-base">{rally.game_name || 'N/A'}</p>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-3 md:p-4 border border-gray-800">
                     <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Tüüp</label>
-                    <p className="text-white font-medium mt-1">{rally.game_type_name || 'N/A'}</p>
+                    <p className="text-white font-medium mt-1 font-['Orbitron'] text-sm md:text-base">{rally.game_type_name || 'N/A'}</p>
                   </div>
                   
                   {/* Dates */}
-                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
-                    <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Võistluse aeg</label>
-                    <p className="text-white font-medium mt-1">{formatDate(rally.competition_date)}</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
-                    <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Registreerimine kuni</label>
-                    <p className="text-white font-medium mt-1">{formatDate(rally.registration_deadline)}</p>
+                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-3 md:p-4 border border-gray-800">
+                    <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Võistluse kuupäev</label>
+                    <p className="text-white font-medium mt-1 font-['Orbitron'] text-sm md:text-base leading-tight">
+                      {new Date(rally.competition_date).toLocaleDateString('et-EE', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long', 
+                        day: 'numeric'
+                      })}
+                    </p>
                   </div>
                   
                   {/* Participants */}
-                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                  <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-3 md:p-4 border border-gray-800">
                     <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Osalejaid</label>
                     <div className="flex items-baseline space-x-2 mt-1">
-                      <span className="text-2xl font-bold text-white font-['Orbitron']">{participants.length}</span>
+                      <span className="text-xl md:text-2xl font-bold text-white font-['Orbitron']">{participants.length}</span>
                       {rally.max_participants && (
-                        <span className="text-gray-500">/ {rally.max_participants}</span>
+                        <span className="text-gray-500 font-['Orbitron'] text-sm">/ {rally.max_participants}</span>
                       )}
                     </div>
                     {rally.max_participants && (
@@ -291,9 +333,9 @@ export function RallyDetailModal({ rally, onClose, onRegister, userRegistration:
                   
                   {/* Available spots */}
                   {rally.max_participants && (
-                    <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
+                    <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-3 md:p-4 border border-gray-800">
                       <label className="text-xs text-gray-500 font-['Orbitron'] uppercase tracking-wider">Vabu kohti</label>
-                      <p className={`text-2xl font-bold font-['Orbitron'] mt-1 ${
+                      <p className={`text-xl md:text-2xl font-bold font-['Orbitron'] mt-1 ${
                         rally.max_participants - participants.length > 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
                         {Math.max(0, rally.max_participants - participants.length)}
@@ -306,8 +348,8 @@ export function RallyDetailModal({ rally, onClose, onRegister, userRegistration:
                 {rally.description && (
                   <div>
                     <label className="text-sm font-bold text-white font-['Orbitron'] uppercase tracking-wider mb-3 block">Kirjeldus</label>
-                    <div className="p-4 bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl border border-gray-800">
-                      <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{rally.description}</p>
+                    <div className="p-3 md:p-4 bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl border border-gray-800">
+                      <p className="text-gray-300 whitespace-pre-wrap leading-relaxed text-sm md:text-base font-['Orbitron'] font-light">{rally.description}</p>
                     </div>
                   </div>
                 )}
@@ -316,8 +358,8 @@ export function RallyDetailModal({ rally, onClose, onRegister, userRegistration:
                 {rally.rules && (
                   <div>
                     <label className="text-sm font-bold text-white font-['Orbitron'] uppercase tracking-wider mb-3 block">Reeglid</label>
-                    <div className="p-4 bg-gradient-to-br from-red-900/20 to-gray-900/30 rounded-xl border border-red-500/30">
-                      <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{rally.rules}</p>
+                    <div className="p-3 md:p-4 bg-gradient-to-br from-red-900/20 to-gray-900/30 rounded-xl border border-red-500/30">
+                      <p className="text-gray-300 whitespace-pre-wrap leading-relaxed text-sm md:text-base font-['Orbitron'] font-light">{rally.rules}</p>
                     </div>
                   </div>
                 )}
@@ -330,20 +372,20 @@ export function RallyDetailModal({ rally, onClose, onRegister, userRegistration:
                     </label>
                     <div className="space-y-3">
                       {safeEvents.map((event, eventIndex) => (
-                        <div key={event.event_id || eventIndex} className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-4 border border-gray-800">
-                          <h4 className="text-white font-bold mb-3 flex items-center space-x-2">
-                            <span className="w-8 h-8 bg-red-600/20 rounded-lg flex items-center justify-center text-red-400 font-['Orbitron'] text-sm">
+                        <div key={event.event_id || eventIndex} className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl p-3 md:p-4 border border-gray-800">
+                          <h4 className="text-white font-bold mb-3 flex items-center space-x-2 font-['Orbitron']">
+                            <span className="w-6 h-6 md:w-8 md:h-8 bg-red-600/20 rounded-lg flex items-center justify-center text-red-400 font-['Orbitron'] text-xs md:text-sm">
                               {eventIndex + 1}
                             </span>
-                            <span>{event.event_name}</span>
+                            <span className="text-sm md:text-base">{event.event_name}</span>
                           </h4>
                           {event.tracks && event.tracks.length > 0 && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                               {event.tracks.map((track, trackIndex) => (
                                 <div key={track.id || trackIndex} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
                                   <div className="flex items-center justify-between">
-                                    <span className="text-gray-300 font-medium">
-                                      <span className="text-gray-500 mr-2">{trackIndex + 1}.</span>
+                                    <span className="text-gray-300 font-medium font-['Orbitron'] text-sm">
+                                      <span className="text-gray-500 mr-2 font-['Orbitron']">{trackIndex + 1}.</span>
                                       {track.name}
                                     </span>
                                     {track.length_km && (
@@ -353,7 +395,7 @@ export function RallyDetailModal({ rally, onClose, onRegister, userRegistration:
                                     )}
                                   </div>
                                   {track.surface_type && (
-                                    <span className="text-xs text-gray-500 mt-1 block">
+                                    <span className="text-xs text-gray-500 mt-1 block font-['Orbitron']">
                                       {track.surface_type}
                                     </span>
                                   )}
@@ -442,28 +484,12 @@ export function RallyDetailModal({ rally, onClose, onRegister, userRegistration:
                             {/* Participants in this class */}
                             <div className="space-y-2">
                               {sortedParticipants.map((participant, index) => (
-                                <div
+                                <ParticipantRowWithTeam 
                                   key={participant.id}
-                                  className="flex items-center justify-between p-4 bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl border border-gray-800 hover:border-gray-700 transition-all duration-300"
-                                  style={{ animationDelay: `${(classIndex * 50) + (index * 30)}ms` }}
-                                >
-                                  <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-red-600/20 to-gray-600/20 rounded-lg flex items-center justify-center text-white font-bold font-['Orbitron']">
-                                      {index + 1}
-                                    </div>
-                                    <div>
-                                      <p className="text-white font-medium">
-                                        {participant.user_player_name || participant.user_name || 'Tundmatu'}
-                                      </p>
-                                      {/* Team info if needed - currently not in RallyRegistration type */}
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-xs text-gray-600">
-                                      {new Date(participant.created_at).toLocaleDateString('et-EE')}
-                                    </p>
-                                  </div>
-                                </div>
+                                  participant={participant}
+                                  index={index}
+                                  classIndex={classIndex}
+                                />
                               ))}
                             </div>
                           </div>
