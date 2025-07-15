@@ -123,6 +123,13 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
       description: 'Genereeri automaatselt uus ralli',
       action: () => navigateTo('/generate-rally'),
       priority: 'primary'
+    },
+    {
+      icon: '🛍️',
+      label: 'Fan Merch',
+      description: 'Fännide pood ja tooted',
+      action: () => navigateTo('/fan-merch'),
+      priority: 'primary'
     }
   ] : []
 
