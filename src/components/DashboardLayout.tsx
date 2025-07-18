@@ -64,7 +64,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         '/participant-linking',
         '/sponsors',
         '/teams-manager',
-        '/generate-rally'
+        '/generate-rally',
+        '/product-dashboard'
       ]
       
       if (adminPages.some(page => pathname.includes(page))) {
