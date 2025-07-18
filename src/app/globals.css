@@ -605,3 +605,22 @@ html, body {
     font-display: swap;
   }
 }
+
+@keyframes scroll-text-desktop {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.scrolling-text-desktop {
+  animation: scroll-text-desktop 60s linear infinite;
+}
+
+/* Pause on hover for readability */
+.scrolling-text-desktop:hover,
+.scrolling-text-mobile:hover {
+  animation-play-state: paused;
+}

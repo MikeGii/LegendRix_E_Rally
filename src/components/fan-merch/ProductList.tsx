@@ -118,8 +118,8 @@ export function ProductList() {
           <div className="flex flex-col md:flex-row gap-6">
             {/* Product Image */}
             <div
-              className="w-full md:w-48 h-48 rounded-xl overflow-hidden bg-slate-700/50 
-                          flex items-center justify-center border border-slate-600/50"
+              className="w-full md:w-48 h-48 rounded-xl overflow-hidden bg-transparent 
+              flex items-center justify-center border border-slate-600/50 flex-shrink-0"
             >
               {product.main_image_url ? (
                 <Image
@@ -127,7 +127,7 @@ export function ProductList() {
                   alt={`${product.product_name} pilt`}
                   width={192}
                   height={192}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
                 <div className="text-slate-400 text-center">
@@ -163,20 +163,10 @@ export function ProductList() {
               )}
 
               {/* Product Price */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
-                <div className="flex items-center space-x-3">
-                  <span className="text-3xl font-bold text-white font-['Orbitron']">
-                    €{product.product_price.toFixed(2)}
-                  </span>
-                </div>
-
-                {/* Decorative "Coming Soon" badge */}
-                <div
-                  className="px-4 py-2 bg-gray-700/50 text-gray-400 rounded-lg 
-                              border border-gray-600/50 text-sm font-['Orbitron'] tracking-wider"
-                >
-                  TULEKUL
-                </div>
+              <div className="pt-4 border-t border-slate-700/50">
+                <span className="text-2xl font-bold text-white font-['Orbitron']">
+                  €{product.product_price.toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
