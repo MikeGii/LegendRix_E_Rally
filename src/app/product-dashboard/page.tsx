@@ -29,7 +29,7 @@ export default function ProductDashboardPage() {
           <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
             <AdminPageHeader
               title="Fännikaubad"
-              description="Halda fännikaupu ja nende müügit"
+              description="Halda fännikaupu"
               icon="🛍️"
             />
 
