@@ -347,6 +347,7 @@ export function ProductFormModal({
     setSelectedImage(null);
     setImagePreview(null);
     setImageError(null);
+    setExistingImageUrl(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
