@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { User } from '@supabase/supabase-js'
+import { ProductList } from '@/components/fan-merch/ProductList'
 import Image from 'next/image'
 import { ScrollingText } from '@/components/fan-merch/ScrollingText'
 import '@/styles/futuristic-theme.css'
@@ -152,36 +153,9 @@ export default function FanMerchPage() {
           {/* Scrolling Text */}
             <ScrollingText />
 
-          {/* Placeholder Content */}
+          {/* Product List */}
           <div className="max-w-4xl mx-auto">
-            <div className="tech-border rounded-2xl bg-black/90 backdrop-blur-xl p-8 sm:p-12 relative overflow-hidden">
-              {/* Background pattern */}
-              <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
-              
-              {/* Content */}
-              <div className="relative z-10 text-center space-y-6">
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-red-600/20 to-orange-600/20 rounded-xl flex items-center justify-center border border-red-500/30 shadow-[0_0_30px_rgba(255,0,64,0.3)]">
-                  <span className="text-5xl">🛍️</span>
-                </div>
-                
-                <h3 className="text-2xl font-bold text-white font-['Orbitron'] uppercase tracking-wider">
-                  Tulekul
-                </h3>
-                
-                <p className="text-gray-400 max-w-2xl mx-auto">
-                  LegendRix Fan Merch pood on hetkel arendamisel. Varsti saad siit osta ägedaid LegendRix tooteid!
-                </p>
-                
-                <div className="pt-4">
-                  <div className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-900/50 rounded-lg border border-gray-700/50">
-                    <span className="text-gray-500">🚧</span>
-                    <span className="text-gray-400 font-['Rajdhani'] uppercase tracking-wider">
-                      Arenduses
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ProductList />
           </div>
         </div>
       </main>
