@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { AdminPageHeader } from '@/components/shared/AdminPageHeader'
 import { ProductFormModal } from '@/components/products/ProductFormModal'
+import { ProductsTable } from '@/components/products/ProductsTable'
 
 export default function ProductDashboardPage() {
   console.log('🛍️ ProductDashboardPage - Component loaded')
@@ -46,12 +47,9 @@ export default function ProductDashboardPage() {
               </button>
             </div>
 
-            {/* Content will be added later */}
-            <div className="tech-border rounded-2xl shadow-[0_0_30px_rgba(255,0,64,0.1)] bg-black/80 backdrop-blur-xl p-6">
-              <p className="text-gray-400 text-center py-8">
-                Fännikaupade haldus tuleb peagi...
-              </p>
-            </div>
+            {/* Products Table */}
+            <ProductsTable />
+
           </div>
         </div>
 

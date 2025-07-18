@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase'
 import { CategoryCreateModal } from './CategoryCreateModal'
 import { useProductCategories } from '@/hooks/useProductCategories'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCreateProduct } from '@/hooks/useProducts'
+import { useCreateProduct, useUpdateProduct } from '@/hooks/useProducts'
+import { Product } from './ProductsTable'
 
 interface ProductFormData {
   product_name: string
@@ -21,32 +22,48 @@ interface ProductFormData {
 interface ProductFormModalProps {
   isOpen: boolean
   onClose: () => void
+  editingProduct?: Product | null
 }
 
-export function ProductFormModal({ isOpen, onClose }: ProductFormModalProps) {
+export function ProductFormModal({ isOpen, onClose, editingProduct }: ProductFormModalProps) {
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
-    const createProductMutation = useCreateProduct()    
+    const createProductMutation = useCreateProduct()
+    const updateProductMutation = useUpdateProduct()  
 
     const { data: categories = [] } = useProductCategories()
     const queryClient = useQueryClient()
 
     const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
-  const {
+    const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors }
-  } = useForm<ProductFormData>({
+    } = useForm<ProductFormData>({
     defaultValues: {
-      product_name: '',
-      product_price: 0,
-      category_id: '',
-      product_description: '',
-      is_top_product: false,
-      display_order: 0
+        product_name: '',
+        product_price: 0,
+        category_id: '',
+        product_description: '',
+        is_top_product: false,
+        display_order: 0
     }
-  })
+    })
+
+    useEffect(() => {
+    if (editingProduct) {
+        setValue('product_name', editingProduct.product_name)
+        setValue('product_price', editingProduct.product_price)
+        setValue('category_id', editingProduct.category_id)
+        setValue('product_description', editingProduct.product_description || '')
+        setValue('is_top_product', editingProduct.is_top_product)
+        setValue('display_order', editingProduct.display_order)
+    } else {
+        reset()
+    }
+    }, [editingProduct, setValue, reset])
 
     const handleClose = () => {
     reset()
@@ -55,21 +72,32 @@ export function ProductFormModal({ isOpen, onClose }: ProductFormModalProps) {
     }
 
     const onSubmit = async (data: ProductFormData) => {
-    try {
-        console.log('🔄 Creating product:', data)
-        await createProductMutation.mutateAsync(data)
-        console.log('✅ Product created successfully')
-
-        // Show success message
-        setShowSuccessMessage(true)
-        
-        // Close modal after a short delay
-        setTimeout(() => {
-        handleClose()
-        }, 1500)
-
+        try {
+            console.log(editingProduct ? '🔄 Updating product:' : '🔄 Creating product:', data)
+            
+            if (editingProduct) {
+            // Update existing product
+            await updateProductMutation.mutateAsync({
+                product_id: editingProduct.product_id,
+                ...data
+            })
+            } else {
+            // Create new product
+            await createProductMutation.mutateAsync(data)
+            }
+            
+            console.log(editingProduct ? '✅ Product updated successfully' : '✅ Product created successfully')
+            
+            // Show success message
+            setShowSuccessMessage(true)
+            
+            // Close modal after a short delay
+            setTimeout(() => {
+            handleClose()
+            }, 1500)
+            
         } catch (error: any) {
-            console.error('❌ Product creation error:', error)
+            console.error(editingProduct ? '❌ Product update error:' : '❌ Product creation error:', error)
         }
     }
 
@@ -82,10 +110,10 @@ export function ProductFormModal({ isOpen, onClose }: ProductFormModalProps) {
   return (
     <>
     <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="Lisa Uus Toode"
-      maxWidth="lg"
+    isOpen={isOpen}
+    onClose={handleClose}
+    title={editingProduct ? "Muuda Toodet" : "Lisa Uus Toode"}
+    maxWidth="lg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {showSuccessMessage && (
@@ -234,30 +262,30 @@ export function ProductFormModal({ isOpen, onClose }: ProductFormModalProps) {
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4 pt-6 border-t border-slate-700/50">
             <button
-            type="button"
-            onClick={handleClose}
-            disabled={createProductMutation.isPending}
-            className="px-6 py-3 text-slate-400 hover:text-white transition-colors duration-200
-                    disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                onClick={handleClose}
+                disabled={createProductMutation.isPending || updateProductMutation.isPending}
+                className="px-6 py-3 text-slate-400 hover:text-white transition-colors duration-200
+                        disabled:opacity-50 disabled:cursor-not-allowed"
             >
-            Tühista
+                Tühista
             </button>
             <button
-            type="submit"
-            disabled={createProductMutation.isPending}
-            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl
-                    transition-all duration-200 transform hover:scale-105
-                    disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
-                    shadow-[0_0_20px_rgba(220,38,38,0.3)]"
+                type="submit"
+                disabled={createProductMutation.isPending || updateProductMutation.isPending}
+                className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl
+                        transition-all duration-200 transform hover:scale-105
+                        disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
+                        shadow-[0_0_20px_rgba(220,38,38,0.3)]"
             >
-            {createProductMutation.isPending ? (
-                <span className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Salvestamine...</span>
-                </span>
-            ) : (
-                'Lisa Toode'
-            )}
+                {(createProductMutation.isPending || updateProductMutation.isPending) ? (
+                    <span className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Salvestamine...</span>
+                    </span>
+                ) : (
+                    editingProduct ? 'Salvesta Muudatused' : 'Lisa Toode'
+                )}
             </button>
         </div>
       </form>
