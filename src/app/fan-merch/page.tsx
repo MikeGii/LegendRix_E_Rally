@@ -1,41 +1,46 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { User } from '@supabase/supabase-js'
-import { ProductList } from '@/components/fan-merch/ProductList'
-import Image from 'next/image'
-import { ScrollingText } from '@/components/fan-merch/ScrollingText'
-import '@/styles/futuristic-theme.css'
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { User } from "@supabase/supabase-js";
+import { ProductList } from "@/components/fan-merch/ProductList";
+import { ContactInfo } from "@/components/fan-merch/ContactInfo";
+import Image from "next/image";
+import { ScrollingText } from "@/components/fan-merch/ScrollingText";
+import "@/styles/futuristic-theme.css";
 
 export default function FanMerchPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-    }
-    checkUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    checkUser();
 
     // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header - Same as rules page */}
       <header className="fixed top-0 left-0 right-0 z-50">
         <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl border-b border-red-500/20"></div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-20 sm:h-24 py-4 sm:py-6">
             {/* Logo with futuristic styling and pulsing effect */}
@@ -55,9 +60,9 @@ export default function FanMerchPage() {
                   </div>
                 </div>
               </div>
-              <h1 
+              <h1
                 className="text-xl sm:text-3xl font-black text-white font-['Orbitron'] tracking-wider cursor-pointer"
-                onClick={() => router.push('/')}
+                onClick={() => router.push("/")}
               >
                 LEGEND<span className="text-red-500">RIX</span>
               </h1>
@@ -66,7 +71,7 @@ export default function FanMerchPage() {
             {/* Desktop Navigation buttons - Hidden on mobile */}
             <div className="hidden md:flex items-center space-x-4">
               <button
-                onClick={() => router.push('/')}
+                onClick={() => router.push("/")}
                 className="group px-6 py-3 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-gray-700/50 hover:border-gray-600 transition-all duration-300 relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-gray-600/0 via-gray-600/10 to-gray-600/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
@@ -76,7 +81,7 @@ export default function FanMerchPage() {
               </button>
               {user && (
                 <button
-                  onClick={() => router.push('/user-dashboard')}
+                  onClick={() => router.push("/user-dashboard")}
                   className="group px-6 py-3 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-red-500/30 hover:border-red-500/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,0,64,0.3)] relative overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-red-600/0 via-red-600/10 to-red-600/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
@@ -93,11 +98,26 @@ export default function FanMerchPage() {
               className="md:hidden relative z-50 p-2 text-white"
               aria-label="Toggle menu"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 {isMobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 )}
               </svg>
             </button>
@@ -110,8 +130,8 @@ export default function FanMerchPage() {
             <div className="flex flex-col items-center justify-center h-full space-y-6 px-6">
               <button
                 onClick={() => {
-                  router.push('/')
-                  setIsMobileMenuOpen(false)
+                  router.push("/");
+                  setIsMobileMenuOpen(false);
                 }}
                 className="w-full max-w-xs tech-border group px-6 py-4 text-white rounded-lg font-bold transition-all duration-300"
               >
@@ -120,12 +140,12 @@ export default function FanMerchPage() {
                   <span className="font-['Orbitron']">PEALEHELE</span>
                 </div>
               </button>
-              
+
               {user && (
                 <button
                   onClick={() => {
-                    router.push('/user-dashboard')
-                    setIsMobileMenuOpen(false)
+                    router.push("/user-dashboard");
+                    setIsMobileMenuOpen(false);
                   }}
                   className="w-full max-w-xs tech-border group px-6 py-4 text-white rounded-lg font-bold transition-all duration-300"
                 >
@@ -151,14 +171,17 @@ export default function FanMerchPage() {
           </div>
 
           {/* Scrolling Text */}
-            <ScrollingText />
+          <ScrollingText />
 
           {/* Product List */}
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto space-y-8">
             <ProductList />
+
+            {/* Contact Info Section */}
+            <ContactInfo />
           </div>
         </div>
       </main>
     </div>
-  )
+  );
 }
