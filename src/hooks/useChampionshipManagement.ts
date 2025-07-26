@@ -125,6 +125,7 @@ export function useCreateChampionship() {
       season_year?: number
       game_id?: string
       game_type_id?: string
+      championship_type?: 'individual' | 'team'
     }) => {
       console.log('🔄 Creating championship:', data.name)
       
@@ -137,6 +138,7 @@ export function useCreateChampionship() {
         .from('championships')
         .insert({
           ...data,
+          championship_type: data.championship_type || 'individual',
           is_active: true,
           status: 'ongoing',
           created_by: user.id,

@@ -96,7 +96,10 @@ export function CreateChampionshipModal({
       const newChampionship =
         championshipType === "team"
           ? await createTeamChampionshipMutation.mutateAsync(formData)
-          : await createChampionshipMutation.mutateAsync(formData);
+          : await createChampionshipMutation.mutateAsync({
+              ...formData,
+              championship_type: "individual", // ADD THIS - explicitly set championship_type
+            });
 
       // Step 2: Add selected rallies
       if (selectedRallies.length > 0) {
