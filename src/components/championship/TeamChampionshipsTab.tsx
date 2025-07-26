@@ -9,6 +9,7 @@ import {
   useReopenChampionship,
 } from "@/hooks/useChampionshipCompletion";
 import { useActivateChampionship } from "@/hooks/useChampionshipManagement";
+import { TeamChampionshipDetailsModal } from "./TeamChampionshipDetailsModal";
 
 interface TeamChampionshipsTabProps {
   onOpenRallyModal?: (championship: { id: string; name: string }) => void;
@@ -332,6 +333,14 @@ export function TeamChampionshipsTab({
                           >
                             Rallid
                           </button>
+                          <button
+                            onClick={() =>
+                              setSelectedChampionship(championship.id)
+                            }
+                            className="px-3 py-1 text-sm bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded hover:bg-blue-600/30 transition-colors"
+                          >
+                            Halda
+                          </button>
 
                           {!championship.is_active &&
                             (championship.total_rallies || 0) > 0 && (
@@ -407,7 +416,6 @@ export function TeamChampionshipsTab({
           )}
         </div>
       </div>
-
       {/* Create Championship Modal */}
       {isCreateModalOpen && (
         <CreateChampionshipModal
@@ -418,6 +426,17 @@ export function TeamChampionshipsTab({
             refetch();
           }}
           championshipType="team"
+        />
+      )}
+      // At the bottom with other modals, add:
+      {selectedChampionship && (
+        <TeamChampionshipDetailsModal
+          championshipId={selectedChampionship}
+          onClose={() => setSelectedChampionship(null)}
+          onSuccess={() => {
+            setSelectedChampionship(null);
+            refetch();
+          }}
         />
       )}
     </>

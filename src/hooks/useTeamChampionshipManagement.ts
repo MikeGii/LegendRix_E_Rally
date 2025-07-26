@@ -42,6 +42,21 @@ export interface TeamChampionshipResults {
   }>;
 }
 
+// Raw response type from the database function
+interface TeamChampionshipResultsRaw {
+  team_id: string;
+  team_name: string;
+  class_id: string;
+  class_name: string;
+  total_points: string | number;
+  rallies_participated: string | number;
+  class_position: string | number;
+  overall_position: string | number;
+  avg_participating_members: string | number;
+  avg_scoring_members: string | number;
+  rally_scores: any; // JSONB from postgres
+}
+
 // Query Keys
 export const teamChampionshipKeys = {
   all: ["team-championships"] as const,
@@ -150,18 +165,64 @@ export function useTeamChampionshipResults(championshipId: string) {
 
       console.log("🔄 Loading team championship results for:", championshipId);
 
-      const { data, error } = await supabase.rpc(
-        "get_team_championship_results",
-        { p_championship_id: championshipId }
-      );
+      // Query the view directly instead of using the RPC function
+      const { data, error } = await supabase
+        .from("team_championship_standings")
+        .select("*")
+        .eq("championship_id", championshipId)
+        .order("overall_position");
+
+      console.log("Raw data from view:", data);
 
       if (error) {
-        console.error("Error loading team championship results:", error);
-        throw error;
+        console.warn("Error loading team championship results:", error);
+        return [];
       }
 
-      console.log(`✅ Loaded ${data?.length || 0} team results`);
-      return data || [];
+      // Transform the data - note: the view has 'rally_results' not 'rally_scores'
+      const results: TeamChampionshipResults[] = (data || []).map(
+        (row: any) => {
+          // Parse rally_results array
+          let rallyResults = [];
+          try {
+            if (row.rally_results) {
+              if (typeof row.rally_results === "string") {
+                rallyResults = JSON.parse(row.rally_results);
+              } else if (Array.isArray(row.rally_results)) {
+                rallyResults = row.rally_results;
+              }
+            }
+          } catch (e) {
+            console.error("Error parsing rally results:", e);
+          }
+
+          return {
+            team_id: row.team_id,
+            team_name: row.team_name,
+            class_id: row.class_id,
+            class_name: row.class_name,
+            total_points: Number(row.total_points) || 0,
+            rallies_participated: Number(row.rallies_participated) || 0,
+            class_position: Number(row.class_position) || 0,
+            overall_position: Number(row.overall_position) || 0,
+            avg_participating_members:
+              Number(row.avg_participating_members) || 0,
+            avg_scoring_members: Number(row.avg_scoring_members) || 0,
+            rally_scores: rallyResults.map((rs: any) => ({
+              rally_id: rs.rally_id,
+              rally_name: rs.rally_name,
+              round_number: Number(rs.round_number) || 0,
+              points: Number(rs.points) || 0,
+              position: Number(rs.position) || 0,
+              participating_members: Number(rs.participating_members) || 0,
+              scoring_members: Number(rs.scoring_members) || 0,
+            })),
+          };
+        }
+      );
+
+      console.log("Transformed results:", results);
+      return results;
     },
     enabled: !!championshipId,
     staleTime: 2 * 60 * 1000,
