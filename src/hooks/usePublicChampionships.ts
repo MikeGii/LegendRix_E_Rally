@@ -38,7 +38,8 @@ export function usePublicChampionships() {
           )
         `
         )
-        .eq("is_active", true) // Only active championships
+        .eq("is_active", true)
+        .neq("championship_type", "team")
         .order("season_year", { ascending: false })
         .order("name");
 

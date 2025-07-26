@@ -299,8 +299,7 @@ async function saveRegisteredUserResults(
   const resultData = {
     rally_id: rallyId,
     user_id: registrationData.user_id,
-    registration_id: registrationData.id,
-    participant_name: playerName,
+
     class_name: className,
     overall_position: participant.overallPosition,
     class_position: participant.classPosition,

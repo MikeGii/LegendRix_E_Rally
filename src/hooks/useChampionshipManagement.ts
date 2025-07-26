@@ -22,6 +22,7 @@ export interface Championship {
   game_name?: string
   game_type_name?: string
   total_rallies?: number
+  championship_type?: 'individual' | 'team'
 }
 
 export interface ChampionshipRally {
@@ -103,7 +104,8 @@ export function useChampionships() {
         game_name: championship.game?.name || null,
         game_type_name: championship.game_type?.name || null,
         total_rallies: championship.championship_rallies?.length || 0,
-        status: championship.status || 'ongoing'
+        status: championship.status || 'ongoing',
+        championship_type: championship.championship_type || 'individual'
       }))
 
       console.log(`✅ Loaded ${championships.length} championships`)
@@ -123,6 +125,7 @@ export function useCreateChampionship() {
       season_year?: number
       game_id?: string
       game_type_id?: string
+      championship_type?: 'individual' | 'team'
     }) => {
       console.log('🔄 Creating championship:', data.name)
       
@@ -135,6 +138,7 @@ export function useCreateChampionship() {
         .from('championships')
         .insert({
           ...data,
+          championship_type: data.championship_type || 'individual',
           is_active: true,
           status: 'ongoing',
           created_by: user.id,
