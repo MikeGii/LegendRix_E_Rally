@@ -267,20 +267,37 @@ async function saveRegisteredUserResults(
   currentTime: string
 ): Promise<void> {
   console.log("💾 Saving registered user results...");
+  console.log("Registration data:", registrationData);
 
-  // Get user's player name from the registrations join
+  // Get user's player name directly from users table
   const { data: userData, error: userError } = await supabase
-    .from("rally_registrations")
-    .select("users!inner(player_name), game_classes!inner(name)")
-    .eq("id", registrationData.id)
+    .from("users")
+    .select("player_name")
+    .eq("id", registrationData.user_id)
     .single();
 
   if (userError || !userData) {
+    console.error("Failed to get user data:", userError);
     throw new Error("Failed to get user data for registration");
   }
 
-  const playerName = (userData.users as any)?.player_name;
-  const className = (userData.game_classes as any)?.name;
+  // Get class name from game_classes table
+  const { data: classData, error: classError } = await supabase
+    .from("game_classes")
+    .select("name")
+    .eq("id", registrationData.class_id)
+    .single();
+
+  if (classError || !classData) {
+    console.error("Failed to get class data:", classError);
+    throw new Error("Failed to get class data for registration");
+  }
+
+  const playerName = userData.player_name;
+  const className = classData.name;
+
+  console.log("Player name:", playerName);
+  console.log("Class name:", className);
 
   // Check if rally_results record already exists for this user
   const { data: existingResult, error: existingError } = await supabase
@@ -299,7 +316,7 @@ async function saveRegisteredUserResults(
   const resultData = {
     rally_id: rallyId,
     user_id: registrationData.user_id,
-
+    registration_id: registrationData.id,
     class_name: className,
     overall_position: participant.overallPosition,
     class_position: participant.classPosition,
@@ -309,6 +326,8 @@ async function saveRegisteredUserResults(
     results_entered_at: currentTime,
     updated_at: currentTime,
   };
+
+  console.log("Result data to save:", resultData);
 
   if (existingResult) {
     // Update existing record
