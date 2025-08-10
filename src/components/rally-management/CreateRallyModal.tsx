@@ -453,7 +453,7 @@ export function CreateRallyModal({ rally, onClose, onSuccess }: CreateRallyModal
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Registreerimise tähtpäev *
+                    Registreerimise kuupäev *
                   </label>
                   <input
                     type="date"
