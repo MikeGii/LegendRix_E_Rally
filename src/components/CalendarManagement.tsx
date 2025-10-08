@@ -294,16 +294,22 @@ export function CalendarManagement() {
                   key={index}
                   onClick={() => handleDayClick(day)}
                   disabled={!isCurrentMonth}
-                  className={`
-                    relative h-16 p-2 rounded-lg transition-all duration-300
-                    ${isCurrentMonth 
-                      ? 'bg-gray-800/30 hover:bg-gray-700/50 border border-gray-700/30 hover:border-red-500/50 cursor-pointer' 
-                      : 'bg-transparent border border-transparent cursor-default'
-                    }
-                    ${today ? 'ring-2 ring-red-500/50 bg-red-900/20' : ''}
-                    ${selected ? 'bg-red-500/30 border-red-500 shadow-[0_0_20px_rgba(255,0,64,0.3)]' : ''}
-                    group
-                  `}
+                    className={`
+                      relative h-16 p-2 rounded-lg transition-all duration-300
+                      ${isCurrentMonth 
+                        ? 'bg-gray-800/30 hover:bg-gray-700/50 cursor-pointer' 
+                        : 'bg-transparent border border-transparent cursor-default'
+                      }
+                      ${dayHasEvents && isCurrentMonth
+                        ? 'border-2 border-blue-500 hover:border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                        : isCurrentMonth
+                        ? 'border border-gray-700/30 hover:border-red-500/50'
+                        : ''
+                      }
+                      ${today ? 'ring-2 ring-red-500/50 bg-red-900/20' : ''}
+                      ${selected ? 'bg-red-500/30 border-red-500 shadow-[0_0_20px_rgba(255,0,64,0.3)]' : ''}
+                      group
+                    `}
                 >
                   {/* Day Number */}
                   <span className={`
@@ -315,13 +321,6 @@ export function CalendarManagement() {
                   `}>
                     {displayDay}
                   </span>
-
-                  {/* Event Indicator Dots */}
-                  {dayHasEvents && (
-                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-                      <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
-                    </div>
-                  )}
 
                   {/* Today Indicator Dot */}
                   {today && !selected && !dayHasEvents && (
