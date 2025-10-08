@@ -58,7 +58,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         '/user-management', 
         '/game-management',
         '/rally-management',
-        '/news-management',
+        '/calendar-management',
         '/championships',
         '/results',
         '/participant-linking',

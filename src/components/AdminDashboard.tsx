@@ -187,48 +187,6 @@ export function AdminDashboard() {
         {/* Quick Action Buttons - User Dashboard Style */}
         <AdminQuickButtons />
 
-        {/* Fännikaubad Section */}
-        <div className="tech-border rounded-2xl shadow-[0_0_30px_rgba(255,0,64,0.1)] bg-black/80 backdrop-blur-xl p-6 relative overflow-hidden">
-          <div className="absolute inset-0 grid-pattern opacity-[0.02] pointer-events-none"></div>
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">🛍️</span>
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white font-['Orbitron'] uppercase tracking-wider">
-                    Fännikaubad
-                  </h2>
-                  <p className="text-sm text-gray-400 font-['Rajdhani']">
-                    Halda fännikaupu ja nende müügit
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <button
-              onClick={() => window.location.href = '/product-dashboard'}
-              className="group w-full p-4 rounded-xl border transition-all duration-300 overflow-hidden cursor-pointer transform
-                       bg-gradient-to-br from-gray-900/50 to-black/50 border-gray-800 
-                       hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(255,0,64,0.3)] hover:scale-[1.02]"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none"></div>
-              
-              <div className="relative z-10 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl group-hover:scale-110 transition-transform duration-300">🛍️</span>
-                  <span className="text-white font-['Orbitron'] font-medium">
-                    Mine fännikaupade haldusesse
-                  </span>
-                </div>
-                <span className="text-red-400 group-hover:translate-x-1 transition-transform duration-300">→</span>
-              </div>
-            </button>
-          </div>
-        </div>
         
         {/* Floating Action Indicators - Only show if there are pending items */}
         {(userStats.pendingApproval > 0 || userStats.pendingEmail > 0) && (
