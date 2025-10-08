@@ -4,6 +4,7 @@
 import { useAuth } from '@/components/AuthProvider'
 import { useView } from '@/components/ViewProvider'
 import { useAllRallies, useUserRallyRegistrations } from '@/hooks/useOptimizedRallies'
+import { UserCalendarSection } from '@/components/user/UserCalendarSection'
 import { UserWelcomeHeader } from '@/components/user/UserWelcomeHeader'
 import { UserQuickMenu } from '@/components/user/UserQuickMenu'
 import { UserStatusBanner } from '@/components/user/UserStatusBanner'
@@ -140,6 +141,14 @@ export function UserDashboard() {
             isLoading={isLoadingAll}
             canAccessRallies={canAccessRallies}
           />
+        </div>
+
+        {/* Calendar Section */}
+        <div className="mt-8">
+          <SectionDivider variant="z-pattern" />
+        </div>
+        <div className="relative mt-8">
+          <UserCalendarSection />
         </div>
 
         {/* Instructions Section */}
