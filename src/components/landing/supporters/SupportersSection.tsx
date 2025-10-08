@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react'
 import { BigSponsorsCarousel } from './BigSponsorsCarousel'
 import { StreamSupportersTable } from './StreamSupportersTable'
-import { CompactNewsSection } from '../sections/NewsSection'
 import { supabase } from '@/lib/supabase'
 
 export function SupportersSection() {
@@ -91,7 +90,7 @@ export function SupportersSection() {
         </div>
 
         {/* Two-column layout for QR + News during loading */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 max-w-6xl mx-auto">
           {/* QR Code Section - Loading placeholder */}
           <div className="text-center">
             <h3 className="text-2xl font-bold text-white mb-6 font-['Orbitron'] uppercase">Toeta Meid</h3>
@@ -105,8 +104,6 @@ export function SupportersSection() {
             </div>
           </div>
 
-          {/* News Section - Will show when loaded */}
-          <CompactNewsSection />
         </div>
       </div>
     )
@@ -146,11 +143,10 @@ export function SupportersSection() {
         </div>
       )}
 
-      {/* Two-column layout for QR Code + News - Equal Heights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        {/* QR Code Section - no grey background, red text */}
-        <div className="text-center h-full">
-          <h3 className="text-2xl font-bold text-white mb-6 font-['Orbitron'] uppercase">Toeta Meid</h3>
+      {/* QR Code Section - Centered */}
+      <div className="flex justify-center">
+        <div className="w-full max-w-md">
+          <h3 className="text-2xl font-bold text-white mb-6 font-['Orbitron'] uppercase text-center">Toeta Meid</h3>
           <div className="max-w-md mx-auto h-full">
             <div className="group relative rounded-2xl p-8 hover:scale-105 transition-all duration-300 overflow-hidden h-full flex flex-col border border-red-500/20 hover:border-red-500/40">
               {/* Hover glow effect - red theme */}
@@ -196,9 +192,6 @@ export function SupportersSection() {
             </div>
           </div>
         </div>
-
-        {/* News Section */}
-        <CompactNewsSection />
       </div>
     </div>
   )

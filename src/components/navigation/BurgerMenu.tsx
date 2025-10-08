@@ -100,13 +100,6 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
       priority: 'primary'
     },
     {
-      icon: '💬',
-      label: 'Foorum',
-      description: 'Kogukonna arutelud',
-      action: () => navigateTo('/forum'),
-      priority: 'primary'
-    },
-    {
       icon: '⚙️',
       label: 'Kasutaja Sätted',
       description: 'Profiili ja eelistuste haldamine',
@@ -117,20 +110,7 @@ export function BurgerMenu({ user, onLogout }: BurgerMenuProps) {
 
   // Add admin-only items if user is admin
   const adminOnlyItems = user?.role === 'admin' ? [
-    {
-      icon: '🎲',
-      label: 'Genereeri ralli!',
-      description: 'Genereeri automaatselt uus ralli',
-      action: () => navigateTo('/generate-rally'),
-      priority: 'primary'
-    },
-    {
-      icon: '🛍️',
-      label: 'Fan Merch',
-      description: 'Fännide pood ja tooted',
-      action: () => navigateTo('/fan-merch'),
-      priority: 'primary'
-    }
+
   ] : []
 
   // Combine menu items - insert admin items after teams but before registration

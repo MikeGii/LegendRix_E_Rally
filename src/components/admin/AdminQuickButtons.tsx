@@ -34,10 +34,10 @@ export function AdminQuickButtons() {
     },
     {
       id: 'news',
-      title: 'Uudiste manageerimine',
-      description: 'Loo ja halda uudiseid',
+      title: 'Kalender',
+      description: 'Halda kalendris toimuvaid sündmuseid',
       icon: '📰',
-      href: '/news-management'
+      href: '/calendar-management'
     },
     {
       id: 'championships',
